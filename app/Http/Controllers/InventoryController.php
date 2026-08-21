@@ -313,13 +313,40 @@ class InventoryController extends Controller
             ]);
         }
 
+        // ── 7. PAGINASI DATA TABEL UNTUK DATASET BESAR (600+ BARIS) ──
+        $perPageParam = $request->get('per_page', '50');
+        $perPage = ($perPageParam === 'ALL' || $perPageParam === 'all') ? max(1, $filteredMatrix->count()) : max(10, (int)$perPageParam);
+        $currentPage = (int) $request->get('page', 1);
+        $totalRowsCount = $filteredMatrix->count();
+
+        if ($perPage > 0 && $totalRowsCount > $perPage) {
+            $slice = $filteredMatrix->slice(($currentPage - 1) * $perPage, $perPage)->values();
+            $paginatedMatrix = new \Illuminate\Pagination\LengthAwarePaginator(
+                $slice,
+                $totalRowsCount,
+                $perPage,
+                $currentPage,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        } else {
+            $paginatedMatrix = new \Illuminate\Pagination\LengthAwarePaginator(
+                $filteredMatrix,
+                $totalRowsCount,
+                max(1, $totalRowsCount),
+                1,
+                ['path' => $request->url(), 'query' => $request->query()]
+            );
+        }
+
         return view('purchasing.inventory', compact(
             'search',
             'itemCode',
             'plantFilter',
             'supplierFilter',
             'statusFilter',
+            'perPageParam',
             'filteredMatrix',
+            'paginatedMatrix',
             'kpiTotalInventoryQty',
             'kpiTotalInventoryValUsd',
             'kpiTotalInventoryValIdr',

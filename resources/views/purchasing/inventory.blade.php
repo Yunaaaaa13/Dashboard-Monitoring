@@ -500,13 +500,23 @@
                         <option value="OPTIMAL" {{ $statusFilter === 'OPTIMAL' ? 'selected' : '' }}>Optimal / No Demand</option>
                     </select>
                 </div>
+
+                {{-- Per Page Selector --}}
+                <div>
+                    <select name="per_page" class="filter-select" onchange="this.form.submit()">
+                        <option value="25" {{ ($perPageParam == '25') ? 'selected' : '' }}>25 Data / Hal</option>
+                        <option value="50" {{ ($perPageParam == '50') ? 'selected' : '' }}>50 Data / Hal</option>
+                        <option value="100" {{ ($perPageParam == '100') ? 'selected' : '' }}>100 Data / Hal</option>
+                        <option value="ALL" {{ (strtoupper($perPageParam) == 'ALL') ? 'selected' : '' }}>Semua Data (All)</option>
+                    </select>
+                </div>
             </div>
 
             <div class="d-flex align-items-center gap-2">
                 <button type="submit" class="btn btn-sm btn-purple text-white px-3 fw-bold rounded-pill" style="background: #8b5cf6;">
                     <i class="bi bi-filter me-1"></i> Terapkan
                 </button>
-                @if($search || $plantFilter !== 'ALL' || $supplierFilter !== 'ALL' || $statusFilter !== 'ALL' || ($itemCode && $itemCode !== 'ALL'))
+                @if($search || $plantFilter !== 'ALL' || $supplierFilter !== 'ALL' || $statusFilter !== 'ALL' || ($itemCode && $itemCode !== 'ALL') || $perPageParam != '50')
                     <a href="{{ route('purchasing.actual-inventory') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                         <i class="bi bi-x-circle me-1"></i> Reset
                     </a>
@@ -527,8 +537,8 @@
                         </h5>
                         <small class="text-muted">Perbandingan 4 dimensi: Kebutuhan (Inventory Demand) vs Stok Fisik vs Pesanan Berjalan (PO) vs Total Pasokan</small>
                     </div>
-                    <span class="badge bg-dark border border-secondary text-info font-monospace" style="font-size: 0.75rem;">
-                        Top 10 Critical Materials
+                    <span class="badge bg-dark border border-secondary text-info font-monospace" style="font-size: 0.75rem;" title="Diagram menampilkan 10 material teratas berdasarkan volume kebutuhan/pasokan dari total {{ $kpiTotalPositions }} posisi di tabel bawah">
+                        Top 10 Spotlight (Total {{ $kpiTotalPositions }} Posisi)
                     </span>
                 </div>
                 <div style="position: relative; height: 340px; width: 100%;">
@@ -636,7 +646,11 @@
             </div>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-dark border border-secondary text-light font-monospace">
-                    Total: {{ $filteredMatrix->count() }} Posisi Terdaftar
+                    @if(method_exists($paginatedMatrix, 'firstItem') && $paginatedMatrix->firstItem())
+                        Menampilkan {{ $paginatedMatrix->firstItem() }} - {{ $paginatedMatrix->lastItem() }} dari Total {{ $filteredMatrix->count() }} Data
+                    @else
+                        Total: {{ $filteredMatrix->count() }} Posisi Terdaftar
+                    @endif
                 </span>
             </div>
         </div>
@@ -666,7 +680,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($filteredMatrix as $index => $row)
+                    @forelse($paginatedMatrix as $index => $row)
                     <tr>
                         <td class="text-center">
                             <input type="checkbox" class="form-check-input row-checkbox-inventory" 
@@ -675,7 +689,9 @@
                                    data-part="{{ $row->part_number }}"
                                    onchange="updateSelectedInventoryCount()">
                         </td>
-                        <td class="text-center font-monospace text-muted">{{ $index + 1 }}</td>
+                        <td class="text-center font-monospace text-muted">
+                            {{ method_exists($paginatedMatrix, 'firstItem') && $paginatedMatrix->firstItem() ? ($paginatedMatrix->firstItem() + $index) : ($index + 1) }}
+                        </td>
                         <td>
                             <span class="badge-plant">{{ $row->factory_code }}</span>
                         </td>
@@ -794,6 +810,18 @@
                 @endif
             </table>
         </div>
+
+        {{-- Pagination Controls --}}
+        @if(method_exists($paginatedMatrix, 'hasPages') && $paginatedMatrix->hasPages())
+        <div class="d-flex justify-content-between align-items-center p-3 border-top border-secondary border-opacity-25 flex-wrap gap-2" style="background: rgba(15, 23, 42, 0.4);">
+            <div class="text-muted small font-monospace">
+                Menampilkan <strong>{{ $paginatedMatrix->firstItem() }}</strong> - <strong>{{ $paginatedMatrix->lastItem() }}</strong> dari <strong>{{ $paginatedMatrix->total() }}</strong> total posisi stok fisik
+            </div>
+            <div>
+                {{ $paginatedMatrix->appends(request()->query())->links('pagination::bootstrap-5') }}
+            </div>
+        </div>
+        @endif
     </div>
 
 </div>
