@@ -1235,8 +1235,8 @@
             const supName = itemsMapInventory[codeClean].supplier_name || '';
             
             document.getElementById('add_description').value = desc;
-            if (supCode) document.getElementById('add_supplier_code').value = supCode;
-            if (supName) document.getElementById('add_supplier_name').value = supName;
+            if (supCode && document.getElementById('add_supplier_code')) document.getElementById('add_supplier_code').value = supCode;
+            if (supName && document.getElementById('add_supplier_name')) document.getElementById('add_supplier_name').value = supName;
         }
     }
 
@@ -1251,15 +1251,18 @@
         reader.onload = function(e) {
             try {
                 const data = new Uint8Array(e.target.result);
-                const workbook = XLSX.read(data, { type: 'array' });
+                const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                 const firstSheetName = workbook.SheetNames[0];
                 const worksheet = workbook.Sheets[firstSheetName];
                 
-                const rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
-                renderExcelPreview(rawJson);
+                // Read as 2D Array to handle any header position
+                const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                renderExcelPreview2D(sheetData);
             } catch (err) {
                 if (window.notify) {
                     window.notify.error('Gagal Baca File', 'Gagal membaca file Excel: ' + err.message);
+                } else {
+                    console.error(err);
                 }
             }
         };
@@ -1281,48 +1284,33 @@
         });
     }
 
-    function resolveFieldJS(row, candidateKeys, defaultVal = '') {
-        const normalizedRow = {};
-        for (let k in row) {
-            if (row.hasOwnProperty(k)) {
-                const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-                normalizedRow[cleanK] = row[k];
-            }
-        }
-        for (let cand of candidateKeys) {
-            const cleanCand = cand.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (normalizedRow[cleanCand] !== undefined && normalizedRow[cleanCand] !== null && normalizedRow[cleanCand] !== '') {
-                return normalizedRow[cleanCand];
-            }
-        }
-        return defaultVal;
-    }
-
     function parseNumericStockJS(val) {
         if (val === null || val === undefined || val === '') return 0;
-        if (typeof val === 'number') return Math.round(val);
-        let s = String(val).trim().replace(/[a-zA-Z$]/g, '').trim();
-        if (s.includes(',') && !s.includes('.')) {
-            if (s.match(/^\d+,\d{3}$/)) {
-                s = s.replace(/,/g, '');
-            } else {
-                s = s.replace(',', '.');
-            }
-        } else if (s.includes('.') && !s.includes(',')) {
-            if (s.match(/^\d+\.\d{3}$/)) {
-                s = s.replace(/\./g, '');
-            }
-        } else if (s.includes('.') && s.includes(',')) {
+        if (typeof val === 'number') return isNaN(val) ? 0 : Math.round(val);
+        let s = String(val).trim().replace(/[Rp\$€¥\s]/gi, '').replace(/[^\d\.\,\-]/g, '');
+        if (s === '' || s === '-') return 0;
+        
+        if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
+            s = s.replace(/\./g, '');
+        } else if (/^-?\d{1,3}(,\d{3})+$/.test(s)) {
             s = s.replace(/,/g, '');
+        } else if (s.includes(',') && !s.includes('.')) {
+            s = s.replace(',', '.');
         }
         const num = parseFloat(s);
         return isNaN(num) ? 0 : Math.round(num);
     }
 
-    function renderExcelPreview(rows) {
+    function renderExcelPreview2D(sheetData) {
         parsedExcelRows = [];
         const tbody = document.getElementById('previewTableBody');
         tbody.innerHTML = '';
+
+        if (!sheetData || sheetData.length === 0) {
+            document.getElementById('statTotalRows').innerText = 'Total: 0 Baris';
+            document.getElementById('btnConfirmImport').disabled = true;
+            return;
+        }
 
         let validCount = 0;
         let duplicateCount = 0;
@@ -1330,18 +1318,108 @@
         const seenCombinations = new Set();
         const todayStr = new Date().toISOString().split('T')[0];
 
-        rows.forEach((row, idx) => {
-            const supCode = String(resolveFieldJS(row, ['supplier_code', 'suppliercode', 'vendor_code', 'vendorcode', 'kode_supplier', 'kode_vendor'])).trim();
-            const supName = String(resolveFieldJS(row, ['supplier_name', 'suppliername', 'supplier', 'vendor_name', 'vendorname', 'vendor', 'nama_supplier', 'nama_vendor'])).trim();
-            const plant   = String(resolveFieldJS(row, ['plant', 'factory_code', 'factorycode', 'factory', 'lokasi', 'site', 'plant_code'], 'KIP1')).trim().toUpperCase();
-            const matCode = String(resolveFieldJS(row, ['material_code', 'materialcode', 'part_number', 'partnumber', 'part_no', 'partno', 'item_code', 'itemcode', 'kode_material', 'kode_barang', 'material', 'part'])).trim();
-            const desc    = String(resolveFieldJS(row, ['description', 'deskripsi', 'nama_barang', 'item_description', 'material_name', 'keterangan'])).trim();
-            const rawInv  = resolveFieldJS(row, ['actual_inventory', 'actualinventory', 'aktual_inventory', 'aktualinventory', 'actual_stock', 'actualstock', 'aktual_stok', 'aktualstok', 'current_stock', 'currentstock', 'stok_fisik', 'stokfisik', 'physical_stock', 'physicalstock', 'ending_stock', 'endingstock', 'saldo', 'saldo_akhir', 'qty', 'quantity', 'jumlah', 'inventory', 'stock', 'stok', 'm0_inventory', 'm0_stock', 'm0'], 0);
-            const snapDate = String(resolveFieldJS(row, ['snapshot_date', 'snapshotdate', 'tanggal_inventory', 'tanggalinventory', 'tanggal', 'date', 'periode', 'period', 'tgl'], todayStr)).trim();
+        const headerKeywords = {
+            mat_code: ['materialcode', 'itemcode', 'partnumber', 'partno', 'drawing', 'material', 'kodebarang', 'kodematerial', 'kodeitem', 'kodepart', 'komponen', 'mat', 'pn', 'sku', 'code', 'barang', 'item', 'part', 'matno', 'matcode', 'drawingno'],
+            inv_qty: ['actualinventory', 'aktualinventory', 'actualstock', 'aktualstok', 'currentstock', 'stokfisik', 'physicalstock', 'endingstock', 'saldoakhir', 'inventory', 'stock', 'stok', 'm0inventory', 'm0stock', 'm0', 'saldo', 'qty', 'quantity', 'jumlah', 'kuantitas', 'vol', 'volume', 'total', 'output', 'pcs', 'juli', 'jul'],
+            plant: ['plant', 'factorycode', 'factory', 'pabrik', 'lokasi', 'site', 'gedung', 'kdpabrik', 'line', 'unit', 'plantcode'],
+            supp_code: ['suppliercode', 'vendorcode', 'kodesupplier', 'kodevendor', 'kdsupp', 'kdvendor', 'kdsp', 'suppcode', 'vendorcode'],
+            supp_name: ['suppliername', 'vendorname', 'namasupplier', 'namavendor', 'namapemasok', 'pemasok', 'supplier', 'vendor', 'namasupp', 'pt'],
+            desc: ['description', 'deskripsibarang', 'deskripsi', 'namabarang', 'namamaterial', 'keterangan', 'itemname', 'materialname', 'partname', 'namapart', 'spec', 'spesifikasi', 'desc', 'itemdescription'],
+            date: ['snapshotdate', 'tanggalinventory', 'tanggal', 'date', 'periode', 'period', 'tgl', 'proddate']
+        };
 
-            if (!matCode) return;
+        // 1. Detect Header Row Index (Scan first 25 rows)
+        let bestHeaderIdx = -1;
+        let maxHeaderScore = 0;
 
+        for (let r = 0; r < Math.min(25, sheetData.length); r++) {
+            const row = sheetData[r];
+            if (!Array.isArray(row)) continue;
+            let score = 0;
+            for (let cell of row) {
+                const clean = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                if (!clean) continue;
+                for (let type in headerKeywords) {
+                    for (let kw of headerKeywords[type]) {
+                        if (clean === kw || clean.includes(kw) || (kw.length >= 5 && kw.includes(clean))) {
+                            score += (kw.length >= 4 ? 2 : 1);
+                            break;
+                        }
+                    }
+                }
+            }
+            if (score > maxHeaderScore) {
+                maxHeaderScore = score;
+                bestHeaderIdx = r;
+            }
+        }
+
+        if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+        const headerRow = sheetData[bestHeaderIdx] || [];
+
+        // 2. Map Column Indices
+        const colMap = {
+            mat_code: -1,
+            inv_qty: -1,
+            plant: -1,
+            supp_code: -1,
+            supp_name: -1,
+            desc: -1,
+            date: -1
+        };
+
+        for (let c = 0; c < headerRow.length; c++) {
+            const clean = String(headerRow[c] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!clean) continue;
+
+            for (let field in colMap) {
+                if (colMap[field] === -1) {
+                    for (let kw of headerKeywords[field]) {
+                        if (clean === kw || clean.includes(kw) || (clean.length >= 4 && kw.includes(clean))) {
+                            colMap[field] = c;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Heuristic fallback if mat_code or inv_qty not detected
+        if (colMap.mat_code === -1 || colMap.inv_qty === -1) {
+            for (let c = 0; c < headerRow.length; c++) {
+                let numCount = 0;
+                let codeCount = 0;
+                for (let r = bestHeaderIdx + 1; r < Math.min(bestHeaderIdx + 20, sheetData.length); r++) {
+                    const val = String((sheetData[r] && sheetData[r][c]) || '').trim();
+                    if (/^-?\d+(\.\d+)?$/.test(val)) numCount++;
+                    if (/^[A-Za-z0-9\-\.]{4,20}$/.test(val) && isNaN(Number(val))) codeCount++;
+                }
+                if (colMap.inv_qty === -1 && numCount > 5) colMap.inv_qty = c;
+                if (colMap.mat_code === -1 && (codeCount > 3 || (numCount > 5 && colMap.inv_qty !== c))) colMap.mat_code = c;
+            }
+        }
+
+        let totalRawRows = 0;
+
+        for (let r = bestHeaderIdx + 1; r < sheetData.length; r++) {
+            const row = sheetData[r];
+            if (!Array.isArray(row) || row.every(cell => String(cell || '').trim() === '')) continue;
+            totalRawRows++;
+
+            const matCode = colMap.mat_code !== -1 ? String(row[colMap.mat_code] || '').trim() : '';
+            if (!matCode || matCode.toUpperCase() === 'ITEM CODE' || matCode.toUpperCase() === 'MATERIAL CODE' || matCode.toUpperCase().startsWith('TOTAL')) {
+                continue;
+            }
+
+            const rawInv = colMap.inv_qty !== -1 ? row[colMap.inv_qty] : 0;
             const cleanInv = parseNumericStockJS(rawInv);
+
+            const plant   = (colMap.plant !== -1 && row[colMap.plant]) ? String(row[colMap.plant]).trim().toUpperCase() : 'KIP 1';
+            const supCode = (colMap.supp_code !== -1 && row[colMap.supp_code]) ? String(row[colMap.supp_code]).trim().toUpperCase() : '';
+            const supName = (colMap.supp_name !== -1 && row[colMap.supp_name]) ? String(row[colMap.supp_name]).trim() : '';
+            const desc    = (colMap.desc !== -1 && row[colMap.desc]) ? String(row[colMap.desc]).trim() : '';
+            const snapDate = (colMap.date !== -1 && row[colMap.date]) ? String(row[colMap.date]).trim() : todayStr;
+
             const comboKey = plant + '|' + matCode;
             const isDuplicate = seenCombinations.has(comboKey);
             seenCombinations.add(comboKey);
@@ -1360,7 +1438,7 @@
                 snapshot_date: snapDate
             });
 
-            if (idx < 30) {
+            if (parsedExcelRows.length <= 100) {
                 const tr = document.createElement('tr');
                 let statusBadge = '<span class="badge bg-success bg-opacity-25 text-success">Valid</span>';
                 if (isDuplicate) {
@@ -1370,7 +1448,7 @@
                 }
 
                 tr.innerHTML = `
-                    <td class="text-muted font-monospace">${idx + 1}</td>
+                    <td class="text-muted font-monospace">${r + 1}</td>
                     <td class="font-monospace">${supCode || '-'}</td>
                     <td>${supName || '-'}</td>
                     <td><span class="badge-plant">${plant}</span></td>
@@ -1382,9 +1460,9 @@
                 `;
                 tbody.appendChild(tr);
             }
-        });
+        }
 
-        document.getElementById('statTotalRows').innerText = `Total: ${parsedExcelRows.length} Baris`;
+        document.getElementById('statTotalRows').innerText = `Total: ${totalRawRows} Baris`;
         document.getElementById('statValidRows').innerText = `✓ ${validCount} Siap Import`;
         
         const statDup = document.getElementById('statDuplicateRows');
@@ -1405,15 +1483,32 @@
 
         document.getElementById('previewStatsBox').classList.remove('d-none');
         document.getElementById('previewTableContainer').classList.remove('d-none');
-        document.getElementById('btnConfirmImport').disabled = parsedExcelRows.length === 0;
+        
+        const btn = document.getElementById('btnConfirmImport');
+        if (btn) {
+            btn.disabled = (parsedExcelRows.length === 0);
+            if (parsedExcelRows.length > 0) {
+                btn.classList.add('shadow-lg');
+                btn.style.filter = 'drop-shadow(0 0 10px rgba(16,185,129,0.5))';
+            } else {
+                btn.style.filter = '';
+            }
+        }
     }
 
     function submitParsedInventoryData() {
-        if (parsedExcelRows.length === 0) return;
+        if (!parsedExcelRows || parsedExcelRows.length === 0) {
+            if (window.notify) {
+                window.notify.warning('Data Kosong', 'Tidak ada data valid yang siap diimport. Silakan periksa file Excel Anda.');
+            }
+            return;
+        }
 
         const btn = document.getElementById('btnConfirmImport');
-        btn.disabled = true;
-        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengimport data...';
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengimport data...';
+        }
 
         fetch("{{ route('purchasing.actual-inventory.import') }}", {
             method: 'POST',
@@ -1428,23 +1523,27 @@
         .then(data => {
             if (data.success) {
                 if (window.notify) {
-                    window.notify.success('Import Berhasil', 'Data stok fisik aktual berhasil diimpor!');
+                    window.notify.success('Import Berhasil', data.message || 'Data stok fisik aktual berhasil diimpor!');
                 }
                 setTimeout(() => window.location.reload(), 1000);
             } else {
                 if (window.notify) {
                     window.notify.error('Gagal Import', data.message || 'Gagal mengimpor data.');
                 }
-                btn.disabled = false;
-                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+                }
             }
         })
         .catch(err => {
             if (window.notify) {
-                window.notify.error('Kesalahan Jaringan', err.message || 'Terjadi kesalahan jaringan.');
+                window.notify.error('Kesalahan Jaringan', err.message || 'Terjadi kesalahan sistem.');
             }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+            }
         });
     }
 

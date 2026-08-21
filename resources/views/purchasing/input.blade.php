@@ -1385,12 +1385,12 @@ document.addEventListener('DOMContentLoaded', function() {
             reader.onload = function(evt) {
                 try {
                     const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
+                    const workbook = XLSX.read(data, { type: 'array', cellDates: true });
                     const firstSheetName = workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[firstSheetName];
                     
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    if (jsonData.length < 2) {
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                    if (!jsonData || jsonData.length === 0) {
                         if (window.notify) {
                             window.notify.warning('File Kosong', 'Berkas Excel kosong atau tidak memiliki baris data.');
                         }
@@ -1399,48 +1399,92 @@ document.addEventListener('DOMContentLoaded', function() {
                         return;
                     }
 
-                    let headerRowIdx = 0;
-                    let bestMatchCount = 0;
-                    for (let r = 0; r < Math.min(jsonData.length, 25); r++) {
+                    const headerKeywords = {
+                        itemcode: ['materialcode', 'itemcode', 'partnumber', 'partno', 'drawing', 'material', 'kodebarang', 'kodematerial', 'kodeitem', 'kodepart', 'komponen', 'mat', 'pn', 'sku', 'code', 'barang', 'item', 'part', 'drawingno'],
+                        po: ['ponumber', 'nomorpo', 'kodepo', 'nopo', 'poref', 'poreference', 'noorder', 'purchaseorder', 'po', 'pono'],
+                        supplier: ['suppliername', 'vendorname', 'namasupplier', 'namavendor', 'namapemasok', 'kodesupplier', 'kodevendor', 'supplier', 'vendor', 'pemasok', 'kdsupp', 'kdvendor', 'pt'],
+                        tanggal: ['deliverydate', 'tanggalreceipt', 'tanggalterima', 'tanggalpo', 'tanggal', 'date', 'tgl', 'receiptdate', 'periode'],
+                        name: ['description', 'deskripsibarang', 'deskripsi', 'namabarang', 'namamaterial', 'keterangan', 'itemname', 'materialname', 'partname', 'spec', 'desc'],
+                        target: ['targetpo', 'targetqty', 'planqty', 'orderqty', 'plan', 'target', 'order', 'qtyplan', 'qtytarget'],
+                        actual: ['actualqty', 'resultqty', 'qtyreceived', 'receivedqty', 'aktualqty', 'realisasi', 'result', 'actual', 'aktual', 'received', 'terima', 'masuk', 'qty'],
+                        price: ['unitprice', 'hargasatuan', 'price', 'harga', 'rate', 'unitcost'],
+                        currency: ['currency', 'kurs', 'matauang', 'curr', 'valuta']
+                    };
+
+                    // 1. Detect Header Row Index (Score first 25 rows)
+                    let bestHeaderIdx = -1;
+                    let maxHeaderScore = 0;
+
+                    for (let r = 0; r < Math.min(25, jsonData.length); r++) {
                         const row = jsonData[r];
-                        if (!row || !Array.isArray(row)) continue;
-                        let matchCount = 0;
-                        row.forEach(cell => {
-                            const str = String(cell || '').trim().toUpperCase();
-                            if (
-                                str.includes('MATERIAL CODE') || str.includes('ITEM CODE') || str.includes('ITEM_CODE') ||
-                                str.includes('PO NO') || str.includes('PO NUMBER') || str.includes('NO. PO') ||
-                                str.includes('SUPPLIER') || str.includes('DELIVERY DATE') || str.includes('TANGGAL')
-                            ) {
-                                matchCount++;
+                        if (!Array.isArray(row)) continue;
+                        let score = 0;
+                        for (let cell of row) {
+                            const clean = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                            if (!clean) continue;
+                            for (let type in headerKeywords) {
+                                for (let kw of headerKeywords[type]) {
+                                    if (clean === kw || clean.includes(kw) || (kw.length >= 5 && kw.includes(clean))) {
+                                        score += (kw.length >= 4 ? 2 : 1);
+                                        break;
+                                    }
+                                }
                             }
-                        });
-                        if (matchCount > bestMatchCount) {
-                            bestMatchCount = matchCount;
-                            headerRowIdx = r;
+                        }
+                        if (score > maxHeaderScore) {
+                            maxHeaderScore = score;
+                            bestHeaderIdx = r;
                         }
                     }
 
-                    const headerRow = jsonData[headerRowIdx] || [];
-                    const headers = headerRow.map((h, colIdx) => {
-                        const above = headerRowIdx > 0 ? String((jsonData[headerRowIdx - 1] || [])[colIdx] || '').trim().toUpperCase() : '';
-                        const current = String(h || '').trim().toUpperCase();
-                        return (above + ' ' + current).trim().toLowerCase();
-                    });
-                    
+                    if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+                    const headerRow = jsonData[bestHeaderIdx] || [];
+
+                    // 2. Map Column Indices
                     const colMap = {
-                        supplier: headers.findIndex(h => h === 'supplier name' || h.includes('supplier') || h.includes('vendor') || h.includes('trade')),
-                        tanggal: headers.findIndex(h => h === 'delivery date' || h === 'tanggal receipt' || h.includes('delivery') || h.includes('tanggal') || h.includes('receipt') || h === 'date'),
-                        itemcode: headers.findIndex(h => h === 'material code' || h === 'item code' || h.includes('material code') || h.includes('item code') || h.includes('drawing') || h === 'itemcode' || h.includes('item_code')),
-                        name: headers.findIndex(h => h === 'description' || h === 'deskripsi' || h.includes('description') || h.includes('name')),
-                        po: headers.findIndex(h => h === 'po no.' || h === 'po no' || h === 'no. po' || h === 'no po' || h === 'po' || h === 'po_no' || h.includes('po reference') || h.includes('po_reference') || h.includes('nomor po') || (h.includes('po') && !h.includes('target') && !h.includes('plan'))),
-                        currency: headers.findIndex(h => h === 'currency' || h.includes('currency') || h.includes('kurs') || h.includes('mata uang')),
-                        price: headers.findIndex(h => h === 'price' || h.includes('price') || h.includes('harga')),
-                        target: headers.findIndex(h => (h === 'plan' || h === 'target po' || h === 'target' || ((h.includes('plan') || h.includes('target')) && !h.includes('amount') && !h.includes('amt')))),
-                        actual: headers.findIndex(h => (h === 'result' || h === 'actual qty' || h === 'actual' || h === 'aktual (qty)' || ((h.includes('result') || h.includes('actual') || h.includes('aktual') || h.includes('received') || h === 'qty') && !h.includes('amount') && !h.includes('amt'))))
+                        itemcode: -1,
+                        po: -1,
+                        supplier: -1,
+                        tanggal: -1,
+                        name: -1,
+                        target: -1,
+                        actual: -1,
+                        price: -1,
+                        currency: -1
                     };
 
+                    for (let c = 0; c < headerRow.length; c++) {
+                        const clean = String(headerRow[c] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                        if (!clean) continue;
+
+                        for (let field in colMap) {
+                            if (colMap[field] === -1) {
+                                for (let kw of headerKeywords[field]) {
+                                    if (clean === kw || clean.includes(kw) || (clean.length >= 4 && kw.includes(clean))) {
+                                        colMap[field] = c;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    // Heuristic Fallback
                     if (colMap.itemcode === -1 || colMap.po === -1) {
+                        for (let c = 0; c < headerRow.length; c++) {
+                            let codeCount = 0;
+                            let poCount = 0;
+                            for (let r = bestHeaderIdx + 1; r < Math.min(bestHeaderIdx + 20, jsonData.length); r++) {
+                                const val = String((jsonData[r] && jsonData[r][c]) || '').trim();
+                                if (/^PO[\-\s0-9A-Z]+/i.test(val)) poCount++;
+                                if (/^[A-Za-z0-9\-\.]{4,20}$/.test(val) && isNaN(Number(val))) codeCount++;
+                            }
+                            if (colMap.po === -1 && poCount > 3) colMap.po = c;
+                            if (colMap.itemcode === -1 && (codeCount > 3 || (poCount > 3 && colMap.po !== c))) colMap.itemcode = c;
+                        }
+                    }
+
+                    if (colMap.itemcode === -1 && colMap.po === -1) {
                         // Fallback ke Server-side Direct FormData Processing jika header client-side tidak terdeteksi
                         const formData = new FormData();
                         formData.append('_token', document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}');
@@ -1518,15 +1562,15 @@ document.addEventListener('DOMContentLoaded', function() {
                     const rows = [];
                     const skipList = ['ITEM CODE','ITEM_CODE','PART NUMBER','PART_NUMBER','TOTAL','GRAND TOTAL','NO','SUPPLIER NAME','MATERIAL CODE','DELIVERY DATE','PO NO.','DESCRIPTION'];
 
-                    for (let i = headerRowIdx + 1; i < jsonData.length; i++) {
+                    for (let i = bestHeaderIdx + 1; i < jsonData.length; i++) {
                         const r = jsonData[i];
-                        if (!r || r.length === 0) continue;
+                        if (!r || !Array.isArray(r) || r.every(cell => String(cell || '').trim() === '')) continue;
 
-                        const itemCode = String(r[colMap.itemcode] !== undefined ? r[colMap.itemcode] : '').trim();
-                        const poNum = String(r[colMap.po] !== undefined ? r[colMap.po] : '').trim();
+                        const itemCode = String(colMap.itemcode !== -1 && r[colMap.itemcode] !== undefined ? r[colMap.itemcode] : '').trim();
+                        const poNum = String(colMap.po !== -1 && r[colMap.po] !== undefined ? r[colMap.po] : '').trim();
 
-                        if (!itemCode || !poNum) continue;
-                        if (skipList.includes(itemCode.toUpperCase()) || skipList.includes(poNum.toUpperCase())) continue;
+                        if (!itemCode && !poNum) continue;
+                        if (skipList.includes(itemCode.toUpperCase()) || skipList.includes(poNum.toUpperCase()) || itemCode.toUpperCase().startsWith('TOTAL')) continue;
 
                         let tgl = r[colMap.tanggal];
                         let formattedDate = '';

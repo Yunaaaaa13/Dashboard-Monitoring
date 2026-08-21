@@ -1507,19 +1507,32 @@ class PurchasingOutstandingController extends Controller
             //    Ini menandai awal dari blok multi-baris header.
             // ==============================================================
             $headerRowIdx = null;
+            $bestScore = 0;
+            $itemKeywords = [
+                'ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 
+                'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)', 'MATERIAL CODE', 'MATERIAL_CODE', 'MATERIAL',
+                'KODE BARANG', 'KODE MATERIAL', 'KODE ITEM', 'KODE PART', 'KOMPONEN', 'SKU', 'CODE'
+            ];
 
             foreach ($rows as $rIdx => $row) {
-                if ($rIdx > 20) break;
+                if ($rIdx > 30) break;
+                $rowScore = 0;
                 foreach ($row as $col => $val) {
-                    $cleanVal = strtoupper(trim($val ?? ''));
-                    if (in_array($cleanVal, ['ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)'])) {
-                        $headerRowIdx = $rIdx;
-                        break 2;
+                    $cleanVal = strtoupper(trim((string)($val ?? '')));
+                    if (!$cleanVal) continue;
+                    foreach ($itemKeywords as $ikw) {
+                        if ($cleanVal === $ikw || str_starts_with($cleanVal, $ikw) || str_contains($cleanVal, $ikw)) {
+                            $rowScore += 3;
+                            break;
+                        }
                     }
-                    if (str_starts_with($cleanVal, 'ITEM CODE') || str_starts_with($cleanVal, 'PART NUMBER')) {
-                        $headerRowIdx = $rIdx;
-                        break 2;
+                    if (str_contains($cleanVal, 'SUPPLIER') || str_contains($cleanVal, 'VENDOR') || str_contains($cleanVal, 'DESCRIPTION') || str_contains($cleanVal, 'PRICE') || str_contains($cleanVal, 'PO') || str_contains($cleanVal, 'STOCK')) {
+                        $rowScore += 1;
                     }
+                }
+                if ($rowScore > $bestScore) {
+                    $bestScore = $rowScore;
+                    $headerRowIdx = $rIdx;
                 }
             }
 

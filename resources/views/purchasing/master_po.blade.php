@@ -926,8 +926,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         const firstSheetName = workbook.SheetNames[0];
                         const worksheet = workbook.Sheets[firstSheetName];
                         
-                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                        if (jsonData.length < 2) {
+                        const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                        if (!jsonData || jsonData.length === 0) {
                             if (window.notify) {
                                 window.notify.warning('File Kosong', 'Berkas Excel kosong atau tidak memiliki baris data.');
                             }
@@ -967,22 +967,92 @@ document.addEventListener('DOMContentLoaded', function() {
                             return isNaN(num) ? 0 : num;
                         }
 
-                        const headers = jsonData[0].map(h => String(h || '').trim().toLowerCase());
-                        
-                        const colMap = {
-                            tanggal: headers.findIndex(h => h.includes('tanggal') || h.includes('date')),
-                            supplier: headers.findIndex(h => h.includes('supplier') || h.includes('vendor')),
-                            po: headers.findIndex(h => h.includes('po number') || h.includes('nomor po') || h === 'po' || h.includes('po no')),
-                            itemcode: headers.findIndex(h => h.includes('item code') || h.includes('part number') || h === 'itemcode' || h.includes('item_code') || h.includes('material code')),
-                            name: headers.findIndex(h => h.includes('nama material') || h.includes('deskripsi') || h === 'name' || h.includes('material') || h.includes('description')),
-                            qty: headers.findIndex(h => h.includes('qty') || h.includes('quantity') || h.includes('plan') || h.includes('target')),
-                            price: headers.findIndex(h => h.includes('price') || h.includes('harga')),
-                            currency: headers.findIndex(h => h.includes('currency') || h.includes('kurs') || h.includes('mata uang'))
+                        const headerKeywords = {
+                            po: ['ponumber', 'nomorpo', 'kodepo', 'nopo', 'poref', 'poreference', 'noorder', 'purchaseorder', 'po'],
+                            itemcode: ['materialcode', 'itemcode', 'partnumber', 'partno', 'drawing', 'material', 'kodebarang', 'kodematerial', 'kodeitem', 'kodepart', 'komponen', 'mat', 'pn', 'sku', 'code', 'barang', 'item', 'part'],
+                            supplier: ['suppliername', 'vendorname', 'namasupplier', 'namavendor', 'kodesupplier', 'kodevendor', 'supplier', 'vendor', 'pemasok', 'kdsupp', 'kdvendor', 'pt'],
+                            name: ['description', 'deskripsibarang', 'deskripsi', 'namabarang', 'namamaterial', 'keterangan', 'itemname', 'materialname', 'partname', 'namapart', 'spec', 'desc'],
+                            tanggal: ['tanggalpo', 'podate', 'orderdate', 'tanggal', 'date', 'tgl', 'periode'],
+                            qty: ['qtypo', 'orderqty', 'planqty', 'targetpo', 'target', 'plan', 'qty', 'quantity', 'jumlah', 'kuantitas', 'vol', 'total', 'pcs'],
+                            price: ['unitprice', 'hargasatuan', 'price', 'harga', 'rate', 'unitcost'],
+                            currency: ['currency', 'kurs', 'matauang', 'curr', 'valuta']
                         };
 
-                        if (colMap.po === -1 || colMap.itemcode === -1) {
+                        // 1. Detect Header Row Index (Score first 25 rows)
+                        let bestHeaderIdx = -1;
+                        let maxHeaderScore = 0;
+
+                        for (let r = 0; r < Math.min(25, jsonData.length); r++) {
+                            const row = jsonData[r];
+                            if (!Array.isArray(row)) continue;
+                            let score = 0;
+                            for (let cell of row) {
+                                const clean = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                                if (!clean) continue;
+                                for (let type in headerKeywords) {
+                                    for (let kw of headerKeywords[type]) {
+                                        if (clean === kw || clean.includes(kw) || (kw.length >= 5 && kw.includes(clean))) {
+                                            score += (kw.length >= 4 ? 2 : 1);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                            if (score > maxHeaderScore) {
+                                maxHeaderScore = score;
+                                bestHeaderIdx = r;
+                            }
+                        }
+
+                        if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+                        const headerRow = jsonData[bestHeaderIdx] || [];
+
+                        // 2. Map Column Indices
+                        const colMap = {
+                            po: -1,
+                            itemcode: -1,
+                            supplier: -1,
+                            name: -1,
+                            tanggal: -1,
+                            qty: -1,
+                            price: -1,
+                            currency: -1
+                        };
+
+                        for (let c = 0; c < headerRow.length; c++) {
+                            const clean = String(headerRow[c] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                            if (!clean) continue;
+
+                            for (let field in colMap) {
+                                if (colMap[field] === -1) {
+                                    for (let kw of headerKeywords[field]) {
+                                        if (clean === kw || clean.includes(kw) || (clean.length >= 4 && kw.includes(clean))) {
+                                            colMap[field] = c;
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+
+                        // Heuristic Fallback
+                        if (colMap.itemcode === -1 || colMap.po === -1) {
+                            for (let c = 0; c < headerRow.length; c++) {
+                                let codeCount = 0;
+                                let poCount = 0;
+                                for (let r = bestHeaderIdx + 1; r < Math.min(bestHeaderIdx + 20, jsonData.length); r++) {
+                                    const val = String((jsonData[r] && jsonData[r][c]) || '').trim();
+                                    if (/^PO[\-\s0-9A-Z]+/i.test(val)) poCount++;
+                                    if (/^[A-Za-z0-9\-\.]{4,20}$/.test(val) && isNaN(Number(val))) codeCount++;
+                                }
+                                if (colMap.po === -1 && poCount > 3) colMap.po = c;
+                                if (colMap.itemcode === -1 && (codeCount > 3 || (poCount > 3 && colMap.po !== c))) colMap.itemcode = c;
+                            }
+                        }
+
+                        if (colMap.itemcode === -1 && colMap.po === -1) {
                             if (window.notify) {
-                                window.notify.warning('Format Tidak Sesuai', 'Format Excel tidak sesuai. Pastikan kolom "PO Number" dan "Item Code" tersedia.');
+                                window.notify.warning('Format Tidak Sesuai', 'Format Excel tidak sesuai. Pastikan kolom "PO Number" atau "Item Code" tersedia.');
                             }
                             submitBtn.disabled = false;
                             submitBtn.innerHTML = originalBtnText;
@@ -990,14 +1060,16 @@ document.addEventListener('DOMContentLoaded', function() {
                         }
 
                         const rows = [];
-                        for (let i = 1; i < jsonData.length; i++) {
+                        for (let i = bestHeaderIdx + 1; i < jsonData.length; i++) {
                             const row = jsonData[i];
-                            if (!row || row.length === 0) continue;
+                            if (!row || !Array.isArray(row) || row.every(cell => String(cell || '').trim() === '')) continue;
 
                             const poVal = colMap.po !== -1 ? String(row[colMap.po] || '').trim() : '';
                             const itemVal = colMap.itemcode !== -1 ? String(row[colMap.itemcode] || '').trim() : '';
                             
                             if (!poVal && !itemVal) continue;
+                            if (itemVal.toUpperCase() === 'ITEM CODE' || itemVal.toUpperCase() === 'MATERIAL CODE' || itemVal.toUpperCase().startsWith('TOTAL')) continue;
+                            if (poVal.toUpperCase() === 'PO NUMBER' || poVal.toUpperCase() === 'NO PO') continue;
 
                             const parsedPrice = colMap.price !== -1 ? parseExcelNumber(row[colMap.price]) : 0;
                             let rawCurr = colMap.currency !== -1 ? String(row[colMap.currency] || '').trim().toUpperCase() : '';
@@ -1006,13 +1078,22 @@ document.addEventListener('DOMContentLoaded', function() {
                             rows.push({
                                 tanggal: colMap.tanggal !== -1 ? row[colMap.tanggal] : null,
                                 supplier: colMap.supplier !== -1 ? row[colMap.supplier] : null,
-                                po: poVal,
-                                itemcode: itemVal,
+                                po: poVal || ('PO-' + (itemVal || (i + 1))),
+                                itemcode: itemVal || poVal,
                                 name: colMap.name !== -1 ? row[colMap.name] : null,
                                 qty: colMap.qty !== -1 ? parseExcelNumber(row[colMap.qty]) : 0,
                                 price: parsedPrice,
                                 currency: finalCurr
                             });
+                        }
+
+                        if (rows.length === 0) {
+                            if (window.notify) {
+                                window.notify.warning('Tidak Ada Data', 'Tidak ada baris data valid yang terdeteksi untuk diimport.');
+                            }
+                            submitBtn.disabled = false;
+                            submitBtn.innerHTML = originalBtnText;
+                            return;
                         }
 
                         const token = getCsrfToken();

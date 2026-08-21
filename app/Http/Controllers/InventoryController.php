@@ -495,7 +495,8 @@ class InventoryController extends Controller
             $rawInventory    = $this->resolveField($r, ['actual_inventory', 'actualinventory', 'aktual_inventory', 'aktualinventory', 'actual_stock', 'actualstock', 'aktual_stok', 'aktualstok', 'current_stock', 'currentstock', 'stok_fisik', 'stokfisik', 'physical_stock', 'physicalstock', 'ending_stock', 'endingstock', 'saldo', 'saldo_akhir', 'qty', 'quantity', 'jumlah', 'inventory', 'stock', 'stok', 'm0_inventory', 'm0_stock', 'm0']);
             $rawSnapshotDate = $this->resolveField($r, ['snapshot_date', 'snapshotdate', 'tanggal_inventory', 'tanggalinventory', 'tanggal', 'date', 'periode', 'period', 'tgl'], $today);
 
-            if ($rawMaterialCode === null || trim((string)$rawMaterialCode) === '') continue;
+            $matCodeStr = strtoupper(trim((string)$rawMaterialCode));
+            if ($rawMaterialCode === null || $matCodeStr === '' || $matCodeStr === 'ITEM CODE' || $matCodeStr === 'MATERIAL CODE' || $matCodeStr === 'PART NUMBER' || str_starts_with($matCodeStr, 'TOTAL')) continue;
 
             $materialCode = trim((string)$rawMaterialCode);
             $plant = strtoupper(trim((string)$rawPlant ?: 'KIP1'));

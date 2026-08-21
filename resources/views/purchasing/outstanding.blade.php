@@ -1879,14 +1879,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     return;
                 }
                 
-                // Detect header row
+                // Detect header row with scoring
                 let headerRowIdx = -1;
-                const headerKeywords = ['ITEM CODE', 'ITEM_CODE', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 'DRAWING', 'ITEM CODE (PK)'];
-                for (let i = 0; i < Math.min(rows.length, 20); i++) {
+                let maxHScore = 0;
+                const headerKeywords = [
+                    'ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 
+                    'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)', 'MATERIAL CODE', 'MATERIAL_CODE', 'MATERIAL',
+                    'KODE BARANG', 'KODE MATERIAL', 'KODE ITEM', 'KODE PART', 'KOMPONEN', 'SKU', 'CODE'
+                ];
+                for (let i = 0; i < Math.min(rows.length, 30); i++) {
                     const rowVals = Object.values(rows[i]).map(v => String(v ?? '').toUpperCase().trim());
-                    if (rowVals.some(v => headerKeywords.includes(v) || v.startsWith('ITEM CODE') || v.startsWith('PART NUMBER'))) {
+                    let score = 0;
+                    rowVals.forEach(v => {
+                        if (!v) return;
+                        if (headerKeywords.some(kw => v === kw || v.startsWith(kw) || v.includes(kw))) score += 3;
+                        if (v.includes('SUPPLIER') || v.includes('VENDOR') || v.includes('DESCRIPTION') || v.includes('PRICE') || v.includes('PO') || v.includes('STOCK')) score += 1;
+                    });
+                    if (score > maxHScore) {
+                        maxHScore = score;
                         headerRowIdx = i;
-                        break;
                     }
                 }
                 if (headerRowIdx === -1) headerRowIdx = 0;
