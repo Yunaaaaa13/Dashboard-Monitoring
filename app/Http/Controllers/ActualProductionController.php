@@ -529,13 +529,13 @@ class ActualProductionController extends Controller
     {
         $parsed = [];
         foreach ($rawRows as $index => $row) {
-            $item = $this->resolveField($row, ['material_code', 'item_code', 'part_number', 'part_no', 'drawing', 'material', 'kode_barang', 'kode_material', 'pn', 'sku']);
+            $item = $this->resolveField($row, ['material_code', 'item_code', 'part_number', 'part_no', 'drawing', 'material', 'kode_barang', 'kode_material', 'kode_item', 'kode_part', 'komponen', 'pn', 'sku', 'code', 'barang', 'item', 'part', 'mat_no', 'mat_code', 'drawing_no']);
             $itemStr = trim((string)$item);
-            if ($itemStr === '' || strtoupper($itemStr) === 'ITEM CODE' || strtoupper($itemStr) === 'MATERIAL CODE') {
+            if ($itemStr === '' || strtoupper($itemStr) === 'ITEM CODE' || strtoupper($itemStr) === 'MATERIAL CODE' || strtoupper($itemStr) === 'TOTAL') {
                 continue;
             }
 
-            $qtyRaw = $this->resolveField($row, ['production_qty', 'produksi', 'qty', 'actual_production', 'jumlah', 'kuantitas', 'realisasi', 'vol']);
+            $qtyRaw = $this->resolveField($row, ['production_qty', 'produksi', 'qty', 'quantity', 'actual_production', 'actual', 'aktual', 'jumlah', 'kuantitas', 'realisasi', 'vol', 'volume', 'total', 'output', 'pcs', 'juli', 'jul']);
             $parsedQty = $this->parseStockNumeric($qtyRaw);
 
             // Validasi: Qty harus numeric (0 adalah VALID). Jika bernilai null / tidak bisa diparse, skip atau tandai error.
@@ -546,10 +546,10 @@ class ActualProductionController extends Controller
             $dateRaw = $this->resolveField($row, ['tanggal_produksi', 'tanggal', 'date', 'tgl', 'periode', 'prod_date']);
             $date = $this->parseExcelDate($dateRaw);
 
-            $plant = $this->resolveField($row, ['plant', 'factory_code', 'pabrik', 'lokasi', 'factory', 'kode_pabrik']) ?: 'KIP 1';
-            $suppCode = $this->resolveField($row, ['supplier_code', 'vendor_code', 'kode_supplier', 'supplier', 'vendor', 'kd_supp', 'kode_vendor']) ?: '';
-            $suppName = $this->resolveField($row, ['supplier_name', 'vendor_name', 'nama_supplier', 'nama_vendor']) ?: '';
-            $desc = $this->resolveField($row, ['description', 'deskripsi', 'nama_barang', 'item_name', 'nama_material', 'keterangan']) ?: '';
+            $plant = $this->resolveField($row, ['plant', 'factory_code', 'pabrik', 'lokasi', 'factory', 'kode_pabrik', 'site', 'gedung', 'line', 'unit']) ?: 'KIP 1';
+            $suppCode = $this->resolveField($row, ['supplier_code', 'vendor_code', 'kode_supplier', 'kode_vendor', 'kd_supp', 'kd_vendor', 'supp_code', 'kd_sp']) ?: '';
+            $suppName = $this->resolveField($row, ['supplier_name', 'vendor_name', 'nama_supplier', 'nama_vendor', 'supplier', 'vendor', 'pemasok', 'nama_pemasok']) ?: '';
+            $desc = $this->resolveField($row, ['description', 'deskripsi', 'nama_barang', 'nama_material', 'item_name', 'material_name', 'part_name', 'nama_part', 'keterangan', 'spec', 'spesifikasi', 'desc']) ?: '';
 
             $parsed[] = [
                 'excel_row_number'       => (int)($row['excel_row_number'] ?? ($index + 2)),

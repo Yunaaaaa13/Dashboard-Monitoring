@@ -921,26 +921,12 @@
 <script>
 let parsedExcelRowsProd = [];
 
-// ── SHEETJS CLIENT-SIDE PARSER & LIVE AUDIT PREVIEW ──
-function resolveFieldJS(row, candidates) {
-    const keys = Object.keys(row);
-    for (let cand of candidates) {
-        const cleanCand = cand.toLowerCase().replace(/[^a-z0-9]/g, '');
-        for (let k of keys) {
-            const cleanK = k.toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (cleanK === cleanCand && row[k] !== undefined && row[k] !== null && String(row[k]).trim() !== '') {
-                return String(row[k]).trim();
-            }
-        }
-    }
-    return '';
-}
-
+// ── SMART SHEETJS CLIENT-SIDE PARSER & MULTI-HEADER AUTO-DETECTION ──
 function parseNumericStockJS(val) {
     if (val === undefined || val === null) return null;
     let s = String(val).trim();
-    s = s.replace(/[^\d\.\,\-]/g, '');
-    if (s === '' || s === '-') return null;
+    s = s.replace(/[Rp\$€¥\s]/gi, '').replace(/[^\d\.\,\-]/g, '');
+    if (s === '' || s === '-') return 0;
 
     if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) {
         s = s.replace(/\./g, '');
@@ -967,9 +953,10 @@ function handleProductionExcelFile(e) {
             const workbook = XLSX.read(data, { type: 'array', cellDates: true });
             const firstSheet = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheet];
-            const rawJson = XLSX.utils.sheet_to_json(worksheet, { defval: '', raw: false });
-
-            processProductionPreviewRows(rawJson);
+            
+            // Read as 2D Array to support arbitrary titles / merged header rows
+            const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+            processProductionPreview2D(sheetData);
         } catch (err) {
             if (window.notify) {
                 window.notify.error('Gagal Baca File', 'Gagal membaca file Excel: ' + err.message);
@@ -981,7 +968,7 @@ function handleProductionExcelFile(e) {
     reader.readAsArrayBuffer(file);
 }
 
-function processProductionPreviewRows(rawJson) {
+function processProductionPreview2D(sheetData) {
     parsedExcelRowsProd = [];
     let validCount = 0;
     let zeroCount = 0;
@@ -990,19 +977,113 @@ function processProductionPreviewRows(rawJson) {
     const tbody = document.getElementById('previewTableBodyProd');
     tbody.innerHTML = '';
 
-    rawJson.forEach((row, idx) => {
-        const itemCode = resolveFieldJS(row, ['material_code', 'item_code', 'part_number', 'part_no', 'drawing', 'material', 'kode_barang', 'kode_material', 'pn', 'sku']);
-        if (!itemCode || itemCode.toUpperCase() === 'ITEM CODE' || itemCode.toUpperCase() === 'MATERIAL CODE') {
-            return;
+    if (!sheetData || sheetData.length === 0) {
+        document.getElementById('statTotalRowsProd').innerText = 'Total: 0 Baris';
+        document.getElementById('btnConfirmImportProd').disabled = true;
+        return;
+    }
+
+    const headerKeywords = {
+        item_code: ['materialcode', 'itemcode', 'partnumber', 'partno', 'drawing', 'material', 'kodebarang', 'kodematerial', 'kodeitem', 'kodepart', 'komponen', 'mat', 'pn', 'sku', 'code', 'barang', 'item', 'part', 'matno', 'matcode', 'drawingno'],
+        qty: ['produksipcs', 'qtyproduksi', 'qtyactual', 'aktualproduksi', 'productionqty', 'actualproduction', 'realisasiproduksi', 'totalproduksi', 'produksi', 'qty', 'quantity', 'prod', 'actual', 'aktual', 'realisasi', 'jumlah', 'kuantitas', 'vol', 'volume', 'output', 'pcs', 'juli', 'jul', 'total'],
+        plant: ['plant', 'factorycode', 'factory', 'pabrik', 'lokasi', 'site', 'gedung', 'kdpabrik', 'line', 'unit'],
+        supp_code: ['suppliercode', 'vendorcode', 'kodesupplier', 'kodevendor', 'kdsupp', 'kdvendor', 'kdsp', 'suppcode', 'vendorcode'],
+        supp_name: ['suppliername', 'vendorname', 'namasupplier', 'namavendor', 'namapemasok', 'pemasok', 'supplier', 'vendor', 'namasupp', 'pt'],
+        desc: ['description', 'deskripsibarang', 'deskripsi', 'namabarang', 'namamaterial', 'keterangan', 'itemname', 'materialname', 'partname', 'namapart', 'spec', 'spesifikasi', 'desc'],
+        date: ['tanggalproduksi', 'tanggal', 'date', 'tgl', 'periode', 'proddate']
+    };
+
+    // 1. Find Header Row Index (score first 25 rows)
+    let bestHeaderIdx = -1;
+    let maxHeaderScore = 0;
+
+    for (let r = 0; r < Math.min(25, sheetData.length); r++) {
+        const row = sheetData[r];
+        if (!Array.isArray(row)) continue;
+        let score = 0;
+        for (let cell of row) {
+            const clean = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+            if (!clean) continue;
+            for (let type in headerKeywords) {
+                for (let kw of headerKeywords[type]) {
+                    if (clean === kw || clean.includes(kw) || (kw.length >= 5 && kw.includes(clean))) {
+                        score += (kw.length >= 4 ? 2 : 1);
+                        break;
+                    }
+                }
+            }
+        }
+        if (score > maxHeaderScore) {
+            maxHeaderScore = score;
+            bestHeaderIdx = r;
+        }
+    }
+
+    if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+    const headerRow = sheetData[bestHeaderIdx] || [];
+
+    // 2. Map Column Indices
+    const colMap = {
+        item_code: -1,
+        qty: -1,
+        plant: -1,
+        supp_code: -1,
+        supp_name: -1,
+        desc: -1,
+        date: -1
+    };
+
+    for (let c = 0; c < headerRow.length; c++) {
+        const clean = String(headerRow[c] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!clean) continue;
+
+        for (let field in colMap) {
+            if (colMap[field] === -1) {
+                for (let kw of headerKeywords[field]) {
+                    if (clean === kw || clean.includes(kw) || (clean.length >= 4 && kw.includes(clean))) {
+                        colMap[field] = c;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+
+    // Heuristic fallbacks if item_code or qty not found in headers
+    if (colMap.item_code === -1 || colMap.qty === -1) {
+        for (let c = 0; c < headerRow.length; c++) {
+            let numCount = 0;
+            let codeCount = 0;
+            for (let r = bestHeaderIdx + 1; r < Math.min(bestHeaderIdx + 20, sheetData.length); r++) {
+                const val = String((sheetData[r] && sheetData[r][c]) || '').trim();
+                if (/^\d+(\.\d+)?$/.test(val)) numCount++;
+                if (/^[A-Za-z0-9\-\.]{4,20}$/.test(val) && isNaN(Number(val))) codeCount++;
+            }
+            if (colMap.qty === -1 && numCount > 5) colMap.qty = c;
+            if (colMap.item_code === -1 && (codeCount > 3 || (numCount > 5 && colMap.qty !== c))) colMap.item_code = c;
+        }
+    }
+
+    let totalRawRows = 0;
+
+    // 3. Extract and validate data rows
+    for (let r = bestHeaderIdx + 1; r < sheetData.length; r++) {
+        const row = sheetData[r];
+        if (!Array.isArray(row) || row.every(cell => String(cell || '').trim() === '')) continue;
+        totalRawRows++;
+
+        const rawItem = colMap.item_code !== -1 ? String(row[colMap.item_code] || '').trim() : '';
+        if (!rawItem || rawItem.toUpperCase() === 'ITEM CODE' || rawItem.toUpperCase() === 'MATERIAL CODE' || rawItem.toUpperCase().startsWith('TOTAL')) {
+            continue;
         }
 
-        const plant = resolveFieldJS(row, ['plant', 'factory_code', 'pabrik', 'lokasi', 'factory', 'kode_pabrik']) || 'KIP 1';
-        const suppCode = resolveFieldJS(row, ['supplier_code', 'vendor_code', 'kode_supplier', 'supplier', 'vendor', 'kd_supp', 'kode_vendor']);
-        const suppName = resolveFieldJS(row, ['supplier_name', 'vendor_name', 'nama_supplier', 'nama_vendor']);
-        const desc = resolveFieldJS(row, ['description', 'deskripsi', 'nama_barang', 'item_name', 'nama_material', 'keterangan']);
-        
-        const qtyRaw = resolveFieldJS(row, ['production_qty', 'produksi', 'qty', 'actual_production', 'jumlah', 'kuantitas', 'realisasi', 'vol']);
-        const parsedQty = parseNumericStockJS(qtyRaw);
+        const rawQty = colMap.qty !== -1 ? row[colMap.qty] : 0;
+        const parsedQty = parseNumericStockJS(rawQty);
+
+        const plant = (colMap.plant !== -1 && row[colMap.plant]) ? String(row[colMap.plant]).trim() : 'KIP 1';
+        const suppCode = (colMap.supp_code !== -1 && row[colMap.supp_code]) ? String(row[colMap.supp_code]).trim() : '';
+        const suppName = (colMap.supp_name !== -1 && row[colMap.supp_name]) ? String(row[colMap.supp_name]).trim() : '';
+        const desc = (colMap.desc !== -1 && row[colMap.desc]) ? String(row[colMap.desc]).trim() : '';
 
         const isInvalid = (parsedQty === null);
         const isZero = (parsedQty === 0);
@@ -1014,25 +1095,25 @@ function processProductionPreviewRows(rawJson) {
             if (isZero) zeroCount++;
 
             parsedExcelRowsProd.push({
-                excel_row_number: idx + 2,
+                excel_row_number: r + 1,
                 plant: plant.toUpperCase(),
                 supplier_code: suppCode.toUpperCase(),
                 supplier_name: suppName,
-                material_code: itemCode.toUpperCase(),
+                material_code: rawItem.toUpperCase(),
                 description: desc,
                 production_qty: parsedQty,
                 tanggal_produksi: new Date().toISOString().slice(0, 10),
             });
         }
 
-        if (idx < 50) {
+        if (parsedExcelRowsProd.length <= 100) {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td class="text-center font-monospace text-muted">${idx + 2}</td>
+                <td class="text-center font-monospace text-muted">${r + 1}</td>
                 <td><span class="badge-plant">${plant.toUpperCase()}</span></td>
                 <td class="font-monospace text-muted">${suppCode || '-'}</td>
                 <td class="text-light">${suppName || '-'}</td>
-                <td><strong class="text-white font-monospace">${itemCode.toUpperCase()}</strong></td>
+                <td><strong class="text-white font-monospace">${rawItem.toUpperCase()}</strong></td>
                 <td class="text-muted small">${desc || '-'}</td>
                 <td class="text-end font-monospace fw-bold ${isZero ? 'text-muted' : 'text-success'}">
                     ${isInvalid ? '<span class="text-danger">Invalid</span>' : Number(parsedQty).toLocaleString('id-ID')} PCS
@@ -1045,9 +1126,10 @@ function processProductionPreviewRows(rawJson) {
             `;
             tbody.appendChild(tr);
         }
-    });
+    }
 
-    document.getElementById('statTotalRowsProd').innerText = `Total: ${rawJson.length} Baris`;
+    // 4. Update UI Stats & Enable Button
+    document.getElementById('statTotalRowsProd').innerText = `Total: ${totalRawRows} Baris`;
     document.getElementById('statValidRowsProd').innerText = `✓ ${validCount} Siap Import`;
     document.getElementById('statZeroRowsProd').innerText = `0 ${zeroCount} Zero Production`;
 
@@ -1061,15 +1143,34 @@ function processProductionPreviewRows(rawJson) {
 
     document.getElementById('previewStatsBoxProd').classList.remove('d-none');
     document.getElementById('previewTableContainerProd').classList.remove('d-none');
-    document.getElementById('btnConfirmImportProd').disabled = (parsedExcelRowsProd.length === 0);
+    
+    const btn = document.getElementById('btnConfirmImportProd');
+    if (btn) {
+        btn.disabled = (parsedExcelRowsProd.length === 0);
+        if (parsedExcelRowsProd.length > 0) {
+            btn.classList.add('shadow-lg');
+            btn.style.filter = 'drop-shadow(0 0 10px rgba(16,185,129,0.5))';
+        } else {
+            btn.style.filter = '';
+        }
+    }
 }
 
 function submitParsedProductionData() {
-    if (parsedExcelRowsProd.length === 0) return;
+    if (!parsedExcelRowsProd || parsedExcelRowsProd.length === 0) {
+        if (window.notify) {
+            window.notify.warning('Data Kosong', 'Tidak ada data valid yang siap diimport. Silakan periksa file Excel Anda.');
+        } else if (typeof Swal !== 'undefined') {
+            Swal.fire('Data Kosong', 'Tidak ada data valid yang siap diimport.', 'warning');
+        }
+        return;
+    }
 
     const btn = document.getElementById('btnConfirmImportProd');
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengimport seluruh baris data...';
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Mengimport seluruh baris data...';
+    }
 
     fetch("{{ route('purchasing.actual-production.import') }}", {
         method: 'POST',
@@ -1097,17 +1198,25 @@ function submitParsedProductionData() {
         } else {
             if (window.notify) {
                 window.notify.error('Gagal Import', data.message || 'Gagal mengimpor data.');
+            } else {
+                Swal.fire('Gagal Import', data.message || 'Gagal mengimpor data.', 'error');
             }
-            btn.disabled = false;
-            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+            }
         }
     })
     .catch(err => {
         if (window.notify) {
             window.notify.error('Kesalahan Jaringan', err.message || 'Terjadi kesalahan sistem.');
+        } else {
+            Swal.fire('Kesalahan Jaringan', err.message || 'Terjadi kesalahan sistem.', 'error');
         }
-        btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="bi bi-check2-circle me-1"></i> Konfirmasi & Import Data';
+        }
     });
 }
 
