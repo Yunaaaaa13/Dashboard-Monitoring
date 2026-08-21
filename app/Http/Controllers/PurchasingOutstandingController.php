@@ -1423,6 +1423,39 @@ class PurchasingOutstandingController extends Controller
     }
 
     /**
+     * Hapus seluruh data Purchasing Outstanding & Master Terkait (Reset Total).
+     */
+    public function destroyAll(Request $request)
+    {
+        try {
+            \Illuminate\Support\Facades\DB::transaction(function() {
+                PurchasingOutstanding::query()->delete();
+                \App\Models\Forecasting::query()->delete();
+                \App\Models\Outstanding::query()->delete();
+                \App\Models\Actual::query()->delete();
+                if (\Illuminate\Support\Facades\Schema::hasTable('purchasing_forecast_actuals')) {
+                    \App\Models\ForecastActual::query()->delete();
+                }
+                if (\Illuminate\Support\Facades\Schema::hasTable('purchasing_comparison_master')) {
+                    \App\Models\ComparisonMaster::query()->delete();
+                }
+            });
+
+            session()->forget('import_duplicates_found');
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Seluruh data Purchasing Outstanding (Step 1) berhasil dikosongkan.']);
+            }
+            return redirect()->route('purchasing.outstanding')->with('success', 'Seluruh data Purchasing Outstanding (Step 1) berhasil dikosongkan.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal mengosongkan data: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Helper function untuk membersihkan angka dari format Excel
      * Contoh: "$ 200,32" -> 200.32, "(3.069,80)" -> -3069.80, "2756%" -> 2756
      */

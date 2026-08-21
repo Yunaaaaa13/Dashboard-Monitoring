@@ -66,6 +66,7 @@ Route::post('/purchasing/outstanding', [PurchasingOutstandingController::class, 
 Route::put('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'update'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.update');
 Route::delete('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.destroy');
 Route::post('/purchasing/outstanding/destroy-bulk', [PurchasingOutstandingController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.outstanding.destroy-bulk');
+Route::post('/purchasing/outstanding/destroy-all', [PurchasingOutstandingController::class, 'destroyAll'])->middleware('auth')->name('purchasing.outstanding.destroy-all');
 Route::post('/purchasing/outstanding/seed', [PurchasingOutstandingController::class, 'seedDefault'])->middleware(['auth', 'role:supervisor'])->name('purchasing.outstanding.seed');
 Route::post('/purchasing/outstanding/months', [PurchasingOutstandingController::class, 'updateMonths'])->name('purchasing.outstanding.months');
 Route::get('/purchasing/outstanding/template', [ForecastController::class, 'downloadTemplate'])->middleware('auth')->name('purchasing.template');
@@ -82,6 +83,7 @@ Route::post('/purchasing/input', [PurchasingController::class, 'storeLog'])->mid
 Route::post('/purchasing/log/{id}/verify', [HistoryController::class, 'approveInputLog'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.log.verify');
 Route::delete('/purchasing/log/{id}', [PurchasingController::class, 'destroyLog'])->middleware(['auth', 'role:supervisor'])->name('purchasing.log.destroy');
 Route::post('/purchasing/log/destroy-bulk', [PurchasingController::class, 'destroyLogBulk'])->middleware('auth')->name('purchasing.log.destroy-bulk');
+Route::post('/purchasing/log/destroy-all', [PurchasingController::class, 'destroyLogAll'])->middleware('auth')->name('purchasing.log.destroy-all');
 Route::put('/purchasing/log/{id}', [PurchasingController::class, 'updateLog'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.log.update');
 Route::get('/purchasing/input/template', [IntegratedImportController::class, 'downloadIncomingTemplate'])->middleware('auth')->name('purchasing.input.template');
 Route::post('/purchasing/input/import', [IntegratedImportController::class, 'importIncoming'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.input.import');
@@ -109,6 +111,7 @@ Route::post('/purchasing/master-po/import', [IntegratedImportController::class, 
 Route::put('/purchasing/master-po/{id}', [PurchasingController::class, 'updateMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.update');
 Route::delete('/purchasing/master-po/{id}', [PurchasingController::class, 'destroyMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.destroy');
 Route::post('/purchasing/master-po/destroy-bulk', [PurchasingController::class, 'destroyMasterPoBulk'])->middleware('auth')->name('purchasing.master-po.destroy-bulk');
+Route::post('/purchasing/master-po/destroy-all', [PurchasingController::class, 'destroyMasterPoAll'])->middleware('auth')->name('purchasing.master-po.destroy-all');
  
 // Manajemen Master Kategori Material PT Kawai Indonesia
 Route::get('/purchasing/categories', [PurchasingController::class, 'categories'])->middleware('auth')->name('purchasing.categories');

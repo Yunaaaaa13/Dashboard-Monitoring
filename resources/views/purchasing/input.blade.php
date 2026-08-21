@@ -489,6 +489,11 @@
                         <button type="button" id="btnBulkDeleteLog" class="btn btn-danger btn-sm rounded-pill px-3 py-2 d-none" onclick="confirmBulkDeleteLog()">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="bulkDeleteCountLog">0</span>)
                         </button>
+                        @if($poMonitoringList->count() > 0)
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3 py-2" onclick="confirmDeleteAllLogs()" title="Kosongkan seluruh data penerimaan fisik">
+                            <i class="bi bi-trash3 me-1"></i> Hapus Semua Data
+                        </button>
+                        @endif
                         <span class="badge bg-dark border border-secondary p-2 px-3 text-muted">
                             <i class="bi bi-list-check me-1"></i> Total Data: <strong class="text-white">{{ $poMonitoringList->count() }}</strong>
                         </span>
@@ -500,7 +505,7 @@
                         <thead class="table-secondary text-uppercase text-muted" style="font-size: 0.75rem;">
                             <tr>
                                 <th class="text-center" style="width: 35px;">
-                                    <input type="checkbox" id="checkAllLogs" class="form-check-input">
+                                    <input type="checkbox" id="checkAllLogs" class="form-check-input cursor-pointer" onchange="toggleSelectAllLogs(this)" title="Pilih Semua di Halaman Ini">
                                 </th>
                                 <th class="text-center" style="width: 40px;">#</th>
                                 <th>Supplier Name</th>
@@ -546,7 +551,7 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center">
-                                        <input type="checkbox" class="row-checkbox-log form-check-input" value="{{ $row->id }}">
+                                        <input type="checkbox" class="row-checkbox-log form-check-input cursor-pointer" value="{{ $row->id }}" onchange="updateLogBulkBtn()">
                                     </td>
                                     <td class="text-center text-muted fw-bold">{{ $index + 1 }}</td>
                                     <td>
@@ -1767,12 +1772,12 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
-<!-- Modal Bulk Delete Confirmation Incoming Log -->
+<!-- Modal Bulk Delete Confirmation Incoming -->
 <div class="modal fade" id="modalBulkDeleteLogConfirm" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
             <div class="modal-header border-secondary border-opacity-25">
-                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Massal Incoming Penerimaan</h5>
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Terpilih Incoming Penerimaan</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ route('purchasing.log.destroy-bulk') }}" method="POST" id="formBulkDeleteLog">
@@ -1791,43 +1796,64 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<!-- Modal Reset / Hapus Semua Data Incoming Log (Step 3) -->
+<div class="modal fade" id="modalDeleteAllLogConfirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
+            <div class="modal-header border-danger border-opacity-50">
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Hapus SEMUA Data Realisasi Masuk (Reset Total)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('purchasing.log.destroy-all') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-danger bg-danger bg-opacity-20 border border-danger border-opacity-50 text-white small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
+                        <strong>PERINGATAN:</strong> Tindakan ini akan <strong>MENGHAPUS SELURUH DATA LOG REALISASI PENERIMAAN (Step 3)</strong> dari sistem secara permanen.
+                    </div>
+                    <p class="mb-1">Gunakan opsi ini jika Anda ingin mengosongkan tabel untuk memulai unggah ulang data baru dari nol.</p>
+                    <p class="text-warning small mb-0">Apakah Anda yakin ingin melanjutkan?</p>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold"><i class="bi bi-trash3-fill me-1"></i> Ya, Kosongkan Semua Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    // Global Helper Functions for Step 3 Checkbox Interactions
+    window.toggleSelectAllLogs = function(masterCb) {
+        const isChecked = masterCb ? masterCb.checked : false;
+        const checkboxes = document.querySelectorAll('.row-checkbox-log');
+        checkboxes.forEach(cb => { cb.checked = isChecked; });
+        window.updateLogBulkBtn();
+    };
+
+    window.updateLogBulkBtn = function() {
+        const checked = document.querySelectorAll('.row-checkbox-log:checked');
+        const allCheckboxes = document.querySelectorAll('.row-checkbox-log');
         const checkAllLogs = document.getElementById('checkAllLogs');
-        const rowCheckboxesLog = document.querySelectorAll('.row-checkbox-log');
         const btnBulkDeleteLog = document.getElementById('btnBulkDeleteLog');
         const countSpanLog = document.getElementById('bulkDeleteCountLog');
 
-        function updateLogBulkBtn() {
-            const checked = document.querySelectorAll('.row-checkbox-log:checked');
-            if (btnBulkDeleteLog) {
-                if (checked.length > 0) {
-                    btnBulkDeleteLog.classList.remove('d-none');
-                    countSpanLog.innerText = checked.length;
-                } else {
-                    btnBulkDeleteLog.classList.add('d-none');
-                }
+        if (checkAllLogs && allCheckboxes.length > 0) {
+            checkAllLogs.checked = (checked.length === allCheckboxes.length);
+        }
+
+        if (btnBulkDeleteLog) {
+            if (checked.length > 0) {
+                btnBulkDeleteLog.classList.remove('d-none');
+                if (countSpanLog) countSpanLog.innerText = checked.length;
+            } else {
+                btnBulkDeleteLog.classList.add('d-none');
             }
         }
+    };
 
-        if (checkAllLogs) {
-            checkAllLogs.addEventListener('change', function() {
-                rowCheckboxesLog.forEach(cb => cb.checked = this.checked);
-                updateLogBulkBtn();
-            });
-        }
-
-        rowCheckboxesLog.forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (checkAllLogs) {
-                    checkAllLogs.checked = (document.querySelectorAll('.row-checkbox-log:checked').length === rowCheckboxesLog.length);
-                }
-                updateLogBulkBtn();
-            });
-        });
-    });
-
-    function confirmBulkDeleteLog() {
+    window.confirmBulkDeleteLog = function() {
         const checked = document.querySelectorAll('.row-checkbox-log:checked');
         if (checked.length === 0) return;
         
@@ -1843,7 +1869,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('bulkDeleteLogCountText').innerText = checked.length;
         new bootstrap.Modal(document.getElementById('modalBulkDeleteLogConfirm')).show();
-    }
+    };
+
+    window.confirmDeleteAllLogs = function() {
+        new bootstrap.Modal(document.getElementById('modalDeleteAllLogConfirm')).show();
+    };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <style>

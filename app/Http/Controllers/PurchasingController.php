@@ -2445,6 +2445,46 @@ class PurchasingController extends Controller
     }
 
     /**
+     * Hapus seluruh data Master PO (Reset Total).
+     */
+    public function destroyMasterPoAll(Request $request)
+    {
+        try {
+            \App\Models\MasterPo::query()->delete();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Seluruh data Master PO (Step 2) berhasil dikosongkan.']);
+            }
+            return redirect()->route('purchasing.master-po')->with('success', 'Seluruh data Master PO (Step 2) berhasil dikosongkan.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal mengosongkan data Master PO: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Hapus seluruh data Realisasi Penerimaan PO / Log Masuk (Reset Total).
+     */
+    public function destroyLogAll(Request $request)
+    {
+        try {
+            PurchasingLog::query()->delete();
+
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Seluruh data Realisasi Penerimaan PO (Step 3) berhasil dikosongkan.']);
+            }
+            return redirect()->route('purchasing.input')->with('success', 'Seluruh data Realisasi Penerimaan PO (Step 3) berhasil dikosongkan.');
+        } catch (\Exception $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Gagal mengosongkan log penerimaan: ' . $e->getMessage());
+        }
+    }
+
+    /**
      * Hapus terpilih Kategori Material (Bulk Delete).
      */
     public function destroyCategoryBulk(Request $request)

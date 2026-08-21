@@ -335,6 +335,11 @@
                         <button type="button" id="btnBulkDeleteMasterPo" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDeleteMasterPo()">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="bulkDeleteCountMasterPo">0</span>)
                         </button>
+                        @if($masterPoList->count() > 0)
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="confirmDeleteAllMasterPo()" title="Kosongkan seluruh data Master PO">
+                            <i class="bi bi-trash3 me-1"></i> Hapus Semua Data
+                        </button>
+                        @endif
                         <span class="badge bg-dark border border-secondary text-light font-monospace px-3 py-2">
                             Total: {{ $masterPoList->count() }} Data PO
                         </span>
@@ -346,7 +351,7 @@
                         <thead class="table-secondary text-uppercase text-muted" style="font-size: 0.78rem;">
                             <tr>
                                 <th class="text-center py-3" style="width: 35px;">
-                                    <input type="checkbox" id="checkAllMasterPo" class="form-check-input">
+                                    <input type="checkbox" id="checkAllMasterPo" class="form-check-input cursor-pointer" onchange="toggleSelectAllMasterPo(this)" title="Pilih Semua di Halaman Ini">
                                 </th>
                                 <th class="text-center py-3" style="width: 40px;">#</th>
                                 <th class="py-3">Supplier Name</th>
@@ -377,7 +382,7 @@
                                 @endphp
                                 <tr>
                                     <td class="text-center">
-                                        <input type="checkbox" class="row-checkbox-masterpo form-check-input" value="{{ $mp->id }}">
+                                        <input type="checkbox" class="row-checkbox-masterpo form-check-input cursor-pointer" value="{{ $mp->id }}" onchange="updateMasterPoBulkBtn()">
                                     </td>
                                     <td class="text-center text-muted fw-bold">{{ $idx + 1 }}</td>
                                     <td class="fw-semibold text-white">{{ $mp->supplier ?? '-' }}</td>
@@ -1155,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
             <div class="modal-header border-secondary border-opacity-25">
-                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Massal Master PO</h5>
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Terpilih Master PO</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ route('purchasing.master-po.destroy-bulk') }}" method="POST" id="formBulkDeleteMasterPo">
@@ -1174,43 +1179,64 @@ document.addEventListener('DOMContentLoaded', function() {
     </div>
 </div>
 
+<!-- Modal Reset / Hapus Semua Data Master PO (Step 2) -->
+<div class="modal fade" id="modalDeleteAllMasterPoConfirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
+            <div class="modal-header border-danger border-opacity-50">
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Hapus SEMUA Data Master PO (Reset Total)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('purchasing.master-po.destroy-all') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-danger bg-danger bg-opacity-20 border border-danger border-opacity-50 text-white small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
+                        <strong>PERINGATAN:</strong> Tindakan ini akan <strong>MENGHAPUS SELURUH DATA MASTER PO (Step 2)</strong> dari sistem secara permanen.
+                    </div>
+                    <p class="mb-1">Gunakan opsi ini jika Anda ingin mengosongkan tabel untuk memulai unggah ulang data baru dari nol.</p>
+                    <p class="text-warning small mb-0">Apakah Anda yakin ingin melanjutkan?</p>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold"><i class="bi bi-trash3-fill me-1"></i> Ya, Kosongkan Semua Data</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    // Global Helper Functions for Step 2 Checkbox Interactions
+    window.toggleSelectAllMasterPo = function(masterCb) {
+        const isChecked = masterCb ? masterCb.checked : false;
+        const checkboxes = document.querySelectorAll('.row-checkbox-masterpo');
+        checkboxes.forEach(cb => { cb.checked = isChecked; });
+        window.updateMasterPoBulkBtn();
+    };
+
+    window.updateMasterPoBulkBtn = function() {
+        const checked = document.querySelectorAll('.row-checkbox-masterpo:checked');
+        const allCheckboxes = document.querySelectorAll('.row-checkbox-masterpo');
         const checkAllMasterPo = document.getElementById('checkAllMasterPo');
-        const rowCheckboxesMasterPo = document.querySelectorAll('.row-checkbox-masterpo');
         const btnBulkDeleteMasterPo = document.getElementById('btnBulkDeleteMasterPo');
         const countSpanMasterPo = document.getElementById('bulkDeleteCountMasterPo');
 
-        function updateMasterPoBulkBtn() {
-            const checked = document.querySelectorAll('.row-checkbox-masterpo:checked');
-            if (btnBulkDeleteMasterPo) {
-                if (checked.length > 0) {
-                    btnBulkDeleteMasterPo.classList.remove('d-none');
-                    countSpanMasterPo.innerText = checked.length;
-                } else {
-                    btnBulkDeleteMasterPo.classList.add('d-none');
-                }
+        if (checkAllMasterPo && allCheckboxes.length > 0) {
+            checkAllMasterPo.checked = (checked.length === allCheckboxes.length);
+        }
+
+        if (btnBulkDeleteMasterPo) {
+            if (checked.length > 0) {
+                btnBulkDeleteMasterPo.classList.remove('d-none');
+                if (countSpanMasterPo) countSpanMasterPo.innerText = checked.length;
+            } else {
+                btnBulkDeleteMasterPo.classList.add('d-none');
             }
         }
+    };
 
-        if (checkAllMasterPo) {
-            checkAllMasterPo.addEventListener('change', function() {
-                rowCheckboxesMasterPo.forEach(cb => cb.checked = this.checked);
-                updateMasterPoBulkBtn();
-            });
-        }
-
-        rowCheckboxesMasterPo.forEach(cb => {
-            cb.addEventListener('change', function() {
-                if (checkAllMasterPo) {
-                    checkAllMasterPo.checked = (document.querySelectorAll('.row-checkbox-masterpo:checked').length === rowCheckboxesMasterPo.length);
-                }
-                updateMasterPoBulkBtn();
-            });
-        });
-    });
-
-    function confirmBulkDeleteMasterPo() {
+    window.confirmBulkDeleteMasterPo = function() {
         const checked = document.querySelectorAll('.row-checkbox-masterpo:checked');
         if (checked.length === 0) return;
         
@@ -1226,7 +1252,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
         document.getElementById('bulkDeleteMasterPoCountText').innerText = checked.length;
         new bootstrap.Modal(document.getElementById('modalBulkDeleteMasterPoConfirm')).show();
-    }
+    };
+
+    window.confirmDeleteAllMasterPo = function() {
+        new bootstrap.Modal(document.getElementById('modalDeleteAllMasterPoConfirm')).show();
+    };
 </script>
 @include('partials.registered-item-codes-datalist')
 @include('partials.modal-select-item-code')

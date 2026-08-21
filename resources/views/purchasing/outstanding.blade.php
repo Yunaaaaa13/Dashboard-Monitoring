@@ -351,6 +351,11 @@
                         <button type="button" id="btnBulkDeletePlant3" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDeletePlant3()">
                             <i class="bi bi-trash-fill me-1"></i> Hapus Terpilih (<span id="bulkDeleteCountPlant3">0</span>)
                         </button>
+                        @if(isset($items) && count($items) > 0)
+                        <button type="button" class="btn btn-outline-danger btn-sm rounded-pill px-3" onclick="confirmDeleteAllPlant3()" title="Kosongkan seluruh data monitoring & outstanding">
+                            <i class="bi bi-trash3 me-1"></i> Hapus Semua Data
+                        </button>
+                        @endif
                         <form action="{{ route('purchasing.outstanding.months') }}" method="POST" class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-2 rounded-4 border border-secondary border-opacity-25">
                             @csrf
                             <div class="d-flex align-items-center gap-1">
@@ -394,7 +399,7 @@
                         <thead class="sticky-top bg-dark" style="z-index: 10;">
                             <tr class="text-center">
                                 <th rowspan="3" class="bg-dark text-center align-middle" style="width: 40px;">
-                                    <input type="checkbox" id="checkAllPlant3" class="form-check-input">
+                                    <input type="checkbox" id="checkAllPlant3" class="form-check-input cursor-pointer" onchange="toggleSelectAllPlant3(this)" title="Pilih Semua Item">
                                 </th>
                                 <th rowspan="3" class="bg-dark text-muted align-middle" style="width: 40px;">NO</th>
                                 <th rowspan="3" class="bg-dark text-white text-start align-middle" style="min-width: 140px;">ITEM CODE (PK)</th>
@@ -460,7 +465,7 @@
                             @forelse($items as $idx => $item)
                                 <tr>
                                     <td class="text-center">
-                                        <input type="checkbox" class="row-checkbox-plant3 form-check-input" value="{{ $item->id }}">
+                                        <input type="checkbox" class="row-checkbox-plant3 form-check-input cursor-pointer" value="{{ $item->id }}" onchange="updatePlant3BulkBtn()">
                                     </td>
                                     <td class="text-center text-light fw-bold">{{ $idx + 1 }}</td>
                                     <td class="text-start">
@@ -602,7 +607,7 @@
                         <thead>
                             <tr>
                                 <th style="width: 40px;" class="text-center align-middle" rowspan="2">
-                                    <input type="checkbox" id="checkAllForecast" class="form-check-input">
+                                    <input type="checkbox" id="checkAllForecast" class="form-check-input cursor-pointer" onchange="toggleSelectAllForecast(this)" title="Pilih Semua Forecast">
                                 </th>
                                 <th style="width: 50px;" rowspan="2" class="align-middle">No</th>
                                 <th rowspan="2" class="align-middle">Part Number (Item Code)</th>
@@ -639,7 +644,7 @@
                             @endphp
                             <tr>
                                 <td class="text-center">
-                                    <input type="checkbox" class="row-checkbox-forecast form-check-input" value="{{ $item->id }}">
+                                    <input type="checkbox" class="row-checkbox-forecast form-check-input cursor-pointer" value="{{ $item->id }}" onchange="updateForecastBulkBtn()">
                                 </td>
                                 <td class="text-muted fw-semibold">{{ $index + 1 }}</td>
                                 <td class="fw-bold text-white">{{ $item->part_number }}</td>
@@ -2300,7 +2305,7 @@ function showImportProgress() {
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
             <div class="modal-header border-secondary border-opacity-25">
-                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Massal Data Monitoring</h5>
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-2"></i> Konfirmasi Hapus Terpilih Data Monitoring</h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
             <form action="{{ route('purchasing.outstanding.destroy-bulk') }}" method="POST" id="formBulkDeletePlant3">
@@ -2313,6 +2318,33 @@ function showImportProgress() {
                 <div class="modal-footer border-secondary border-opacity-25">
                     <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold">Ya, Hapus Terpilih</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reset / Hapus Semua Data Monitoring (Step 1) -->
+<div class="modal fade" id="modalDeleteAllPlant3Confirm" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-danger text-white" style="background: #111827;">
+            <div class="modal-header border-danger border-opacity-50">
+                <h5 class="modal-title text-danger fw-bold"><i class="bi bi-exclamation-octagon-fill me-2"></i> Hapus SEMUA Data Step 1 (Reset Total)</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="{{ route('purchasing.outstanding.destroy-all') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-danger bg-danger bg-opacity-20 border border-danger border-opacity-50 text-white small mb-3">
+                        <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
+                        <strong>PERINGATAN:</strong> Tindakan ini akan <strong>MENGHAPUS SELURUH DATA</strong> Monitoring PT KAWAI &amp; Purchasing Outstanding (Step 1) dari sistem secara permanen.
+                    </div>
+                    <p class="mb-1">Gunakan opsi ini jika Anda ingin mengosongkan tabel untuk memulai unggah ulang data baru dari nol.</p>
+                    <p class="text-warning small mb-0">Apakah Anda yakin ingin melanjutkan?</p>
+                </div>
+                <div class="modal-footer border-secondary border-opacity-25">
+                    <button type="button" class="btn btn-sm btn-outline-light rounded-pill px-3" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-bold"><i class="bi bi-trash3-fill me-1"></i> Ya, Kosongkan Semua Data</button>
                 </div>
             </form>
         </div>
@@ -2344,92 +2376,36 @@ function showImportProgress() {
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // High-Performance Event Delegation for Bulk Checkboxes (Plant3/Monitoring)
+    // Global Helper Functions for Step 1 Checkbox Interactions
+    window.toggleSelectAllPlant3 = function(masterCb) {
+        const isChecked = masterCb ? masterCb.checked : false;
+        const checkboxes = document.querySelectorAll('.row-checkbox-plant3');
+        checkboxes.forEach(cb => { cb.checked = isChecked; });
+        window.updatePlant3BulkBtn();
+    };
+
+    window.updatePlant3BulkBtn = function() {
+        const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
+        const allCheckboxes = document.querySelectorAll('.row-checkbox-plant3');
         const checkAllPlant3 = document.getElementById('checkAllPlant3');
         const btnBulkDeletePlant3 = document.getElementById('btnBulkDeletePlant3');
         const countSpanPlant3 = document.getElementById('bulkDeleteCountPlant3');
 
-        function updatePlant3BulkBtn() {
-            const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
-            if (btnBulkDeletePlant3) {
-                if (checked.length > 0) {
-                    btnBulkDeletePlant3.classList.remove('d-none');
-                    if (countSpanPlant3) countSpanPlant3.innerText = checked.length;
-                } else {
-                    btnBulkDeletePlant3.classList.add('d-none');
-                }
-            }
+        if (checkAllPlant3 && allCheckboxes.length > 0) {
+            checkAllPlant3.checked = (checked.length === allCheckboxes.length);
         }
 
-        if (checkAllPlant3) {
-            checkAllPlant3.addEventListener('change', function() {
-                const isChecked = this.checked;
-                const checkboxes = document.querySelectorAll('.row-checkbox-plant3');
-                checkboxes.forEach(cb => { cb.checked = isChecked; });
-                if (btnBulkDeletePlant3) {
-                    if (isChecked && checkboxes.length > 0) {
-                        btnBulkDeletePlant3.classList.remove('d-none');
-                        if (countSpanPlant3) countSpanPlant3.innerText = checkboxes.length;
-                    } else {
-                        btnBulkDeletePlant3.classList.add('d-none');
-                    }
-                }
-            });
-        }
-
-        // High-Performance Event Delegation for Bulk Checkboxes (Forecast)
-        const checkAllForecast = document.getElementById('checkAllForecast');
-        const btnBulkDeleteForecast = document.getElementById('btnBulkDeleteForecast');
-        const countSpanForecast = document.getElementById('bulkDeleteCountForecast');
-
-        function updateForecastBulkBtn() {
-            const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
-            if (btnBulkDeleteForecast) {
-                if (checked.length > 0) {
-                    btnBulkDeleteForecast.classList.remove('d-none');
-                    if (countSpanForecast) countSpanForecast.innerText = checked.length;
-                } else {
-                    btnBulkDeleteForecast.classList.add('d-none');
-                }
+        if (btnBulkDeletePlant3) {
+            if (checked.length > 0) {
+                btnBulkDeletePlant3.classList.remove('d-none');
+                if (countSpanPlant3) countSpanPlant3.innerText = checked.length;
+            } else {
+                btnBulkDeletePlant3.classList.add('d-none');
             }
         }
+    };
 
-        if (checkAllForecast) {
-            checkAllForecast.addEventListener('change', function() {
-                const isChecked = this.checked;
-                const checkboxes = document.querySelectorAll('.row-checkbox-forecast');
-                checkboxes.forEach(cb => { cb.checked = isChecked; });
-                if (btnBulkDeleteForecast) {
-                    if (isChecked && checkboxes.length > 0) {
-                        btnBulkDeleteForecast.classList.remove('d-none');
-                        if (countSpanForecast) countSpanForecast.innerText = checkboxes.length;
-                    } else {
-                        btnBulkDeleteForecast.classList.add('d-none');
-                    }
-                }
-            });
-        }
-
-        // Global Event Delegation for Row Checkbox Changes (Zero Latency)
-        document.addEventListener('change', function(e) {
-            if (e.target && e.target.classList.contains('row-checkbox-plant3')) {
-                const total = document.querySelectorAll('.row-checkbox-plant3').length;
-                const checkedCount = document.querySelectorAll('.row-checkbox-plant3:checked').length;
-                if (checkAllPlant3) checkAllPlant3.checked = (total > 0 && checkedCount === total);
-                updatePlant3BulkBtn();
-            }
-            if (e.target && e.target.classList.contains('row-checkbox-forecast')) {
-                const total = document.querySelectorAll('.row-checkbox-forecast').length;
-                const checkedCount = document.querySelectorAll('.row-checkbox-forecast:checked').length;
-                if (checkAllForecast) checkAllForecast.checked = (total > 0 && checkedCount === total);
-                updateForecastBulkBtn();
-            }
-        });
-    });
-
-    // Instant DocumentFragment Form Construction for Bulk Delete
-    function confirmBulkDeletePlant3() {
+    window.confirmBulkDeletePlant3 = function() {
         const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
         const total = document.querySelectorAll('.row-checkbox-plant3').length;
         if (checked.length === 0) return;
@@ -2457,9 +2433,41 @@ function showImportProgress() {
 
         document.getElementById('bulkDeletePlant3CountText').innerText = checked.length;
         new bootstrap.Modal(document.getElementById('modalBulkDeletePlant3Confirm')).show();
-    }
+    };
 
-    function confirmBulkDeleteForecast() {
+    window.confirmDeleteAllPlant3 = function() {
+        new bootstrap.Modal(document.getElementById('modalDeleteAllPlant3Confirm')).show();
+    };
+
+    window.toggleSelectAllForecast = function(masterCb) {
+        const isChecked = masterCb ? masterCb.checked : false;
+        const checkboxes = document.querySelectorAll('.row-checkbox-forecast');
+        checkboxes.forEach(cb => { cb.checked = isChecked; });
+        window.updateForecastBulkBtn();
+    };
+
+    window.updateForecastBulkBtn = function() {
+        const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
+        const allCheckboxes = document.querySelectorAll('.row-checkbox-forecast');
+        const checkAllForecast = document.getElementById('checkAllForecast');
+        const btnBulkDeleteForecast = document.getElementById('btnBulkDeleteForecast');
+        const countSpanForecast = document.getElementById('bulkDeleteCountForecast');
+
+        if (checkAllForecast && allCheckboxes.length > 0) {
+            checkAllForecast.checked = (checked.length === allCheckboxes.length);
+        }
+
+        if (btnBulkDeleteForecast) {
+            if (checked.length > 0) {
+                btnBulkDeleteForecast.classList.remove('d-none');
+                if (countSpanForecast) countSpanForecast.innerText = checked.length;
+            } else {
+                btnBulkDeleteForecast.classList.add('d-none');
+            }
+        }
+    };
+
+    window.confirmBulkDeleteForecast = function() {
         const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
         const total = document.querySelectorAll('.row-checkbox-forecast').length;
         if (checked.length === 0) return;
@@ -2487,7 +2495,7 @@ function showImportProgress() {
 
         document.getElementById('bulkDeleteForecastCountText').innerText = checked.length;
         new bootstrap.Modal(document.getElementById('modalBulkDeleteForecastConfirm')).show();
-    }
+    };
 </script>
 @include('partials.registered-item-codes-datalist')
 @include('partials.modal-select-item-code')
