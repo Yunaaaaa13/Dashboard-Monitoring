@@ -1238,24 +1238,65 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.confirmBulkDeleteMasterPo = function() {
         const checked = document.querySelectorAll('.row-checkbox-masterpo:checked');
+        const total = document.querySelectorAll('.row-checkbox-masterpo').length;
         if (checked.length === 0) return;
         
         const container = document.getElementById('bulkDeleteMasterPoIdsContainer');
-        container.innerHTML = '';
-        checked.forEach(cb => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'ids[]';
-            input.value = cb.value;
-            container.appendChild(input);
-        });
+        if (container) {
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            if (checked.length === total && total > 0) {
+                const inputAll = document.createElement('input');
+                inputAll.type = 'hidden';
+                inputAll.name = 'delete_all';
+                inputAll.value = '1';
+                frag.appendChild(inputAll);
+            } else {
+                checked.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    frag.appendChild(input);
+                });
+            }
+            container.appendChild(frag);
+        }
 
-        document.getElementById('bulkDeleteMasterPoCountText').innerText = checked.length;
-        new bootstrap.Modal(document.getElementById('modalBulkDeleteMasterPoConfirm')).show();
+        const countText = document.getElementById('bulkDeleteMasterPoCountText');
+        if (countText) countText.innerText = checked.length;
+
+        const modalEl = document.getElementById('modalBulkDeleteMasterPoConfirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm(`Hapus ${checked.length} data Master PO terpilih?`)) {
+                const form = document.getElementById('formBulkDeleteMasterPo');
+                if (form) form.submit();
+            }
+        }
     };
 
     window.confirmDeleteAllMasterPo = function() {
-        new bootstrap.Modal(document.getElementById('modalDeleteAllMasterPoConfirm')).show();
+        const modalEl = document.getElementById('modalDeleteAllMasterPoConfirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA Master PO?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ route('purchasing.master-po.destroy-all') }}";
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = "{{ csrf_token() }}";
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
     };
 </script>
 @include('partials.registered-item-codes-datalist')

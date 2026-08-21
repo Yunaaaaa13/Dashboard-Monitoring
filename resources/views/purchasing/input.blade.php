@@ -1855,24 +1855,65 @@ document.addEventListener('DOMContentLoaded', function() {
 
     window.confirmBulkDeleteLog = function() {
         const checked = document.querySelectorAll('.row-checkbox-log:checked');
+        const total = document.querySelectorAll('.row-checkbox-log').length;
         if (checked.length === 0) return;
         
         const container = document.getElementById('bulkDeleteLogIdsContainer');
-        container.innerHTML = '';
-        checked.forEach(cb => {
-            const input = document.createElement('input');
-            input.type = 'hidden';
-            input.name = 'ids[]';
-            input.value = cb.value;
-            container.appendChild(input);
-        });
+        if (container) {
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            if (checked.length === total && total > 0) {
+                const inputAll = document.createElement('input');
+                inputAll.type = 'hidden';
+                inputAll.name = 'delete_all';
+                inputAll.value = '1';
+                frag.appendChild(inputAll);
+            } else {
+                checked.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    frag.appendChild(input);
+                });
+            }
+            container.appendChild(frag);
+        }
 
-        document.getElementById('bulkDeleteLogCountText').innerText = checked.length;
-        new bootstrap.Modal(document.getElementById('modalBulkDeleteLogConfirm')).show();
+        const countText = document.getElementById('bulkDeleteLogCountText');
+        if (countText) countText.innerText = checked.length;
+
+        const modalEl = document.getElementById('modalBulkDeleteLogConfirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm(`Hapus ${checked.length} catatan penerimaan terpilih?`)) {
+                const form = document.getElementById('formBulkDeleteLog');
+                if (form) form.submit();
+            }
+        }
     };
 
     window.confirmDeleteAllLogs = function() {
-        new bootstrap.Modal(document.getElementById('modalDeleteAllLogConfirm')).show();
+        const modalEl = document.getElementById('modalDeleteAllLogConfirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA Realisasi Masuk?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ route('purchasing.log.destroy-all') }}";
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = "{{ csrf_token() }}";
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
     };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>

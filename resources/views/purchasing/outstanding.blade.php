@@ -2411,32 +2411,61 @@ function showImportProgress() {
         if (checked.length === 0) return;
         
         const container = document.getElementById('bulkDeletePlant3IdsContainer');
-        container.innerHTML = '';
-        
-        const frag = document.createDocumentFragment();
-        if (checked.length === total && total > 0) {
-            const inputAll = document.createElement('input');
-            inputAll.type = 'hidden';
-            inputAll.name = 'delete_all';
-            inputAll.value = '1';
-            frag.appendChild(inputAll);
-        } else {
-            checked.forEach(cb => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = cb.value;
-                frag.appendChild(input);
-            });
+        if (container) {
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            if (checked.length === total && total > 0) {
+                const inputAll = document.createElement('input');
+                inputAll.type = 'hidden';
+                inputAll.name = 'delete_all';
+                inputAll.value = '1';
+                frag.appendChild(inputAll);
+            } else {
+                checked.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    frag.appendChild(input);
+                });
+            }
+            container.appendChild(frag);
         }
-        container.appendChild(frag);
 
-        document.getElementById('bulkDeletePlant3CountText').innerText = checked.length;
-        new bootstrap.Modal(document.getElementById('modalBulkDeletePlant3Confirm')).show();
+        const countText = document.getElementById('bulkDeletePlant3CountText');
+        if (countText) countText.innerText = checked.length;
+
+        const modalEl = document.getElementById('modalBulkDeletePlant3Confirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm(`Hapus ${checked.length} data terpilih?`)) {
+                const form = document.getElementById('formBulkDeletePlant3');
+                if (form) form.submit();
+            }
+        }
     };
 
     window.confirmDeleteAllPlant3 = function() {
-        new bootstrap.Modal(document.getElementById('modalDeleteAllPlant3Confirm')).show();
+        const modalEl = document.getElementById('modalDeleteAllPlant3Confirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA Step 1?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = "{{ route('purchasing.outstanding.destroy-all') }}";
+                const csrf = document.createElement('input');
+                csrf.type = 'hidden';
+                csrf.name = '_token';
+                csrf.value = "{{ csrf_token() }}";
+                form.appendChild(csrf);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
     };
 
     window.toggleSelectAllForecast = function(masterCb) {
@@ -2473,28 +2502,40 @@ function showImportProgress() {
         if (checked.length === 0) return;
         
         const container = document.getElementById('bulkDeleteForecastIdsContainer');
-        container.innerHTML = '';
-        
-        const frag = document.createDocumentFragment();
-        if (checked.length === total && total > 0) {
-            const inputAll = document.createElement('input');
-            inputAll.type = 'hidden';
-            inputAll.name = 'delete_all';
-            inputAll.value = '1';
-            frag.appendChild(inputAll);
-        } else {
-            checked.forEach(cb => {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = 'ids[]';
-                input.value = cb.value;
-                frag.appendChild(input);
-            });
+        if (container) {
+            container.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            if (checked.length === total && total > 0) {
+                const inputAll = document.createElement('input');
+                inputAll.type = 'hidden';
+                inputAll.name = 'delete_all';
+                inputAll.value = '1';
+                frag.appendChild(inputAll);
+            } else {
+                checked.forEach(cb => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = 'ids[]';
+                    input.value = cb.value;
+                    frag.appendChild(input);
+                });
+            }
+            container.appendChild(frag);
         }
-        container.appendChild(frag);
 
-        document.getElementById('bulkDeleteForecastCountText').innerText = checked.length;
-        new bootstrap.Modal(document.getElementById('modalBulkDeleteForecastConfirm')).show();
+        const countText = document.getElementById('bulkDeleteForecastCountText');
+        if (countText) countText.innerText = checked.length;
+
+        const modalEl = document.getElementById('modalBulkDeleteForecastConfirm');
+        if (modalEl && typeof bootstrap !== 'undefined') {
+            const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+            modal.show();
+        } else {
+            if (window.confirm(`Hapus ${checked.length} data forecast terpilih?`)) {
+                const form = document.getElementById('formBulkDeleteForecast');
+                if (form) form.submit();
+            }
+        }
     };
 </script>
 @include('partials.registered-item-codes-datalist')

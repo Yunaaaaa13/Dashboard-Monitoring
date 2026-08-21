@@ -17,9 +17,9 @@
             } = options;
 
             const modalEl = document.getElementById('modalGlobalConfirm');
-            if (!modalEl) {
+            if (!modalEl || typeof bootstrap === 'undefined') {
                 if (window.confirm(message)) {
-                    onConfirm();
+                    if (typeof onConfirm === 'function') onConfirm();
                 }
                 return;
             }
@@ -27,8 +27,6 @@
             const titleEl = document.getElementById('confirmTitle');
             const msgEl = document.getElementById('confirmMessage');
             const btnConfirm = document.getElementById('btnExecuteConfirm');
-            const iconBox = document.getElementById('confirmIconBox');
-            const iconEl = document.getElementById('confirmIcon');
 
             if (titleEl) titleEl.innerText = title;
             if (msgEl) msgEl.innerText = message;
@@ -39,35 +37,68 @@
                     (confirmType === 'danger' ? 'btn-kawai-danger' : 
                     (confirmType === 'warning' ? 'btn-kawai-primary' : 'btn-kawai-primary'));
 
-                // Replace onclick listener
+                // Replace onclick listener cleanly
                 const newBtn = btnConfirm.cloneNode(true);
                 btnConfirm.parentNode.replaceChild(newBtn, btnConfirm);
 
                 newBtn.addEventListener('click', function() {
-                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    let bsModal = bootstrap.Modal.getInstance(modalEl) || bootstrap.Modal.getOrCreateInstance(modalEl);
                     if (bsModal) bsModal.hide();
-                    onConfirm();
+                    if (typeof onConfirm === 'function') {
+                        onConfirm();
+                    }
                 });
             }
 
-            const bsModal = new bootstrap.Modal(modalEl);
+            let bsModal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
             bsModal.show();
         },
 
-        delete: function(targetName, onConfirm) {
+        delete: function(arg1, arg2, arg3) {
+            let title = 'Hapus Data?';
+            let message = 'Data ini akan dihapus permanen dari sistem dan tidak dapat dikembalikan.';
+            let onConfirm = () => {};
+
+            if (typeof arg1 === 'string' && typeof arg2 === 'string' && typeof arg3 === 'function') {
+                title = arg1;
+                message = arg2;
+                onConfirm = arg3;
+            } else if (typeof arg1 === 'string' && typeof arg2 === 'function') {
+                title = 'Hapus Data?';
+                message = `Data "${arg1}" akan dihapus permanen dari sistem dan tidak dapat dikembalikan.`;
+                onConfirm = arg2;
+            } else if (typeof arg1 === 'function') {
+                onConfirm = arg1;
+            }
+
             this.ask({
-                title: 'Hapus Data?',
-                message: `Data "${targetName}" akan dihapus permanen dari sistem dan tidak dapat dikembalikan.`,
+                title: title,
+                message: message,
                 confirmText: 'Ya, Hapus',
                 confirmType: 'danger',
                 onConfirm: onConfirm
             });
         },
 
-        deleteAll: function(count, onConfirm) {
+        deleteAll: function(arg1, arg2, arg3) {
+            let title = 'Hapus Seluruh Data?';
+            let message = 'PERINGATAN KRITIS: Seluruh data akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.';
+            let onConfirm = () => {};
+
+            if (typeof arg1 === 'string' && typeof arg2 === 'string' && typeof arg3 === 'function') {
+                title = arg1;
+                message = arg2;
+                onConfirm = arg3;
+            } else if (typeof arg1 === 'function') {
+                onConfirm = arg1;
+            } else if (typeof arg2 === 'function') {
+                message = `PERINGATAN KRITIS: Sebanyak ${arg1} data akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`;
+                onConfirm = arg2;
+            }
+
             this.ask({
-                title: 'Hapus Seluruh Data?',
-                message: `PERINGATAN KRITIS: Sebanyak ${count || 'seluruh'} data akan dihapus permanen. Tindakan ini tidak dapat dibatalkan.`,
+                title: title,
+                message: message,
                 confirmText: 'Hapus Semua Data',
                 confirmType: 'danger',
                 onConfirm: onConfirm
