@@ -1,0 +1,175 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\PurchasingOutstanding;
+use Illuminate\Support\Facades\Schema;
+
+class PurchasingOutstandingSeeder extends Seeder
+{
+    /**
+     * Run the database seeds untuk data Outstanding Order PO Material PT Kawai Indonesia (Termasuk Format KAWAI PLANT-3)
+     */
+    public function run(): void
+    {
+        Schema::disableForeignKeyConstraints();
+        PurchasingOutstanding::truncate();
+        Schema::enableForeignKeyConstraints();
+
+        $data = [
+            // --- 6 DATA RESMI Sesuai Format KAWAI PLANT-3 (JULY - AUG - SEP - OCT) ---
+            [
+                'po_number'      => 'PO-KP3-2026-001',
+                'po_date'        => '2026-07-01',
+                'part_number'    => '954024',
+                'description'    => 'WB-35 B',
+                'plan_stock'     => 39,
+                'm1_po'          => 15,
+                'm1_prod'        => 16,
+                'm2_po'          => 5,
+                'm2_prod'        => 16,
+                'm3_po'          => 0,
+                'm3_prod'        => 13,
+                'm4_po'          => 10,
+                'm4_prod'        => 15,
+                'order_qty'      => 20,
+                'drawing'        => 'DWG-KP3-WB35D',
+                'price'          => 1250000,
+                'amount'         => 25000000,
+                'complete'       => 15,
+                'status'         => 'On Progress',
+                'workflow_stage' => 'material_shipped',
+                'approval_notes' => 'Pengiriman batch pertama 15 unit dari total PO tiba di Plant-3',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-08-15',
+            ],
+            [
+                'po_number'      => 'PO-KP3-2026-002',
+                'po_date'        => '2026-07-02',
+                'part_number'    => '954856',
+                'description'    => 'WB-35 W',
+                'plan_stock'     => 0,
+                'm1_po'          => 0,
+                'm1_prod'        => 0,
+                'm2_po'          => 0,
+                'm2_prod'        => 0,
+                'm3_po'          => 0,
+                'm3_prod'        => 0,
+                'm4_po'          => 0,
+                'm4_prod'        => 0,
+                'order_qty'      => 0,
+                'drawing'        => 'DWG-KP3-WB35W',
+                'price'          => 980000,
+                'amount'         => 0,
+                'complete'       => 0,
+                'status'         => 'Pending',
+                'workflow_stage' => 'waiting_manager',
+                'approval_notes' => 'Menunggu review kebutuhan plan stock berikutnya',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-08-20',
+            ],
+            [
+                'po_number'      => 'PO-KP3-2026-003',
+                'po_date'        => '2026-07-03',
+                'part_number'    => '954418',
+                'description'    => 'WB-35 A',
+                'plan_stock'     => 90,
+                'm1_po'          => 0,
+                'm1_prod'        => 37,
+                'm2_po'          => 50,
+                'm2_prod'        => 27,
+                'm3_po'          => 15,
+                'm3_prod'        => 36,
+                'm4_po'          => 20,
+                'm4_prod'        => 30,
+                'order_qty'      => 65,
+                'drawing'        => 'DWG-KP3-WB35A',
+                'price'          => 1450000,
+                'amount'         => 94250000,
+                'complete'       => 50,
+                'status'         => 'On Progress',
+                'workflow_stage' => 'iad_check',
+                'approval_notes' => 'Pemeriksaan IAD sedang berjalan di Gudang Plant-3 KIIC',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-09-05',
+            ],
+            [
+                'po_number'      => 'PO-KP3-2026-004',
+                'po_date'        => '2026-07-05',
+                'part_number'    => '955072',
+                'description'    => 'WB-35 LO',
+                'plan_stock'     => 53,
+                'm1_po'          => 30,
+                'm1_prod'        => 20,
+                'm2_po'          => 0,
+                'm2_prod'        => 8,
+                'm3_po'          => 25,
+                'm3_prod'        => 36,
+                'm4_po'          => 15,
+                'm4_prod'        => 35,
+                'order_qty'      => 55,
+                'drawing'        => 'DWG-KP3-WB35LO',
+                'price'          => 1100000,
+                'amount'         => 60500000,
+                'complete'       => 55,
+                'status'         => 'Complete',
+                'workflow_stage' => 'completed',
+                'approval_notes' => 'Lolos inspeksi IAD & material masuk stok produksi',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-08-10',
+            ],
+            [
+                'po_number'      => 'PO-KP3-2026-005',
+                'po_date'        => '2026-07-08',
+                'part_number'    => '3000008375',
+                'description'    => 'WB-35 NW',
+                'plan_stock'     => 26,
+                'm1_po'          => 10,
+                'm1_prod'        => 8,
+                'm2_po'          => 30,
+                'm2_prod'        => 10,
+                'm3_po'          => 0,
+                'm3_prod'        => 12,
+                'm4_po'          => 10,
+                'm4_prod'        => 24,
+                'order_qty'      => 40,
+                'drawing'        => 'DWG-KP3-3008375',
+                'price'          => 1350000,
+                'amount'         => 54000000,
+                'complete'       => 10,
+                'status'         => 'On Progress',
+                'workflow_stage' => 'waiting_supplier',
+                'approval_notes' => 'PO sudah diapprove Manager, menunggu konfirmasi jadwal supplier',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-09-12',
+            ],
+            [
+                'po_number'      => 'PO-KP3-2026-006',
+                'po_date'        => '2026-07-10',
+                'part_number'    => '956239',
+                'description'    => 'WB-35 E',
+                'plan_stock'     => 15,
+                'm1_po'          => 0,
+                'm1_prod'        => 0,
+                'm2_po'          => 0,
+                'm2_prod'        => 0,
+                'm3_po'          => 0,
+                'm3_prod'        => 0,
+                'order_qty'      => 0,
+                'drawing'        => 'DWG-KP3-WB35E',
+                'price'          => 1150000,
+                'amount'         => 0,
+                'complete'       => 0,
+                'status'         => 'Pending',
+                'workflow_stage' => 'approved_manager',
+                'supplier_name'  => 'PT Kawai Musical Instruments Mfg',
+                'eta_date'       => '2026-08-25',
+            ],
+        ];
+
+        foreach ($data as $item) {
+            PurchasingOutstanding::create($item);
+        }
+    }
+}
