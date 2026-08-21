@@ -2311,6 +2311,7 @@
                                                             @else
                                                                 <p class="text-muted small mb-0">Tidak ada item code yang berubah.</p>
                                                             @endif
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2329,7 +2330,6 @@
             </div>
         </div>
     </div>
-</div> {{-- END MODAL modalSupplierMoMAnalytics --}}
 </div> {{-- END SLIDE 2 TAB PANE --}}
 
 
