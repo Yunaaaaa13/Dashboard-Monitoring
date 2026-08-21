@@ -41,15 +41,21 @@ class PurchasingOutstandingController extends Controller
             });
         }
 
-        $items = $query->orderBy('part_number', 'asc')->get();
+        $perPageParam = $request->get('per_page', '50');
+        $perPage = ($perPageParam === 'ALL' || $perPageParam === 'all') ? null : max(10, (int)$perPageParam);
 
-        // KPI Keseluruhan (dari seluruh data, bukan hanya hasil filter)
-        $allItems = PurchasingOutstanding::all();
-        $totalItems        = $allItems->count();
-        $totalOrderQty     = $allItems->sum('order_qty');
-        $totalCompleteQty  = $allItems->sum('complete');
+        if ($perPage) {
+            $items = $query->orderBy('part_number', 'asc')->paginate($perPage)->withQueryString();
+        } else {
+            $items = $query->orderBy('part_number', 'asc')->get();
+        }
+
+        // Fast SQL Aggregate KPIs Keseluruhan
+        $totalItems        = PurchasingOutstanding::count();
+        $totalOrderQty     = (int) PurchasingOutstanding::sum('order_qty');
+        $totalCompleteQty  = (int) PurchasingOutstanding::sum('complete');
         $totalPendingQty   = max(0, $totalOrderQty - $totalCompleteQty);
-        $totalAmount       = $allItems->sum('amount');
+        $totalAmount       = (float) PurchasingOutstanding::sum('amount');
         $overallProgress   = $totalOrderQty > 0 ? round(($totalCompleteQty / $totalOrderQty) * 100, 1) : 0;
 
         if ($request->has('duration')) {
@@ -289,6 +295,7 @@ class PurchasingOutstandingController extends Controller
             'monitoringChartActual'      => $monitoringChartActual,
             'monitoringChartOutstanding' => $monitoringChartOutstanding,
             'items'            => $items,
+            'perPageParam'     => $perPageParam,
             'categories'       => $allCategories,
             'buyers'           => \App\Models\User::orderBy('name')->get(),
             'statusFilter'     => $statusFilter,

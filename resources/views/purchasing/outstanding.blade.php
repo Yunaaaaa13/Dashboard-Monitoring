@@ -10,6 +10,173 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // High Performance Global Functions for Step 1 Checkbox & Delete
+        window.toggleSelectAllPlant3 = function(masterCb) {
+            const isChecked = masterCb ? masterCb.checked : false;
+            const checkboxes = document.querySelectorAll('.row-checkbox-plant3');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = isChecked;
+            }
+            window.updatePlant3BulkBtn();
+        };
+
+        window.updatePlant3BulkBtn = function() {
+            const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
+            const allCheckboxes = document.querySelectorAll('.row-checkbox-plant3');
+            const checkAllPlant3 = document.getElementById('checkAllPlant3');
+            const btnBulkDeletePlant3 = document.getElementById('btnBulkDeletePlant3');
+            const countSpanPlant3 = document.getElementById('bulkDeleteCountPlant3');
+
+            if (checkAllPlant3 && allCheckboxes.length > 0) {
+                checkAllPlant3.checked = (checked.length === allCheckboxes.length);
+            }
+
+            if (btnBulkDeletePlant3) {
+                if (checked.length > 0) {
+                    btnBulkDeletePlant3.classList.remove('d-none');
+                    if (countSpanPlant3) countSpanPlant3.innerText = checked.length;
+                } else {
+                    btnBulkDeletePlant3.classList.add('d-none');
+                }
+            }
+        };
+
+        window.confirmBulkDeletePlant3 = function() {
+            const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
+            const total = document.querySelectorAll('.row-checkbox-plant3').length;
+            if (checked.length === 0) return;
+            
+            const container = document.getElementById('bulkDeletePlant3IdsContainer');
+            if (container) {
+                container.innerHTML = '';
+                const frag = document.createDocumentFragment();
+                if (checked.length === total && total > 0) {
+                    const inputAll = document.createElement('input');
+                    inputAll.type = 'hidden';
+                    inputAll.name = 'delete_all';
+                    inputAll.value = '1';
+                    frag.appendChild(inputAll);
+                } else {
+                    checked.forEach(cb => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'ids[]';
+                        input.value = cb.value;
+                        frag.appendChild(input);
+                    });
+                }
+                container.appendChild(frag);
+            }
+
+            const countText = document.getElementById('bulkDeletePlant3CountText');
+            if (countText) countText.innerText = checked.length;
+
+            const modalEl = document.getElementById('modalBulkDeletePlant3Confirm');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                if (window.confirm(`Hapus ${checked.length} data monitoring terpilih?`)) {
+                    const form = document.getElementById('formBulkDeletePlant3');
+                    if (form) form.submit();
+                }
+            }
+        };
+
+        window.confirmDeleteAllPlant3 = function() {
+            const modalEl = document.getElementById('modalDeleteAllPlant3Confirm');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                if (window.confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA Step 1?')) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = "{{ route('purchasing.outstanding.destroy-all') }}";
+                    const csrf = document.createElement('input');
+                    csrf.type = 'hidden';
+                    csrf.name = '_token';
+                    csrf.value = "{{ csrf_token() }}";
+                    form.appendChild(csrf);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            }
+        };
+
+        window.toggleSelectAllForecast = function(masterCb) {
+            const isChecked = masterCb ? masterCb.checked : false;
+            const checkboxes = document.querySelectorAll('.row-checkbox-forecast');
+            for (let i = 0; i < checkboxes.length; i++) {
+                checkboxes[i].checked = isChecked;
+            }
+            window.updateForecastBulkBtn();
+        };
+
+        window.updateForecastBulkBtn = function() {
+            const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
+            const allCheckboxes = document.querySelectorAll('.row-checkbox-forecast');
+            const checkAllForecast = document.getElementById('checkAllForecast');
+            const btnBulkDeleteForecast = document.getElementById('btnBulkDeleteForecast');
+            const countSpanForecast = document.getElementById('bulkDeleteCountForecast');
+
+            if (checkAllForecast && allCheckboxes.length > 0) {
+                checkAllForecast.checked = (checked.length === allCheckboxes.length);
+            }
+
+            if (btnBulkDeleteForecast) {
+                if (checked.length > 0) {
+                    btnBulkDeleteForecast.classList.remove('d-none');
+                    if (countSpanForecast) countSpanForecast.innerText = checked.length;
+                } else {
+                    btnBulkDeleteForecast.classList.add('d-none');
+                }
+            }
+        };
+
+        window.confirmBulkDeleteForecast = function() {
+            const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
+            const total = document.querySelectorAll('.row-checkbox-forecast').length;
+            if (checked.length === 0) return;
+            
+            const container = document.getElementById('bulkDeleteForecastIdsContainer');
+            if (container) {
+                container.innerHTML = '';
+                const frag = document.createDocumentFragment();
+                if (checked.length === total && total > 0) {
+                    const inputAll = document.createElement('input');
+                    inputAll.type = 'hidden';
+                    inputAll.name = 'delete_all';
+                    inputAll.value = '1';
+                    frag.appendChild(inputAll);
+                } else {
+                    checked.forEach(cb => {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'ids[]';
+                        input.value = cb.value;
+                        frag.appendChild(input);
+                    });
+                }
+                container.appendChild(frag);
+            }
+
+            const countText = document.getElementById('bulkDeleteForecastCountText');
+            if (countText) countText.innerText = checked.length;
+
+            const modalEl = document.getElementById('modalBulkDeleteForecastConfirm');
+            if (modalEl && typeof bootstrap !== 'undefined') {
+                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+                modal.show();
+            } else {
+                if (window.confirm(`Hapus ${checked.length} data forecast terpilih?`)) {
+                    const form = document.getElementById('formBulkDeleteForecast');
+                    if (form) form.submit();
+                }
+            }
+        };
+    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/kawai-theme.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -385,12 +552,25 @@
                     </div>
                 </div>
 
-                <div class="row g-3 mb-3">
+                <div class="row g-3 mb-3 align-items-center">
                     <div class="col-md-6 col-lg-5">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
                             <input type="text" id="searchPlant3" class="form-control form-control-dark border-secondary border-opacity-50" placeholder="Cari Part Number, Description, Supplier..." onkeyup="filterPlant3Table()">
                         </div>
+                    </div>
+                    <div class="col-md-6 col-lg-7 d-flex justify-content-md-end align-items-center gap-2">
+                        <form method="GET" action="{{ route('purchasing.outstanding') }}" class="d-flex align-items-center gap-2">
+                            @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
+                            @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
+                            <label class="text-muted small fw-bold text-nowrap mb-0"><i class="bi bi-list-nested me-1"></i> Tampilkan:</label>
+                            <select name="per_page" class="form-select form-select-sm form-select-dark border-secondary border-opacity-50" style="width: 130px;" onchange="this.form.submit()">
+                                <option value="25" {{ ($perPageParam ?? '50') == '25' ? 'selected' : '' }}>25 baris</option>
+                                <option value="50" {{ ($perPageParam ?? '50') == '50' ? 'selected' : '' }}>50 baris</option>
+                                <option value="100" {{ ($perPageParam ?? '50') == '100' ? 'selected' : '' }}>100 baris</option>
+                                <option value="ALL" {{ ($perPageParam ?? '50') == 'ALL' ? 'selected' : '' }}>Semua Data</option>
+                            </select>
+                        </form>
                     </div>
                 </div>
 
@@ -579,6 +759,17 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if($items instanceof \Illuminate\Pagination\LengthAwarePaginator && $items->hasPages())
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="text-muted small">
+                            Menampilkan <b>{{ $items->firstItem() ?? 0 }}</b> - <b>{{ $items->lastItem() ?? 0 }}</b> dari total <b>{{ $items->total() }}</b> Part Number
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {{ $items->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
