@@ -845,9 +845,9 @@
                 </div>
 
                 <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-20 flex-wrap gap-2 text-muted small">
-                    <span class="fs-8"></span>
+                    <span class="fs-8 text-info"><i class="bi bi-info-circle me-1"></i>Klik titik grafik atau baris vendor pada tabel di bawah untuk membuka popup diagnosa item.</span>
                     <div class="d-flex align-items-center gap-3 fs-8 font-monospace">
-                        <span><span class="badge rounded-circle p-1 me-1" style="background: #3b82f6;"></span>Target</span>
+                        <span><span class="badge rounded-circle p-1 me-1" style="background: #38bdf8;"></span>Target Kebutuhan</span>
                         <span><span class="badge rounded-circle p-1 me-1" style="background: #a855f7;"></span>Stok Fisik</span>
                         <span><span class="badge rounded-circle p-1 me-1" style="background: #f59e0b;"></span>Outstanding PO</span>
                     </div>
@@ -1358,7 +1358,7 @@
         @if(method_exists($paginatedMatrix, 'hasPages') && $paginatedMatrix->hasPages())
         <div class="d-flex justify-content-between align-items-center p-3 border-top border-secondary border-opacity-25 flex-wrap gap-2" style="background: rgba(15, 23, 42, 0.4);">
             <div class="text-muted small font-monospace">
-                Menampilkan <strong>{{ $paginatedMatrix->firstItem() }}</strong> - <strong>{{ $paginatedMatrix->lastItem() }}</strong> dari <strong>{{ $paginatedMatrix->total() }}</strong> total posisi stok fisik
+                Menampilkan <strong>{{ $paginatedMatrix->firstItem() }}</strong> - <strong>{{ $paginatedMatrix->lastItem() }}</strong> dari <strong>{{ $paginatedMatrix->total() }}</strong> total posisi part material
             </div>
             <div>
                 {{ $paginatedMatrix->appends(request()->query())->links('pagination::bootstrap-5') }}
@@ -2946,14 +2946,6 @@
         gPo.addColorStop(0, 'rgba(245, 158, 11, 0.40)');
         gPo.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
 
-        // Point Styling Based on Vendor Health Status
-        const pointBgColors = statuses.map(s => {
-            if (s === 'Critical') return '#ef4444';
-            if (s === 'Attention') return '#f59e0b';
-            if (s === 'Healthy') return '#10b981';
-            return '#94a3b8';
-        });
-
         if (chartVendorAreaInst) {
             chartVendorAreaInst.destroy();
         }
@@ -2967,14 +2959,14 @@
                         label: 'In Demand (Target Kebutuhan)',
                         data: inDemandData,
                         backgroundColor: gDemand,
-                        borderColor: '#3b82f6',
+                        borderColor: '#38bdf8',
                         borderWidth: 2.5,
                         fill: 'origin',
                         tension: 0.35,
                         pointRadius: 6,
                         pointHoverRadius: 10,
                         hitRadius: 30,
-                        pointBackgroundColor: pointBgColors,
+                        pointBackgroundColor: '#38bdf8',
                         pointBorderColor: '#ffffff',
                         pointBorderWidth: 1.5
                     },
@@ -3002,10 +2994,12 @@
                         borderDash: [4, 4],
                         fill: 'origin',
                         tension: 0.35,
-                        pointRadius: 5,
-                        pointHoverRadius: 8,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
                         hitRadius: 30,
-                        pointBackgroundColor: '#f59e0b'
+                        pointBackgroundColor: '#f59e0b',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5
                     }
                 ]
             },
@@ -3044,24 +3038,49 @@
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: { color: '#cbd5e1', font: { family: 'Outfit', weight: 600, size: 11 }, usePointStyle: true }
+                        labels: {
+                            color: '#e2e8f0',
+                            font: { family: 'Outfit', weight: 600, size: 12 },
+                            usePointStyle: true,
+                            padding: 16
+                        }
                     },
                     tooltip: {
                         backgroundColor: 'rgba(15, 23, 42, 0.96)',
-                        borderColor: 'rgba(139, 92, 246, 0.5)',
-                        borderWidth: 1,
-                        padding: 12,
+                        borderColor: 'rgba(139, 92, 246, 0.6)',
+                        borderWidth: 1.5,
+                        padding: 14,
+                        cornerRadius: 8,
                         titleFont: { family: 'Outfit', weight: 'bold', size: 13 },
+                        titleColor: '#ffffff',
+                        bodyFont: { family: 'Outfit', size: 12 },
+                        bodyColor: '#e2e8f0',
+                        footerFont: { family: 'Outfit', size: 11 },
+                        footerColor: '#94a3b8',
+                        displayColors: true,
+                        usePointStyle: true,
                         callbacks: {
                             title: (tooltipItems) => {
                                 const idx = tooltipItems[0].dataIndex;
-                                return `${fullNames[idx]} [${statuses[idx].toUpperCase()}]`;
+                                const v = filteredVendors[idx];
+                                const tag = v.status === 'Critical' ? '🔴 DEFISIT KRITIS' : (v.status === 'Attention' ? '🟡 TERCOVER PO' : '🟢 HEALTHY (AMAN)');
+                                return `${fullNames[idx]} [${tag}]`;
                             },
                             afterTitle: (tooltipItems) => {
                                 const idx = tooltipItems[0].dataIndex;
-                                return `Status: ${statuses[idx]} (${criticalCnts[idx]} Defisit / ${healthyCnts[idx]} Aman)`;
+                                const v = filteredVendors[idx];
+                                return `Status: ${v.status} (${v.critical_items_count || 0} Defisit • ${v.healthy_items_count || 0} Aman)\n─────────────────────────────`;
                             },
-                            label: (ctx) => `  ${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('id-ID')} PCS`
+                            label: (ctx) => `  ${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('id-ID')} PCS`,
+                            footer: (tooltipItems) => {
+                                const idx = tooltipItems[0].dataIndex;
+                                const v = filteredVendors[idx];
+                                const pot = (v.total_actual_inventory || 0) + (v.total_outstanding || 0);
+                                const dem = v.total_in_demand || 0;
+                                const gap = pot - dem;
+                                const gapText = gap >= 0 ? `+${Number(gap).toLocaleString('id-ID')} PCS (Surplus)` : `${Number(gap).toLocaleString('id-ID')} PCS (Defisit)`;
+                                return `\nTotal Potensi Pasokan: ${Number(pot).toLocaleString('id-ID')} PCS (${gapText})\n💡 Klik grafik untuk diagnosa detail SKU vendor ini`;
+                            }
                         }
                     }
                 },

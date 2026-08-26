@@ -36,22 +36,35 @@ class Forecasting extends Model
         };
     }
 
+    protected static ?array $priceLookupCache = null;
+    protected static ?array $poLookupCache = null;
+    protected static ?array $deliveryLookupCache = null;
+
+    public static function clearLookupsCache(): void
+    {
+        static::$priceLookupCache = null;
+        static::$poLookupCache = null;
+        static::$deliveryLookupCache = null;
+    }
+
     /**
-     * Get price with fallback to PurchasingOutstanding if not explicitly set.
+     * Get price with fast in-memory fallback to PurchasingOutstanding.
      */
     public function getPriceAttribute($value): float
     {
         if ($value !== null && (float) $value > 0) {
             return (float) $value;
         }
-        $po = \App\Models\PurchasingOutstanding::where('part_number', $this->part_number)
-            ->orWhere('drawing', $this->part_number)
-            ->where('price', '>', 0)
-            ->first();
-        if ($po) {
-            return (float) $po->price;
+        
+        $pn = strtoupper(trim((string)$this->part_number));
+        if (static::$priceLookupCache === null) {
+            static::$priceLookupCache = \App\Models\PurchasingOutstanding::where('price', '>', 0)
+                ->pluck('price', 'part_number')
+                ->mapWithKeys(fn($p, $k) => [strtoupper(trim((string)$k)) => (float)$p])
+                ->toArray();
         }
-        return 0.0;
+
+        return static::$priceLookupCache[$pn] ?? 0.0;
     }
 
     /**
@@ -99,54 +112,40 @@ class Forecasting extends Model
     }
 
     /**
-     * Hitung PO secara dinamis dari Step 2 (Master PO).
-     * Jika belum di-input di Step 2, maka nilainya otomatis 0 / NULL.
+     * Hitung PO secara dinamis dari Step 2 (Master PO) menggunakan batch memory lookup.
      */
     public function getCalculatedPoAttribute(): int
     {
-        $poSum = \App\Models\MasterPo::where('item_code', $this->part_number)
-            ->orWhere('po', $this->part_number)
-            ->sum('qty');
-
-        if ($poSum > 0) {
-            return (int) $poSum;
+        $pn = strtoupper(trim((string)$this->part_number));
+        if (static::$poLookupCache === null) {
+            static::$poLookupCache = \App\Models\MasterPo::select('item_code', \Illuminate\Support\Facades\DB::raw('SUM(qty) as total_po'))
+                ->groupBy('item_code')
+                ->pluck('total_po', 'item_code')
+                ->mapWithKeys(fn($qty, $k) => [strtoupper(trim((string)$k)) => (int)$qty])
+                ->toArray();
         }
 
-        // Murni bernilai 0 jika pengguna belum membuat/mengisi Master PO (Step 2)
-        return 0;
+        return static::$poLookupCache[$pn] ?? 0;
     }
 
     /**
-     * Hitung Delivery secara dinamis murni dari Step 3 (Realisasi Penerimaan / PurchasingLog).
-     * Jika belum ada realisasi di Step 3, nilainya murni 0.
+     * Hitung Delivery secara dinamis murni dari Step 3 menggunakan batch memory lookup.
      */
     public function getCalculatedDeliveryAttribute(): int
     {
-        $logSum = \App\Models\PurchasingLog::where('item_code', $this->part_number)
-            ->orWhere('po_reference', $this->part_number)
-            ->sum('actual_received');
-
-        if ($logSum > 0) {
-            return (int) $logSum;
+        $pn = strtoupper(trim((string)$this->part_number));
+        if (static::$deliveryLookupCache === null) {
+            static::$deliveryLookupCache = \App\Models\PurchasingLog::select('item_code', \Illuminate\Support\Facades\DB::raw('SUM(actual_received) as total_rcpt'))
+                ->groupBy('item_code')
+                ->pluck('total_rcpt', 'item_code')
+                ->mapWithKeys(fn($qty, $k) => [strtoupper(trim((string)$k)) => (int)$qty])
+                ->toArray();
         }
 
-        $del = \App\Models\ForecastActual::where('part_number', $this->part_number)
-            ->where('periode', $this->periode)
-            ->sum('forecast_actual');
-
-        if ($del <= 0) {
-            $del = \App\Models\Actual::where('part_number', $this->part_number)
-                ->where(function ($q) {
-                    $q->where('periode', $this->periode)->orWhere('period_month', $this->periode);
-                })
-                ->sum('actual_qty');
+        if (isset(static::$deliveryLookupCache[$pn]) && static::$deliveryLookupCache[$pn] > 0) {
+            return static::$deliveryLookupCache[$pn];
         }
 
-        if ($del > 0) {
-            return (int) $del;
-        }
-
-        // Murni bernilai 0 jika pengguna belum melakukan realisasi penerimaan di Step 3
         return 0;
     }
 

@@ -741,6 +741,17 @@
                         </tbody>
                     </table>
                 </div>
+
+                @if($forecastList instanceof \Illuminate\Pagination\LengthAwarePaginator && $forecastList->hasPages())
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mt-3 pt-3 border-top border-secondary border-opacity-25">
+                        <div class="text-muted small">
+                            Menampilkan <b>{{ $forecastList->firstItem() ?? 0 }}</b> - <b>{{ $forecastList->lastItem() ?? 0 }}</b> dari total <b>{{ $forecastList->total() }}</b> Data Forecast
+                        </div>
+                        <div class="d-flex align-items-center">
+                            {{ $forecastList->links('pagination::bootstrap-5') }}
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -2492,6 +2503,7 @@ function showImportProgress() {
         }
     };
 </script>
+@endpush
 @include('partials.registered-item-codes-datalist')
 @include('partials.modal-select-item-code')
 @include('partials.confirm-modal')

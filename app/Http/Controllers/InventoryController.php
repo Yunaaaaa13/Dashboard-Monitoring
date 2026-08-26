@@ -24,10 +24,9 @@ class InventoryController extends Controller
         $itemCode       = $request->get('item_code', 'ALL');
         $plantFilter    = $request->get('plant', 'ALL');
         $supplierFilter = $request->get('supplier', 'ALL');
-        $periodFilter   = $request->get('period', $request->get('periode', 'ALL'));
         $statusFilter   = $request->get('status_filter', 'ALL');
 
-        // ── 1. PRE-FETCH DATA INTEGRASI (PO & INCOMING LOGS) ──
+        // ── 1. PRE-FETCH DATA INTEGRASI (PO & INCOMING LOGS KESELURUHAN & PER PERIODE) ──
         $poSummaries = MasterPo::select('item_code', DB::raw('SUM(qty) as total_po_qty'), DB::raw('AVG(price) as avg_po_price'), DB::raw('MAX(currency) as currency'))
             ->whereNotNull('item_code')
             ->where('item_code', '!=', '')
@@ -42,12 +41,25 @@ class InventoryController extends Controller
             ->get()
             ->keyBy(fn($item) => strtoupper(trim((string)$item->item_code)));
 
+        // Pre-fetch PO dan Incoming per periode (YYYY-MM)
+        $poByPeriod = MasterPo::selectRaw("item_code, SUBSTRING(tanggal, 1, 7) as ym, SUM(qty) as sum_qty, AVG(price) as avg_price, MAX(currency) as currency")
+            ->whereNotNull('item_code')
+            ->groupBy('item_code', 'ym')
+            ->get()
+            ->groupBy(fn($x) => strtoupper(trim((string)$x->item_code)));
+
+        $receiptByPeriod = PurchasingLog::selectRaw("item_code, period_month as ym, SUM(actual_received) as sum_received, AVG(price) as avg_price, MAX(currency) as currency")
+            ->whereNotNull('item_code')
+            ->groupBy('item_code', 'period_month')
+            ->get()
+            ->groupBy(fn($x) => strtoupper(trim((string)$x->item_code)));
+
         // Kurs Budget terkini
         $latestBudgetRateRecord = TaxBudgetForecastRate::orderBy('exch_year', 'desc')->orderBy('exch_month', 'desc')->first();
         $budgetExchangeRate = $latestBudgetRateRecord ? (int) $latestBudgetRateRecord->budget_rate : 16600;
 
-        // ── 2. SUMBER UTAMA TABEL: DATA DARI TABEL INVENTORIES (LOGS FISIK TERUNGGAH) ──
-        $inventoryRecords = Inventory::orderBy('tanggal_inventory', 'desc')->orderBy('id', 'desc')->get();
+        // ── 2. SUMBER UTAMA TABEL: DATA DARI TABEL INVENTORIES DILENGKAPI DATA MASTER PART ──
+        $rawInventoryRecords = Inventory::orderBy('tanggal_inventory', 'desc')->orderBy('id', 'desc')->get();
         $integratedMatrix = collect();
 
         // Master outstandings untuk referensi harga & fallback deskripsi
@@ -56,9 +68,39 @@ class InventoryController extends Controller
         $allOutstandings = $allOutstandingsByPart->merge($allOutstandingsByDrawing);
         $allForecasting = Forecasting::all()->groupBy(fn($x) => strtoupper(trim((string)$x->part_number)));
 
-        $latestSnapshotDateRaw = $inventoryRecords->max('tanggal_inventory');
+        $latestSnapshotDateRaw = $rawInventoryRecords->max('tanggal_inventory');
         $latestSnapshotDate = $latestSnapshotDateRaw ? Carbon::parse($latestSnapshotDateRaw)->format('d M Y') : date('d M Y');
-        $snapshotCanonicalPeriod = $latestSnapshotDateRaw ? date('Y-m', strtotime($latestSnapshotDateRaw)) : date('Y-m');
+        $snapshotCanonicalPeriod = $latestSnapshotDateRaw ? date('Y-m', strtotime($latestSnapshotDateRaw)) : '2026-07';
+
+        // Tentukan periode default (mengikuti snapshot fisik terkini, misal 2026-07)
+        $periodFilter = $request->get('period', $request->get('periode', $snapshotCanonicalPeriod));
+
+        // Jika mode ALL atau periode spesifik dipilih:
+        $inventoryRecords = collect();
+        if ($periodFilter !== 'ALL') {
+            $matchingInventories = $rawInventoryRecords->filter(fn($x) => str_starts_with((string)$x->tanggal_inventory, $periodFilter))->unique(fn($x) => strtoupper(trim((string)$x->part_number)) . '|' . strtoupper(trim((string)($x->factory_code ?? ''))))->values();
+            if ($matchingInventories->isNotEmpty()) {
+                $inventoryRecords = $matchingInventories;
+            } else {
+                // Generate data dari 307 master part untuk periode yang dipilih
+                $pDate = $periodFilter . '-01';
+                foreach ($allOutstandingsByPart as $code => $os) {
+                    $inventoryRecords->push((object)[
+                        'id'                => null,
+                        'part_number'       => $code,
+                        'description'       => $os->description ?: 'Material Item',
+                        'supplier_name'     => $os->supplier_name ?: '-',
+                        'supplier_code'     => $os->supplier_code ?? '-',
+                        'factory_code'      => $os->factory_code ?: 'KIP1',
+                        'current_stock'     => 0,
+                        'tanggal_inventory' => $pDate,
+                    ]);
+                }
+            }
+        } else {
+            // Saat mode ALL, ambil snapshot fisik terbaru per Part Number + Factory Code (307 part posisi)
+            $inventoryRecords = $rawInventoryRecords->unique(fn($x) => strtoupper(trim((string)$x->part_number)) . '|' . strtoupper(trim((string)($x->factory_code ?? ''))))->values();
+        }
 
         foreach ($inventoryRecords as $inv) {
             $code = strtoupper(trim((string)$inv->part_number));
@@ -78,7 +120,7 @@ class InventoryController extends Controller
             // 1. Inventory Demand untuk item ini (Target Kebutuhan dari Forecast Monitoring Ratio & Production Plan)
             $inventoryDemand = 0;
             $fcRecords = $allForecasting->get($code);
-            $recordPeriod = $periodCarbon ? $periodCarbon->format('Y-m') : $snapshotCanonicalPeriod;
+            $recordPeriod = $periodCarbon ? $periodCarbon->format('Y-m') : ($periodFilter !== 'ALL' ? $periodFilter : $snapshotCanonicalPeriod);
 
             // Prioritas 1: Cek tabel detail Forecasting untuk periode yang sesuai dengan record input ini
             if ($fcRecords && $fcRecords->isNotEmpty()) {
@@ -87,7 +129,7 @@ class InventoryController extends Controller
                     ?: $fcRecords->firstWhere('period_month', $snapshotCanonicalPeriod));
                 
                 if ($fcMatchingPeriod) {
-                    $inventoryDemand = (int) ($fcMatchingPeriod->production_qty ?: ($fcMatchingPeriod->forecast_qty ?: $fcMatchingPeriod->po_qty));
+                    $inventoryDemand = (int) ($fcMatchingPeriod->production_qty ?: $fcMatchingPeriod->po_qty);
                 }
             }
 
@@ -99,20 +141,29 @@ class InventoryController extends Controller
 
             // Prioritas 3: Fallback ke record forecasting manapun yang memiliki demand > 0
             if ($inventoryDemand === 0 && $fcRecords && $fcRecords->isNotEmpty()) {
-                $fcWithQty = $fcRecords->first(fn($f) => ($f->production_qty > 0 || $f->forecast_qty > 0 || $f->po_qty > 0));
+                $fcWithQty = $fcRecords->first(fn($f) => ($f->production_qty > 0 || $f->po_qty > 0));
                 if ($fcWithQty) {
-                    $inventoryDemand = (int) ($fcWithQty->production_qty ?: ($fcWithQty->forecast_qty ?: $fcWithQty->po_qty));
+                    $inventoryDemand = (int) ($fcWithQty->production_qty ?: $fcWithQty->po_qty);
                 }
             }
 
             $isMatched = ($os !== null || ($fcRecords && $fcRecords->isNotEmpty()));
 
-            // 2. PO & Receipt & Outstanding
+            // 2. PO & Receipt & Outstanding (Spesifik per periode atau akumulatif jika ALL)
             $poData = $poSummaries->get($code);
             $rcptData = $receiptSummaries->get($code);
 
-            $poQty = $poData ? (int) $poData->total_po_qty : 0;
-            $rcptQty = $rcptData ? (int) $rcptData->total_receipt_qty : 0;
+            if ($periodFilter !== 'ALL') {
+                $poRec = $poByPeriod->get($code)?->firstWhere('ym', $recordPeriod);
+                $poQty = $poRec ? (int)$poRec->sum_qty : ($poData ? (int) $poData->total_po_qty : 0);
+
+                $rcptRec = $receiptByPeriod->get($code)?->firstWhere('ym', $recordPeriod);
+                $rcptQty = $rcptRec ? (int)$rcptRec->sum_received : 0;
+            } else {
+                $poQty = $poData ? (int) $poData->total_po_qty : 0;
+                $rcptQty = $rcptData ? (int) $rcptData->total_receipt_qty : 0;
+            }
+
             $outstandingPoQty = max(0, $poQty - $rcptQty);
             $overDeliveryQty  = max(0, $rcptQty - $poQty);
 
@@ -545,18 +596,22 @@ class InventoryController extends Controller
         ];
 
         // ── 6. LIST DROPDOWN OPTIONS UNTUK FILTER & MODAL INPUT ──
-        $availablePeriods = $inventoryRecords
-            ->filter(fn($x) => !empty($x->tanggal_inventory))
-            ->map(function($x) {
-                $carbon = Carbon::parse($x->tanggal_inventory);
+        $availablePeriods = collect()
+            ->concat(PurchasingLog::distinct()->whereNotNull('period_month')->pluck('period_month'))
+            ->concat(MasterPo::selectRaw("SUBSTRING(tanggal, 1, 7) as ym")->distinct()->pluck('ym'))
+            ->concat(Inventory::selectRaw("SUBSTRING(tanggal_inventory, 1, 7) as ym")->distinct()->pluck('ym'))
+            ->concat(Forecasting::distinct()->whereNotNull('period_month')->pluck('period_month'))
+            ->filter(fn($p) => preg_match('/^\d{4}-\d{2}$/', (string)$p))
+            ->unique()
+            ->sortDesc()
+            ->map(function($ym) {
+                $carbon = Carbon::parse($ym . '-01');
                 return (object)[
-                    'key'   => $carbon->format('Y-m'),
-                    'label' => $carbon->translatedFormat('F Y'),
-                    'raw_date' => $x->tanggal_inventory,
+                    'key'      => $ym,
+                    'label'    => $carbon->translatedFormat('F Y'),
+                    'raw_date' => $ym . '-01',
                 ];
             })
-            ->unique('key')
-            ->sortByDesc('key')
             ->values();
 
         $availablePlants    = collect(['KIP1', 'KIP2', 'KIP3', 'KIP4', 'Plant 3'])->merge($inventoryRecords->pluck('factory_code'))->unique()->filter()->sort()->values();

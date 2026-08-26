@@ -22,6 +22,7 @@ class PurchasingOutstandingController extends Controller
     public function index(Request $request)
     {
         PurchasingOutstanding::clearCalcCaches();
+        \App\Models\Forecasting::clearLookupsCache();
         $statusFilter = $request->get('status', 'All');
         $supplierFilter = $request->get('supplier', 'All');
         $searchQuery  = $request->get('search');
@@ -242,33 +243,30 @@ class PurchasingOutstandingController extends Controller
             });
         }
 
-        $forecastList = $forecastQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->get();
-        $actualList = $actualQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->get();
-        $outstandingList = $outstandingQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->get();
+        // KPI Totals 3 Master
+        $masterForecastCount = (clone $forecastQuery)->count();
+        $masterForecastTotalQty = (int) (clone $forecastQuery)->sum('forecast_qty');
+
+        $masterActualCount = (clone $actualQuery)->count();
+        $masterActualTotalQty = (int) (clone $actualQuery)->sum('actual_qty');
+
+        $masterOutstandingCount = (clone $outstandingQuery)->count();
+        $masterOutstandingTotalQty = (int) (clone $outstandingQuery)->sum('outstanding_qty');
 
         // Kumpulkan semua periode unik dari ke-3 tabel untuk filter dropdown, dinormalisasi
         $periodes = collect()
-            ->concat(Forecasting::pluck('periode'))
-            ->concat(Forecasting::pluck('period_month'))
-            ->concat(Actual::pluck('periode'))
-            ->concat(Actual::pluck('period_month'))
-            ->concat(Outstanding::pluck('periode'))
-            ->concat(Outstanding::pluck('period_month'))
+            ->concat(Forecasting::distinct()->whereNotNull('periode')->pluck('periode'))
+            ->concat(Actual::distinct()->whereNotNull('periode')->pluck('periode'))
+            ->concat(Outstanding::distinct()->whereNotNull('periode')->pluck('periode'))
             ->filter()
             ->map(fn ($p) => $this->normalizePeriodString((string) $p))
             ->unique()
             ->sortDesc()
             ->values();
 
-        // KPI Totals 3 Master
-        $masterForecastCount = $forecastList->count();
-        $masterForecastTotalQty = $forecastList->sum('forecast_qty');
-
-        $masterActualCount = $actualList->count();
-        $masterActualTotalQty = $actualList->sum('actual_qty');
-
-        $masterOutstandingCount = $outstandingList->count();
-        $masterOutstandingTotalQty = $outstandingList->sum('outstanding_qty');
+        $forecastList = $forecastQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->paginate(50, ['*'], 'forecast_page')->withQueryString();
+        $actualList = $actualQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->paginate(50, ['*'], 'actual_page')->withQueryString();
+        $outstandingList = $outstandingQuery->orderBy('periode', 'desc')->orderBy('part_number', 'asc')->paginate(50, ['*'], 'outstanding_page')->withQueryString();
 
         // Data Monitoring Status Pemenuhan Material (Revisi Legacy)
         $fulfillmentMonitoringList = $this->buildFulfillmentMonitoringData($periode, $searchQuery);
@@ -546,21 +544,24 @@ class PurchasingOutstandingController extends Controller
             return $this->buildComparisonDataFallback($comparisonPeriod);
         }
 
-        // Sinkronisasi live data untuk periode yang sedang dilihat agar hasil komparasi selalu 100% akurat
-        $outstandingParts = Outstanding::where('periode', $comparisonPeriod)
-            ->orWhere('period_month', $comparisonPeriod)
-            ->pluck('part_number');
-        $actualParts = Actual::where('periode', $comparisonPeriod)
-            ->orWhere('period_month', $comparisonPeriod)
-            ->pluck('part_number');
-        $faParts = ForecastActual::where('periode', $comparisonPeriod)
-            ->pluck('part_number');
-        $compParts = ComparisonMaster::where('periode', $comparisonPeriod)
-            ->pluck('part_number');
+        // Sinkronisasi data hanya jika tabel komparasi untuk periode ini belum terisi
+        $hasComparison = ComparisonMaster::where('periode', $comparisonPeriod)->exists();
+        if (!$hasComparison) {
+            $outstandingParts = Outstanding::where('periode', $comparisonPeriod)
+                ->orWhere('period_month', $comparisonPeriod)
+                ->pluck('part_number');
+            $actualParts = Actual::where('periode', $comparisonPeriod)
+                ->orWhere('period_month', $comparisonPeriod)
+                ->pluck('part_number');
+            $faParts = ForecastActual::where('periode', $comparisonPeriod)
+                ->pluck('part_number');
+            $compParts = ComparisonMaster::where('periode', $comparisonPeriod)
+                ->pluck('part_number');
 
-        $allParts = $outstandingParts->merge($actualParts)->merge($faParts)->merge($compParts)->unique();
-        foreach ($allParts as $pn) {
-            ComparisonMaster::sync($pn, $comparisonPeriod);
+            $allParts = $outstandingParts->merge($actualParts)->merge($faParts)->merge($compParts)->unique();
+            foreach ($allParts as $pn) {
+                ComparisonMaster::sync($pn, $comparisonPeriod);
+            }
         }
 
         // Baca dari tabel komparasi tersimpan
