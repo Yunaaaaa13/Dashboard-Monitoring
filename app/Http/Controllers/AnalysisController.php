@@ -968,7 +968,9 @@ class AnalysisController extends Controller
 
         // Compute available filter lists
         $availableItemCodes = $comparisonGrid->pluck('item_code')->unique()->sort()->values();
-        $availableVendors   = $comparisonGrid->pluck('supplier')->filter()->unique()->sort()->values();
+        $availableVendors   = $comparisonGrid->pluck('supplier')
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->filter()->unique()->sort()->values();
         $availablePics      = $comparisonGrid->pluck('pic_buyer')->filter(fn($x) => $x !== '-')->unique()->sort()->values();
         $availablePoNumbers = \App\Models\MasterPo::pluck('po')->filter()->unique()->sort()->values();
 
@@ -981,7 +983,8 @@ class AnalysisController extends Controller
                 $res = $res->filter(fn($x) => strtoupper($x->item_code) === strtoupper($itemCode) || strtoupper($x->drawing) === strtoupper($itemCode));
             }
             if ($vendor !== 'ALL') {
-                $res = $res->filter(fn($x) => strtoupper($x->supplier) === strtoupper($vendor));
+                $normVendor = \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($vendor);
+                $res = $res->filter(fn($x) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($x->supplier) === $normVendor);
             }
             if ($pic !== 'ALL') {
                 $res = $res->filter(fn($x) => strtoupper($x->pic_buyer) === strtoupper($pic));
@@ -1725,40 +1728,68 @@ class AnalysisController extends Controller
             ];
         }
 
-        // Compile Top 10 ranking dataset for Slide 2 (Deduplicated by item_code)
+        // Compile Top 10 ranking dataset for Slide 2 (Deduplicated by item_code with full multi-currency normalization)
         $rawTop10Data = $displayGridS2->map(function($g) use ($s2_duration) {
             $sumPoQty = 0;
             $sumActualQty = 0;
             $sumPoAmountUsd = 0.0;
+            $sumPoAmountIdr = 0.0;
             $sumActualAmountUsd = 0.0;
-            $lastActualPrice = 0.0;
+            $sumActualAmountIdr = 0.0;
+            $lastActualPriceUsd = 0.0;
+            $lastActualPriceIdr = 0.0;
             
             for ($i = 1; $i <= $s2_duration; $i++) {
                 $sumPoQty += $g->forecast_grid[$i]->po ?? 0;
                 $sumActualQty += $g->actual_grid[$i]->delivery ?? 0;
-                $sumPoAmountUsd += $g->forecast_grid[$i]->po_amount_usd ?? ($g->forecast_grid[$i]->po_amount ?? 0);
-                $sumActualAmountUsd += $g->actual_grid[$i]->delivery_amount_usd ?? 0;
-                if (($g->actual_grid[$i]->delivery ?? 0) > 0 && isset($g->actual_grid[$i]->price_usd)) {
-                    $lastActualPrice = (float) $g->actual_grid[$i]->price_usd;
+                $sumPoAmountUsd += (float)($g->forecast_grid[$i]->po_amount_usd ?? ($g->forecast_grid[$i]->po_amount ?? 0));
+                $sumPoAmountIdr += (float)($g->forecast_grid[$i]->po_amount_idr ?? (($g->forecast_grid[$i]->po ?? 0) * ($g->forecast_grid[$i]->price_idr ?? 0)));
+                $sumActualAmountUsd += (float)($g->actual_grid[$i]->delivery_amount_usd ?? 0);
+                $sumActualAmountIdr += (float)($g->actual_grid[$i]->delivery_amount_idr ?? (($g->actual_grid[$i]->delivery ?? 0) * ($g->actual_grid[$i]->price_idr ?? ($g->forecast_grid[$i]->price_idr ?? 0))));
+
+                if (($g->actual_grid[$i]->delivery ?? 0) > 0) {
+                    if (isset($g->actual_grid[$i]->price_usd) && $g->actual_grid[$i]->price_usd > 0) {
+                        $lastActualPriceUsd = (float) $g->actual_grid[$i]->price_usd;
+                    }
+                    if (isset($g->actual_grid[$i]->price_idr) && $g->actual_grid[$i]->price_idr > 0) {
+                        $lastActualPriceIdr = (float) $g->actual_grid[$i]->price_idr;
+                    }
                 }
             }
             
-            $priceUsd = $lastActualPrice > 0 ? $lastActualPrice 
-                : (float)($g->actual_price > 0 ? $g->actual_price : ($g->forecast_price ?? 0));
+            $firstMonth = $g->forecast_grid[1] ?? null;
+            $fallbackPriceUsd = (float)($firstMonth->price_usd ?? ($g->actual_price > 0 ? $g->actual_price : ($g->forecast_price ?? 0)));
+            $fallbackPriceIdr = (float)($firstMonth->price_idr ?? ($fallbackPriceUsd * 16600));
+
+            $priceUsd = $lastActualPriceUsd > 0 ? $lastActualPriceUsd : $fallbackPriceUsd;
+            $priceIdr = $lastActualPriceIdr > 0 ? $lastActualPriceIdr : $fallbackPriceIdr;
+
+            // Raw price in its native currency (e.g. IDR 1,719,374 or USD 58.96)
+            $nativeCurrency = strtoupper(trim((string)($g->currency ?? ($g->delivery_category_code === 'IMP' ? 'USD' : ($priceIdr > 10000 ? 'IDR' : 'USD')))));
+            $nativePrice = $nativeCurrency === 'IDR' ? $priceIdr : $priceUsd;
+
             $totalAmtUsd = $sumActualAmountUsd > 0 ? $sumActualAmountUsd 
                 : ($sumActualQty > 0 ? $sumActualQty * $priceUsd : $sumPoAmountUsd);
+            $totalAmtIdr = $sumActualAmountIdr > 0 ? $sumActualAmountIdr 
+                : ($sumActualQty > 0 ? $sumActualQty * $priceIdr : $sumPoAmountIdr);
             
             return [
-                'id'             => $g->id,
-                'item_code'      => strtoupper(trim($g->item_code)),
-                'description'    => $g->description ?: '-',
-                'supplier'       => $g->supplier ?: '-',
-                'pic_buyer'      => $g->pic_buyer ?: '-',
-                'category_name'  => $g->category_name ?: '-',
-                'price'          => $priceUsd,
-                'sum_po_qty'     => $sumPoQty,
-                'sum_actual_qty' => $sumActualQty,
-                'total_amount'   => $totalAmtUsd,
+                'id'               => $g->id,
+                'item_code'        => strtoupper(trim($g->item_code)),
+                'description'      => $g->description ?: '-',
+                'supplier'         => $g->supplier ?: '-',
+                'pic_buyer'        => $g->pic_buyer ?: '-',
+                'category_name'    => $g->category_name ?: '-',
+                'currency'         => $nativeCurrency,
+                'native_price'     => $nativePrice,
+                'price_usd'        => $priceUsd,
+                'price_idr'        => $priceIdr,
+                'price'            => $priceUsd, // backward compatibility
+                'sum_po_qty'       => $sumPoQty,
+                'sum_actual_qty'   => $sumActualQty,
+                'total_amount_usd' => $totalAmtUsd,
+                'total_amount_idr' => $totalAmtIdr,
+                'total_amount'     => $totalAmtUsd, // backward compatibility
             ];
         })->values();
 
@@ -1766,16 +1797,22 @@ class AnalysisController extends Controller
         $top10ItemsData = collect($rawTop10Data)->groupBy('item_code')->map(function($group) {
             $first = $group->first();
             return [
-                'id'             => $first['id'],
-                'item_code'      => $first['item_code'],
-                'description'    => $first['description'],
-                'supplier'       => $first['supplier'],
-                'pic_buyer'      => $first['pic_buyer'],
-                'category_name'  => $first['category_name'],
-                'price'          => $group->max('price'),
-                'sum_po_qty'     => $group->sum('sum_po_qty'),
-                'sum_actual_qty' => $group->sum('sum_actual_qty'),
-                'total_amount'   => $group->sum('total_amount'),
+                'id'               => $first['id'],
+                'item_code'        => $first['item_code'],
+                'description'      => $first['description'],
+                'supplier'         => $first['supplier'],
+                'pic_buyer'        => $first['pic_buyer'],
+                'category_name'    => $first['category_name'],
+                'currency'         => $first['currency'],
+                'native_price'     => $first['native_price'],
+                'price_usd'        => $group->max('price_usd'),
+                'price_idr'        => $group->max('price_idr'),
+                'price'            => $group->max('price_usd'),
+                'sum_po_qty'       => $group->sum('sum_po_qty'),
+                'sum_actual_qty'   => $group->sum('sum_actual_qty'),
+                'total_amount_usd' => $group->sum('total_amount_usd'),
+                'total_amount_idr' => $group->sum('total_amount_idr'),
+                'total_amount'     => $group->sum('total_amount_usd'),
             ];
         })->values();
 
@@ -2904,7 +2941,9 @@ class AnalysisController extends Controller
         });
 
         $availableItemCodes = $outstandingData->pluck('item_code')->unique()->sort()->values();
-        $availableVendors   = $outstandingData->pluck('supplier')->filter()->unique()->sort()->values();
+        $availableVendors   = $outstandingData->pluck('supplier')
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->filter()->unique()->sort()->values();
         $availablePics      = $outstandingData->pluck('pic_buyer')->filter(fn($x) => $x !== '-')->unique()->sort()->values();
         $availablePoNumbers = $outstandingData->pluck('po')->filter()->unique()->sort()->values();
 
@@ -2914,7 +2953,8 @@ class AnalysisController extends Controller
         $monthsRange    = $request->get('months_range', 'ALL');
 
         if ($selectedVendor !== 'ALL') {
-            $outstandingData = $outstandingData->filter(fn($x) => strtoupper($x->supplier) === strtoupper($selectedVendor));
+            $normSelectedVendor = \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($selectedVendor);
+            $outstandingData = $outstandingData->filter(fn($x) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($x->supplier) === $normSelectedVendor);
         }
 
         if ($selectedPic !== 'ALL') {

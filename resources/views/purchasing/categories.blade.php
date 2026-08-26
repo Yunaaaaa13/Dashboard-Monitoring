@@ -43,8 +43,8 @@
 
         .top-navbar {
             background: rgba(18, 24, 38, 0.88);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             border-bottom: 1px solid var(--card-border);
             padding: 0.85rem 1.75rem;
             position: sticky;
@@ -65,9 +65,9 @@
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .form-control-dark, .form-select-dark {
@@ -82,7 +82,7 @@
             background: #111827;
             border-color: var(--accent-gold);
             color: #fff;
-            box-shadow: 0 0 0 0.25rem rgba(226, 179, 74, 0.2);
+            box-shadow: 0 0 0 0.15rem rgba(226, 179, 74, 0.12);
             outline: none;
         }
 
@@ -134,7 +134,7 @@
                     <i class="bi bi-music-note-beamed text-warning fs-4" style="line-height:1; vertical-align:middle;"></i>
                     <span class="brand-logo-text" style="font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; background: linear-gradient(135deg, #ffffff 0%, #e2b34a 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">PT KAWAI INDONESIA</span>
                 </div>
-                <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color:#9ca3af !important;">Master Kategori Material &amp; Kode SKU — Pengadaan Bahan Baku Piano</div>
+                <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color:#9ca3af !important;">Master Kategori Material</div>
             </a>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -189,19 +189,15 @@
                         </div>
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="hero-rate-label">MASTER DATA &amp; CATEGORIES</span>
-                                <span class="badge rounded-pill bg-warning text-dark fw-bold" style="font-size:0.68rem; padding: 2px 8px;">SKU MASTER</span>
                             </div>
                             <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.65rem;">Master Kategori Material &amp; Kode SKU</h2>
                         </div>
                     </div>
-                    <p class="text-muted mb-0 mt-2" style="font-size:0.88rem;">
-                        Kelola klasifikasi kelompok bahan baku, kode kategori, serta pencapaian realisasi unit pengadaan PT Kawai Indonesia.
-                    </p>
+
                 </div>
                 <div class="col-12 col-md-5 mt-3 mt-md-0">
                     <div class="d-flex gap-2 justify-content-md-end align-items-center flex-wrap">
-                        <span class="px-3.5 py-2 rounded-pill fw-bold" style="font-size:0.85rem; background:rgba(226,179,74,0.18); border:1px solid rgba(226,179,74,0.45); color:#fbbf24;">
+                        <span class="px-3.5 py-2 rounded-pill fw-bold" style="font-size:0.85rem; background: rgba(226,179,74,0.15); border: none; color:#fbbf24;">
                             <i class="fa-solid fa-boxes-stacked me-1.5 text-warning"></i> Total Kategori: <strong>{{ $categories->count() }}</strong>
                         </span>
                         @if(Auth::check() && Auth::user()->isAdmin())
@@ -263,7 +259,7 @@
                 <div class="glass-card p-3 d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">KATEGORI AKTIF</div>
-                        <div class="h3 fw-bold text-white mb-0 font-monospace">{{ $activeCount }} <small class="fs-6 text-muted">divisi</small></div>
+                        <div class="h3 fw-bold text-white mb-0 font-monospace">{{ $activeCount }} <small class="fs-6 text-muted">kategori</small></div>
                     </div>
                     <div class="p-3 rounded-circle" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
                         <i class="fa-solid fa-layer-group fs-4"></i>
@@ -277,18 +273,18 @@
             <div class="col-12 col-lg-4">
                 <div class="glass-card">
                     <h4 class="fw-bold mb-1">Tambah Kategori Material</h4>
-                    <p class="text-muted mb-4" style="font-size: 0.85rem;">Kelompok pengadaan bahan baku manufaktur piano</p>
+
 
                     <form action="{{ route('purchasing.categories.store') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Kode Kategori</label>
-                            <input type="text" name="category_code" class="form-control-dark w-100" placeholder="Contoh: PUR-05" required>
+                            <input type="text" name="category_code" class="form-control-dark w-100" placeholder="Kode kategori" required>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Nama Kategori Material</label>
-                            <input type="text" name="category_name" class="form-control-dark w-100" placeholder="Contoh: Aksesoris & Hardware Brass" required>
+                            <input type="text" name="category_name" class="form-control-dark w-100" placeholder="Nama kategori" required>
                         </div>
 
                         <div class="mb-3">
@@ -301,7 +297,7 @@
                                     </option>
                                 @endforeach
                             </select>
-                            <small class="text-muted d-block mt-1">PIC terhubung langsung ke akun pengguna.</small>
+
                         </div>
 
                         <div class="mb-3">
@@ -312,9 +308,9 @@
                         <div class="mb-4">
                             <label class="form-label fw-semibold">Status Kategori</label>
                             <select name="status" class="form-select-dark w-100" required>
-                                <option value="Active">Active (Aktif Dibeli)</option>
-                                <option value="Review">Review (Evaluasi Vendor)</option>
-                                <option value="Hold">Hold (Sementara Ditahan)</option>
+                                <option value="Active">Active</option>
+                                <option value="Review">Review</option>
+                                <option value="Hold">Hold</option>
                             </select>
                         </div>
 
@@ -330,8 +326,7 @@
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <div>
-                            <h4 class="fw-bold mb-1">Daftar Divisi &amp; Kategori Pembelian Aktif</h4>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Divisi Procurement PT Kawai Indonesia (KIIC Karawang)</p>
+                            <h4 class="fw-bold mb-1">Daftar Kategori</h4>
                         </div>
                         <button type="button" id="btnBulkDeleteCategory" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDeleteCategory()">
                             <i class="fa-solid fa-trash me-1"></i> Hapus Terpilih (<span id="bulkDeleteCountCategory">0</span>)
@@ -376,7 +371,7 @@
                                         <td class="text-muted">
                                             @if($cat->buyer)
                                                 <div class="fw-semibold text-white">{{ $cat->buyer->name }}</div>
-                                                <small>{{ $cat->buyer->email }} · {{ strtoupper($cat->buyer->role) }}</small>
+                                                <small>{{ $cat->buyer->email }}</small>
                                             @else
                                                 {{ $cat->pic_buyer }}
                                             @endif
@@ -465,9 +460,9 @@
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Status Kategori</label>
                                 <select name="status" class="form-select-dark w-100" required>
-                                    <option value="Active" {{ $cat->status == 'Active' ? 'selected' : '' }}>Active (Aktif Dibeli)</option>
-                                    <option value="Review" {{ $cat->status == 'Review' ? 'selected' : '' }}>Review (Evaluasi Vendor)</option>
-                                    <option value="Hold" {{ $cat->status == 'Hold' ? 'selected' : '' }}>Hold (Sementara Ditahan)</option>
+                                    <option value="Active" {{ $cat->status == 'Active' ? 'selected' : '' }}>Active</option>
+                                    <option value="Review" {{ $cat->status == 'Review' ? 'selected' : '' }}>Review</option>
+                                    <option value="Hold" {{ $cat->status == 'Hold' ? 'selected' : '' }}>Hold</option>
                                 </select>
                             </div>
                         </div>

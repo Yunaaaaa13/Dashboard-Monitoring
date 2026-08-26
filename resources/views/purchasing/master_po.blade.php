@@ -286,7 +286,19 @@
                 </select>
             </div>
 
-            @if(($periode && $periode !== 'All') || $search || ($selectedDeliveryCategory ?? ''))
+            <div class="d-flex align-items-center gap-2">
+                <label class="text-muted small fw-bold mb-0">Vendor:</label>
+                <select name="supplier" class="form-select form-select-sm form-select-dark" style="min-width: 170px;" onchange="this.form.submit()">
+                    <option value="All">-- Semua Vendor --</option>
+                    @foreach($suppliers ?? [] as $sup)
+                        <option value="{{ $sup }}" {{ (($selectedSupplier ?? 'All') === $sup) ? 'selected' : '' }}>
+                            {{ strlen($sup) > 22 ? substr($sup, 0, 20) . '...' : $sup }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            @if(($periode && $periode !== 'All') || $search || ($selectedDeliveryCategory ?? '') || (($selectedSupplier ?? 'All') !== 'All'))
                 <a href="{{ route('purchasing.master-po') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
                     <i class="bi bi-x-circle me-1"></i> Reset
                 </a>

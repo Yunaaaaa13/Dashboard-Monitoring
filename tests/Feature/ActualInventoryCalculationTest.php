@@ -65,6 +65,82 @@ class ActualInventoryCalculationTest extends TestCase
         $response->assertViewHas('chartOutstandingPo');
         $response->assertViewHas('chartPotentialSupply');
         $response->assertViewHas('chartStatusDistribution');
+        $response->assertViewHas('vendorOverviewList');
+        $response->assertViewHas('vendorChartData');
+    }
+
+    /**
+     * Test: Validasi struktur data diagnostik vendor dan kesiapan dataset diagram area.
+     */
+    public function test_vendor_diagnostic_and_area_chart_data_structure(): void
+    {
+        $user = User::factory()->create(['role' => 'admin']);
+
+        // Vendor A: Critical (Demand = 100, Stock = 10, PO = 0)
+        PurchasingOutstanding::create([
+            'supplier_name' => 'PT. VENDOR CRITICAL',
+            'supplier_code' => 'C001',
+            'part_number'   => 'PART-CRIT-01',
+            'description'   => 'Critical Item',
+            'factory_code'  => 'KIP1',
+            'order_qty'     => 100,
+        ]);
+        Inventory::create([
+            'supplier_name' => 'PT. VENDOR CRITICAL',
+            'supplier_code' => 'C001',
+            'part_number'   => 'PART-CRIT-01',
+            'factory_code'  => 'KIP1',
+            'current_stock' => 10,
+            'tanggal_inventory' => '2026-08-20',
+        ]);
+
+        // Vendor B: Healthy (Demand = 50, Stock = 80, PO = 0)
+        PurchasingOutstanding::create([
+            'supplier_name' => 'PT. VENDOR HEALTHY',
+            'supplier_code' => 'C002',
+            'part_number'   => 'PART-HLTH-01',
+            'description'   => 'Healthy Item',
+            'factory_code'  => 'KIP1',
+            'order_qty'     => 50,
+        ]);
+        Inventory::create([
+            'supplier_name' => 'PT. VENDOR HEALTHY',
+            'supplier_code' => 'C002',
+            'part_number'   => 'PART-HLTH-01',
+            'factory_code'  => 'KIP1',
+            'current_stock' => 80,
+            'tanggal_inventory' => '2026-08-20',
+        ]);
+
+        $response = $this->actingAs($user)->get('/purchasing/actual-inventory');
+        $response->assertStatus(200);
+
+        $vendorList = $response->viewData('vendorOverviewList');
+        $this->assertNotNull($vendorList);
+
+        $vCrit = $vendorList->firstWhere('supplier_name', 'PT. VENDOR CRITICAL');
+        $this->assertNotNull($vCrit);
+        $this->assertEquals('Critical', $vCrit['status']);
+        $this->assertEquals(1, $vCrit['critical_items_count']);
+        $this->assertEquals(90, $vCrit['total_additional_req']);
+        $this->assertNotEmpty($vCrit['status_reason']);
+
+        $vHlth = $vendorList->firstWhere('supplier_name', 'PT. VENDOR HEALTHY');
+        $this->assertNotNull($vHlth);
+        $this->assertEquals('Healthy', $vHlth['status']);
+        $this->assertEquals(1, $vHlth['healthy_items_count']);
+        $this->assertEquals(0, $vHlth['total_additional_req']);
+        $this->assertEquals(100.0, $vHlth['health_score_pct']);
+
+        // Validasi struktur vendorChartData untuk Chart.js Area Chart
+        $chartData = $response->viewData('vendorChartData');
+        $this->assertIsArray($chartData);
+        $this->assertArrayHasKey('labels', $chartData);
+        $this->assertArrayHasKey('in_demand', $chartData);
+        $this->assertArrayHasKey('actual_inventory', $chartData);
+        $this->assertArrayHasKey('outstanding_po', $chartData);
+        $this->assertArrayHasKey('statuses', $chartData);
+        $this->assertCount(2, $chartData['labels']);
     }
 
     /**

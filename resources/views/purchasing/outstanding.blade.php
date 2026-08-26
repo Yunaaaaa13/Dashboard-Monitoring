@@ -4,179 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard Master Data Purchasing - PT Kawai Indonesia</title>
-    <meta name="description" content="Dashboard Master Data 3-in-1 (Outstanding, Actual, Forecast) PT Kawai Indonesia">
+    <meta name="description" content="Dashboard Master Forecast PT Kawai Indonesia">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // High Performance Global Functions for Step 1 Checkbox & Delete
-        window.toggleSelectAllPlant3 = function(masterCb) {
-            const isChecked = masterCb ? masterCb.checked : false;
-            const checkboxes = document.querySelectorAll('.row-checkbox-plant3');
-            for (let i = 0; i < checkboxes.length; i++) {
-                checkboxes[i].checked = isChecked;
-            }
-            window.updatePlant3BulkBtn();
-        };
-
-        window.updatePlant3BulkBtn = function() {
-            const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
-            const allCheckboxes = document.querySelectorAll('.row-checkbox-plant3');
-            const checkAllPlant3 = document.getElementById('checkAllPlant3');
-            const btnBulkDeletePlant3 = document.getElementById('btnBulkDeletePlant3');
-            const countSpanPlant3 = document.getElementById('bulkDeleteCountPlant3');
-
-            if (checkAllPlant3 && allCheckboxes.length > 0) {
-                checkAllPlant3.checked = (checked.length === allCheckboxes.length);
-            }
-
-            if (btnBulkDeletePlant3) {
-                if (checked.length > 0) {
-                    btnBulkDeletePlant3.classList.remove('d-none');
-                    if (countSpanPlant3) countSpanPlant3.innerText = checked.length;
-                } else {
-                    btnBulkDeletePlant3.classList.add('d-none');
-                }
-            }
-        };
-
-        window.confirmBulkDeletePlant3 = function() {
-            const checked = document.querySelectorAll('.row-checkbox-plant3:checked');
-            const total = document.querySelectorAll('.row-checkbox-plant3').length;
-            if (checked.length === 0) return;
-            
-            const container = document.getElementById('bulkDeletePlant3IdsContainer');
-            if (container) {
-                container.innerHTML = '';
-                const frag = document.createDocumentFragment();
-                if (checked.length === total && total > 0) {
-                    const inputAll = document.createElement('input');
-                    inputAll.type = 'hidden';
-                    inputAll.name = 'delete_all';
-                    inputAll.value = '1';
-                    frag.appendChild(inputAll);
-                } else {
-                    checked.forEach(cb => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'ids[]';
-                        input.value = cb.value;
-                        frag.appendChild(input);
-                    });
-                }
-                container.appendChild(frag);
-            }
-
-            const countText = document.getElementById('bulkDeletePlant3CountText');
-            if (countText) countText.innerText = checked.length;
-
-            const modalEl = document.getElementById('modalBulkDeletePlant3Confirm');
-            if (modalEl && typeof bootstrap !== 'undefined') {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.show();
-            } else {
-                if (window.confirm(`Hapus ${checked.length} data monitoring terpilih?`)) {
-                    const form = document.getElementById('formBulkDeletePlant3');
-                    if (form) form.submit();
-                }
-            }
-        };
-
-        window.confirmDeleteAllPlant3 = function() {
-            const modalEl = document.getElementById('modalDeleteAllPlant3Confirm');
-            if (modalEl && typeof bootstrap !== 'undefined') {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.show();
-            } else {
-                if (window.confirm('PERINGATAN: Apakah Anda yakin ingin MENGHAPUS SEMUA DATA Step 1?')) {
-                    const form = document.createElement('form');
-                    form.method = 'POST';
-                    form.action = "{{ route('purchasing.outstanding.destroy-all') }}";
-                    const csrf = document.createElement('input');
-                    csrf.type = 'hidden';
-                    csrf.name = '_token';
-                    csrf.value = "{{ csrf_token() }}";
-                    form.appendChild(csrf);
-                    document.body.appendChild(form);
-                    form.submit();
-                }
-            }
-        };
-
-        window.toggleSelectAllForecast = function(masterCb) {
-            const isChecked = masterCb ? masterCb.checked : false;
-            const checkboxes = document.querySelectorAll('.row-checkbox-forecast');
-            for (let i = 0; i < checkboxes.length; i++) {
-                checkboxes[i].checked = isChecked;
-            }
-            window.updateForecastBulkBtn();
-        };
-
-        window.updateForecastBulkBtn = function() {
-            const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
-            const allCheckboxes = document.querySelectorAll('.row-checkbox-forecast');
-            const checkAllForecast = document.getElementById('checkAllForecast');
-            const btnBulkDeleteForecast = document.getElementById('btnBulkDeleteForecast');
-            const countSpanForecast = document.getElementById('bulkDeleteCountForecast');
-
-            if (checkAllForecast && allCheckboxes.length > 0) {
-                checkAllForecast.checked = (checked.length === allCheckboxes.length);
-            }
-
-            if (btnBulkDeleteForecast) {
-                if (checked.length > 0) {
-                    btnBulkDeleteForecast.classList.remove('d-none');
-                    if (countSpanForecast) countSpanForecast.innerText = checked.length;
-                } else {
-                    btnBulkDeleteForecast.classList.add('d-none');
-                }
-            }
-        };
-
-        window.confirmBulkDeleteForecast = function() {
-            const checked = document.querySelectorAll('.row-checkbox-forecast:checked');
-            const total = document.querySelectorAll('.row-checkbox-forecast').length;
-            if (checked.length === 0) return;
-            
-            const container = document.getElementById('bulkDeleteForecastIdsContainer');
-            if (container) {
-                container.innerHTML = '';
-                const frag = document.createDocumentFragment();
-                if (checked.length === total && total > 0) {
-                    const inputAll = document.createElement('input');
-                    inputAll.type = 'hidden';
-                    inputAll.name = 'delete_all';
-                    inputAll.value = '1';
-                    frag.appendChild(inputAll);
-                } else {
-                    checked.forEach(cb => {
-                        const input = document.createElement('input');
-                        input.type = 'hidden';
-                        input.name = 'ids[]';
-                        input.value = cb.value;
-                        frag.appendChild(input);
-                    });
-                }
-                container.appendChild(frag);
-            }
-
-            const countText = document.getElementById('bulkDeleteForecastCountText');
-            if (countText) countText.innerText = checked.length;
-
-            const modalEl = document.getElementById('modalBulkDeleteForecastConfirm');
-            if (modalEl && typeof bootstrap !== 'undefined') {
-                const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
-                modal.show();
-            } else {
-                if (window.confirm(`Hapus ${checked.length} data forecast terpilih?`)) {
-                    const form = document.getElementById('formBulkDeleteForecast');
-                    if (form) form.submit();
-                }
-            }
-        };
-    </script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" href="{{ asset('css/kawai-theme.css') }}">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -210,8 +43,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .glass-card:hover {
-            border-color: rgba(16, 185, 129, 0.3);
-            box-shadow: 0 15px 35px rgba(16, 185, 129, 0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
         }
         .nav-pills-custom .nav-link {
             color: var(--text-muted);
@@ -229,7 +61,7 @@
         .nav-pills-custom .nav-link.active {
             background: linear-gradient(135deg, var(--accent-emerald) 0%, #059669 100%);
             color: #fff;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.35);
+            box-shadow: none;
             border-color: transparent;
         }
         .table-custom, .table-dark-custom, .table {
@@ -281,8 +113,7 @@
             transition: all 0.2s ease;
         }
         .btn-custom-add:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.2);
             color: white;
         }
         .filter-select {
@@ -334,7 +165,7 @@
             background-color: rgba(255, 255, 255, 0.12) !important;
             border-color: var(--accent-gold) !important;
             color: #fff !important;
-            box-shadow: 0 0 0 0.2rem rgba(245, 158, 11, 0.25) !important;
+            box-shadow: 0 0 0 0.15rem rgba(245, 158, 11, 0.12) !important;
         }
         .badge-period {
             background: rgba(245, 158, 11, 0.15);
@@ -401,8 +232,7 @@
             </div>
             <div>
                 <h1 class="page-title-text">Master Forecast &amp; Live Ratio</h1>
-                <p class="page-subtitle-text">Rencana kebutuhan material bulanan dan simulasi stok berantai PT Kawai Indonesia.</p>
-            </div>
+                </div>
         </div>
         <div class="kawai-page-actions">
             <button type="button" class="btn-kawai-secondary" data-bs-toggle="modal" data-bs-target="#modalImportPlant3">
@@ -457,7 +287,7 @@
         <div class="col-12">
             <div class="kpi-card kpi-card-blue">
                 <div class="kpi-header">
-                    <span class="kpi-title">MASTER FORECAST — RENCANA KEBUTUHAN MATERIAL</span>
+                    <span class="kpi-title">MASTER FORECAST</span>
                     <div class="kpi-icon-box icon-blue">
                         <i class="bi bi-graph-up-arrow"></i>
                     </div>
@@ -509,10 +339,7 @@
                         <h4 class="fw-bold text-white mb-1">
                             <i class="bi bi-calendar-range text-gold me-2"></i> Monitoring PT KAWAI & Live Ratio
                         </h4>
-                        <p class="text-muted small mb-0">
-                            Format multi-bulan dengan kalkulasi otomatis <b>Ratio (%)</b> = <code>(Stock Bulan Ini / PROD Bulan Berikutnya) × 100%</code> dan <b>Stock</b> = <code>Prev Stock + PO - PROD</code>.
-                        </p>
-                    </div>
+                        </div>
                     
                     <div class="d-flex align-items-center gap-2 flex-wrap">
                         <button type="button" id="btnBulkDeletePlant3" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDeletePlant3()">
@@ -526,7 +353,7 @@
                         <form action="{{ route('purchasing.outstanding.months') }}" method="POST" class="d-flex align-items-center gap-2 bg-dark bg-opacity-50 p-2 rounded-4 border border-secondary border-opacity-25">
                             @csrf
                             <div class="d-flex align-items-center gap-1">
-                                <span class="badge bg-dark bg-opacity-75 text-warning border border-warning border-opacity-40 px-2.5 py-1.5 rounded-3 fw-bold ms-1" style="font-size:0.8rem;" title="Pre-Month terkunci sesuai data Excel/DB yang diunggah">
+                                <span class="badge bg-dark bg-opacity-75 text-warning border border-warning border-opacity-40 px-2.5 py-1.5 rounded-3 fw-bold ms-1" style="font-size:0.8rem;" title="Bulan sebelumnya">
                                     <i class="bi bi-lock-fill me-1 text-warning"></i> Pre-Month: {{ $startMonth }}
                                 </span>
                             </div>
@@ -553,23 +380,37 @@
                 </div>
 
                 <div class="row g-3 mb-3 align-items-center">
-                    <div class="col-md-6 col-lg-5">
+                    <div class="col-md-5 col-lg-4">
                         <div class="input-group input-group-sm">
                             <span class="input-group-text bg-dark border-secondary border-opacity-50 text-muted"><i class="bi bi-search"></i></span>
                             <input type="text" id="searchPlant3" class="form-control form-control-dark border-secondary border-opacity-50" placeholder="Cari Part Number, Description, Supplier..." onkeyup="filterPlant3Table()">
                         </div>
                     </div>
-                    <div class="col-md-6 col-lg-7 d-flex justify-content-md-end align-items-center gap-2">
-                        <form method="GET" action="{{ route('purchasing.outstanding') }}" class="d-flex align-items-center gap-2">
+                    <div class="col-md-7 col-lg-8 d-flex justify-content-md-end align-items-center gap-2 flex-wrap">
+                        <form method="GET" action="{{ route('purchasing.outstanding') }}" class="d-flex align-items-center gap-2 flex-wrap">
                             @if(request('status')) <input type="hidden" name="status" value="{{ request('status') }}"> @endif
                             @if(request('search')) <input type="hidden" name="search" value="{{ request('search') }}"> @endif
-                            <label class="text-muted small fw-bold text-nowrap mb-0"><i class="bi bi-list-nested me-1"></i> Tampilkan:</label>
-                            <select name="per_page" class="form-select form-select-sm form-select-dark border-secondary border-opacity-50" style="width: 130px;" onchange="this.form.submit()">
+                            
+                            <label class="text-muted small fw-bold text-nowrap mb-0"><i class="bi bi-building me-1"></i> Vendor:</label>
+                            <select name="supplier" class="form-select form-select-sm form-select-dark border-secondary border-opacity-50" style="min-width: 170px; max-width: 220px;" onchange="this.form.submit()">
+                                <option value="All">-- Semua Vendor --</option>
+                                @foreach($suppliers ?? [] as $sup)
+                                    <option value="{{ $sup }}" {{ (($supplierFilter ?? 'All') === $sup) ? 'selected' : '' }}>
+                                        {{ strlen($sup) > 22 ? substr($sup, 0, 20) . '...' : $sup }}
+                                    </option>
+                                @endforeach
+                            </select>
+
+                            <label class="text-muted small fw-bold text-nowrap mb-0 ms-1"><i class="bi bi-list-nested me-1"></i> Tampilkan:</label>
+                            <select name="per_page" class="form-select form-select-sm form-select-dark border-secondary border-opacity-50" style="width: 110px;" onchange="this.form.submit()">
                                 <option value="25" {{ ($perPageParam ?? '50') == '25' ? 'selected' : '' }}>25 baris</option>
                                 <option value="50" {{ ($perPageParam ?? '50') == '50' ? 'selected' : '' }}>50 baris</option>
                                 <option value="100" {{ ($perPageParam ?? '50') == '100' ? 'selected' : '' }}>100 baris</option>
                                 <option value="ALL" {{ ($perPageParam ?? '50') == 'ALL' ? 'selected' : '' }}>Semua Data</option>
                             </select>
+                            @if(($supplierFilter ?? 'All') !== 'All')
+                                <a href="{{ route('purchasing.outstanding') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
+                            @endif
                         </form>
                     </div>
                 </div>
@@ -652,7 +493,7 @@
                                          <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 px-2 py-1 fs-6 font-monospace"><i class="bi bi-upc-scan me-1"></i>{{ $item->part_number ?: ($item->drawing ?: '-') }}</span>
                                     </td>
                                     <td class="text-center">
-                                         <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1 font-monospace"><i class="bi bi-building-gear me-1"></i>{{ $item->factory_code ?: 'KIP 1' }}</span>
+                                         <span class="badge bg-warning bg-opacity-25 text-warning border border-secondary border-opacity-25 px-2 py-1 font-monospace"><i class="bi bi-building-gear me-1"></i>{{ $item->factory_code ?: 'KIP 1' }}</span>
                                     </td>
                                     <td>
                                         @if($item->category)
@@ -752,7 +593,7 @@
                                 <tr>
                                     <td colspan="{{ 15 + ($duration * 11) }}" class="text-center py-5 text-muted">
                                         <i class="bi bi-inbox fs-2 d-block mb-2 text-warning"></i>
-                                        Belum ada data Part Number monitoring PT KAWAI. Klik tombol <b>+ Input Incoming & Ratio</b> di atas untuk menambahkan.
+                                        Belum ada data.
                                     </td>
                                 </tr>
                             @endforelse
@@ -772,8 +613,6 @@
                 @endif
             </div>
         </div>
-
-        <!-- Removed redundant sub-tabs (Step 2 Master Outstanding and Step 3 Master Actual) by user request -->
 
         <!-- ════════════ TAB 3: MASTER FORECAST ════════════ -->
         <div class="tab-pane fade" id="tab-forecast" role="tabpanel" aria-labelledby="tab-forecast-btn">
@@ -839,7 +678,7 @@
                                 </td>
                                 <td class="text-muted fw-semibold">{{ $index + 1 }}</td>
                                 <td class="fw-bold text-white">{{ $item->part_number }}</td>
-                                <td class="text-center"><span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1 font-monospace">{{ $item->factory_code ?: 'KIP 1' }}</span></td>
+                                <td class="text-center"><span class="badge bg-warning bg-opacity-25 text-warning border border-secondary border-opacity-25 px-2 py-1 font-monospace">{{ $item->factory_code ?: 'KIP 1' }}</span></td>
                                 <td>{{ $item->description ?? '-' }}</td>
                                 <td><span class="fw-medium text-info small">{{ $item->supplier_name ?? '-' }}</span></td>
                                 <td><span class="badge-period">{{ $item->periode }}</span></td>
@@ -861,7 +700,7 @@
                                     @if($po > 0)
                                         {{ number_format($po) }}
                                     @else
-                                        <span class="badge bg-dark border border-secondary text-muted">0 (Auto)</span>
+                                        <span class="badge bg-dark border border-secondary text-muted">0</span>
                                     @endif
                                 </td>
                                 <td class="text-end fw-bold text-primary fs-6">{{ number_format($item->forecast_qty) }}</td>
@@ -869,7 +708,7 @@
                                     @if($delivery > 0)
                                         {{ number_format($delivery) }}
                                     @else
-                                        <span class="badge bg-dark border border-secondary text-muted">0 (Auto)</span>
+                                        <span class="badge bg-dark border border-secondary text-muted">0</span>
                                     @endif
                                 </td>
                                 <td class="text-end font-monospace text-info fw-bold text-nowrap" style="white-space: nowrap; font-size: 0.82rem;">{{ number_format($stkQty) }}</td>
@@ -912,8 +751,7 @@
                 <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 pb-3 border-bottom border-secondary border-opacity-25 gap-2">
                     <div>
                         <h4 class="fw-bold text-white mb-1"><i class="bi bi-clipboard-check text-info me-2"></i> Monitoring Status Pemenuhan Material</h4>
-                        <p class="text-muted small mb-0">Halaman operasional harian untuk memonitor progres pemenuhan material berdasarkan sinkronisasi data dari 3 Master (Forecast, Actual, Outstanding).</p>
-                    </div>
+                        </div>
                     <div class="d-flex align-items-center gap-2">
                         <span class="badge bg-primary bg-opacity-25 text-primary border border-primary px-3 py-2 rounded-pill small">
                             <i class="bi bi-calendar-check me-1"></i> Periode: {{ $periode && $periode !== 'All' ? $periode : 'Semua Periode' }}
@@ -960,8 +798,7 @@
                                 <i class="bi bi-pie-chart fs-5" style="color: #c084fc;"></i>
                             </div>
                             <h3 class="fw-bold mb-0 mt-2" style="color: #c084fc;">{{ $monitoringFulfillmentPct ?? 0 }}%</h3>
-                            <div class="small text-muted mt-1">Actual / Forecast &times; 100</div>
-                        </div>
+                            </div>
                     </div>
                 </div>
 
@@ -1097,11 +934,11 @@
                 @csrf
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label text-light small fw-semibold">1. Item Code (Drawing) <span class="badge bg-primary bg-opacity-25 text-primary ms-1">PRIMARY KEY</span> <span class="text-danger">*</span></label>
+                        <label class="form-label text-light small fw-semibold">1. Item Code (Drawing) <span class="text-danger">*</span></label>
                         <input type="text" name="drawing" class="form-control form-control-dark border-primary" placeholder="Contoh: ITM-0001 / DWG-SPEC">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-light small fw-semibold">2. No. PO / Ref (Part Number) <span class="badge bg-success bg-opacity-25 text-success ms-1">SECONDARY KEY</span> <span class="text-danger">*</span></label>
+                        <label class="form-label text-light small fw-semibold">2. No. PO / Ref (Part Number) <span class="text-danger">*</span></label>
                         <input type="text" name="part_number" class="form-control form-control-dark border-success" required placeholder="Contoh: PO-KW-0726">
                     </div>
                     <div class="mb-3">
@@ -1144,11 +981,11 @@
                 @method('PUT')
                 <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label text-light small fw-semibold">1. Item Code (Drawing) <span class="badge bg-primary bg-opacity-25 text-primary ms-1">PRIMARY KEY</span></label>
+                        <label class="form-label text-light small fw-semibold">1. Item Code (Drawing)</label>
                         <input type="text" name="drawing" id="edit_out_drawing" class="form-control form-control-dark border-primary">
                     </div>
                     <div class="mb-3">
-                        <label class="form-label text-light small fw-semibold">2. No. PO / Ref (Part Number) <span class="badge bg-success bg-opacity-25 text-success ms-1">SECONDARY KEY</span> <span class="text-danger">*</span></label>
+                        <label class="form-label text-light small fw-semibold">2. No. PO / Ref (Part Number) <span class="text-danger">*</span></label>
                         <input type="text" name="part_number" id="edit_out_part_number" class="form-control form-control-dark border-success" required readonly style="opacity: 0.7;">
                     </div>
                     <div class="mb-3">
@@ -1402,57 +1239,10 @@
         </div>
     </div>
 </div>
-<!-- Modal Import Excel Step 1 (PT KAWAI) -->
-<div class="modal fade" id="modalImportPlant3" tabindex="-1" aria-labelledby="modalImportPlant3Label" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content modal-content-dark border-secondary text-white">
-            <div class="modal-header border-bottom border-secondary border-opacity-25 py-3 px-4">
-                <h5 class="modal-title fw-bold" id="modalImportPlant3Label">
-                    <i class="bi bi-file-earmark-spreadsheet-fill text-success me-2 fs-5"></i>Import Step 1 dari Excel
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form action="{{ route('purchasing.outstanding.import') }}" method="POST" enctype="multipart/form-data">
-                @csrf
-                <div class="modal-body p-4">
-                    <div class="alert alert-info border border-info border-opacity-50 text-light p-3 mb-4 rounded-3 small" style="background: rgba(14, 165, 233, 0.1);">
-                        <div class="fw-bold text-info mb-1"><i class="bi bi-info-circle-fill me-1"></i>Format Excel / Kolom yang Diterima:</div>
-                        <ul class="mb-0 ps-3">
-                            <li>Baris header harus memiliki kolom: <code>PN</code> (Item Code), <code>DESCRIPTION</code>, <code>PLAN STOCK</code>.</li>
-                            <li>Bulan-bulan berikutnya terdeteksi otomatis (contoh: <code>AUG</code>, <code>SEP</code>, <code>OCT</code>).</li>
-                            <li>Untuk setiap bulan baru, sertakan kolom <code>PO</code> dan <code>PROD</code> di bawah nama bulan.</li>
-                            <li>Kolom kalkulasi <b>Ratio</b> dan <b>Stock</b> akan dihitung otomatis oleh sistem dan tidak perlu diunggah.</li>
-                        </ul>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-warning small fw-bold">Mata Uang Default Import (Mata Uang Harga)</label>
-                        <select name="import_currency" class="form-select bg-dark text-warning border-secondary fw-bold">
-                            <option value="ALL" selected>ALL / Otomatis (Multi-Currency Sesuai File Excel)</option>
-                            <option value="USD">USD ($ - Dollar)</option>
-                            <option value="IDR">IDR (Rp - Rupiah)</option>
-                        </select>
-                        <div class="form-text text-muted fs-7">Jika Excel tidak memiliki kolom 'Currency' / 'Mata Uang', sistem akan menggunakan pilihan ini.</div>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-muted small fw-semibold">Pilih File Excel / CSV (.xlsx, .xls, .csv) <span class="badge bg-secondary ms-1">max 5 MB</span></label>
-                        <input type="file" name="file" class="form-control bg-dark text-white border-secondary" required accept=".xlsx,.xls,.csv,.txt">
-                        <div class="form-text text-muted" style="font-size:0.75rem;">File yang di-upload akan diproses otomatis: kolom bulan, PO, PROD, STOCK, OUTSTANDING terdeteksi cerdas dari struktur header Excel.</div>
-                    </div>
-                </div>
-                <div class="modal-footer border-top border-secondary border-opacity-25 py-3 px-4">
-                    <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
-                    <button type="submit" class="btn btn-success fw-bold text-white rounded-pill px-4 shadow-sm">
-                        <i class="bi bi-upload me-1"></i> Unggah & Proses
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 <!-- ════════════ MODAL ADD DATA & LIVE RATIO PT KAWAI ════════════ -->
 <div class="modal fade" id="modalAddPlant3" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border border-warning border-opacity-50 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
+        <div class="modal-content border border-secondary border-opacity-25 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
             <div class="modal-header px-4 py-3 border-bottom border-secondary border-opacity-25" style="background: #1e293b !important;">
                 <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
                     <i class="bi bi-plus-circle-fill text-warning fs-4"></i>
@@ -1463,19 +1253,8 @@
             <div class="modal-body p-4" style="background: #0b1120 !important;">
                 <form action="{{ route('purchasing.outstanding.store') }}" method="POST" id="formAddPlant3">
                     @csrf
-                    <div class="alert alert-info border border-info border-opacity-50 text-light p-3 mb-4 rounded-3 small" style="background: rgba(14, 165, 233, 0.1);">
-                        <div class="d-flex align-items-center gap-2 mb-1 fw-bold text-info fs-6">
-                            <i class="bi bi-info-circle-fill"></i> Rumus Kalkulasi Otomatis PT Kawai Indonesia:
-                        </div>
-                        <ul class="mb-0 ps-3">
-                            <li><b>Stock Bulan ke-i</b> = <code>Stock Bulan Sebelumnya + PO Bulan Ini - PROD Bulan Ini</code></li>
-                            <li><b>Ratio (%) Bulan ke-i</b> = <code>(Stock Bulan ke-i / PROD Bulan Berikutnya) × 100%</code></li>
-                            <li><i>Input angka pada kolom PO atau PROD di bawah untuk melihat kalkulasi Ratio secara langsung (Real-Time)!</i></li>
-                        </ul>
-                    </div>
-
                     <!-- Pilih Durasi & Bulan Mulai Monitoring -->
-                    <div class="row g-3 mb-4 p-3 rounded-3 border border-warning border-opacity-50 align-items-center shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
+                    <div class="row g-3 mb-4 p-3 rounded-3 border border-secondary border-opacity-25 align-items-center shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
                         <div class="col-md-4">
                             <label class="form-label text-warning small fw-bold mb-1"><i class="bi bi-calendar-check me-1"></i> Bulan Mulai (Start Month)</label>
                             <select name="start_month" id="add_start_month" class="form-select border-warning text-warning fw-bold" onchange="updateModalMonthsDisplay('add')" style="background-color: #1a2234 !important; color: #fbbf24 !important;">
@@ -1513,7 +1292,7 @@
                     <div class="row g-3 mb-4 p-3 rounded-3 border border-secondary border-opacity-25" style="background: rgba(30, 41, 59, 0.6);">
                         <div class="col-md-3">
                             <label class="form-label text-light small fw-bold d-flex justify-content-between align-items-center mb-1">
-                                <span>Item Code (Drawing) <span class="badge bg-primary bg-opacity-25 text-info ms-1">PRIMARY KEY</span></span>
+                                <span>Item Code (Drawing)</span>
                                 <button type="button" class="btn p-0 text-info text-decoration-none small fw-bold" onclick="openItemCodeSelectorModal('add_drawing', 'add_description_input')">
                                     <i class="bi bi-window-stack"></i> Pop-up
                                 </button>
@@ -1651,7 +1430,7 @@
 <!-- ════════════ MODAL EDIT DATA & LIVE RATIO PT KAWAI ════════════ -->
 <div class="modal fade" id="modalEditPlant3" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border border-warning border-opacity-50 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
+        <div class="modal-content border border-secondary border-opacity-25 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
             <div class="modal-header px-4 py-3 border-bottom border-secondary border-opacity-25" style="background: #1e293b !important;">
                 <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
                     <i class="bi bi-pencil-square text-warning fs-4"></i>
@@ -1664,7 +1443,7 @@
                     @csrf
                     @method('PUT')
                     <!-- Pilih Durasi & Bulan Mulai Monitoring -->
-                    <div class="row g-3 mb-4 p-3 rounded-3 border border-warning border-opacity-50 align-items-center shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
+                    <div class="row g-3 mb-4 p-3 rounded-3 border border-secondary border-opacity-25 align-items-center shadow-sm" style="background: rgba(245, 158, 11, 0.08);">
                         <div class="col-md-4">
                             <label class="form-label text-warning small fw-bold mb-1"><i class="bi bi-calendar-check me-1"></i> Bulan Mulai (Start Month)</label>
                             <select name="start_month" id="edit_plant3_start_month" class="form-select border-warning text-warning fw-bold" onchange="updateModalMonthsDisplay('edit')" style="background-color: #1a2234 !important; color: #fbbf24 !important;">
@@ -1700,7 +1479,7 @@
 
                     <div class="row g-3 mb-4 p-3 rounded-3 border border-secondary border-opacity-25" style="background: rgba(30, 41, 59, 0.6);">
                         <div class="col-md-3">
-                            <label class="form-label text-light small fw-bold">Item Code (Drawing) <span class="badge bg-primary bg-opacity-25 text-info ms-1">PRIMARY KEY</span></label>
+                            <label class="form-label text-light small fw-bold">Item Code (Drawing)</label>
                             <input type="text" name="drawing" id="edit_plant3_drawing" class="form-control text-white fw-bold" style="background-color: #1a2234 !important; color: #ffffff !important; border: 1px solid #3b82f6 !important;" list="registeredItemCodesList" onchange="autoFillItemDescription(this, 'edit_plant3_description'); document.getElementById('edit_plant3_part_number').value = this.value;" oninput="autoFillItemDescription(this, 'edit_plant3_description'); document.getElementById('edit_plant3_part_number').value = this.value;">
                         </div>
                         <div class="col-md-3" style="display:none;">
@@ -1817,7 +1596,7 @@
 <!-- ════════════ MODAL SMART IMPORT EXCEL (ENHANCED v2) ════════════ -->
 <div class="modal fade" id="modalImportPlant3" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content border border-success border-opacity-50 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
+        <div class="modal-content border border-secondary border-opacity-25 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
             <div class="modal-header px-4 py-3 border-bottom border-secondary border-opacity-25" style="background: #1e293b !important;">
                 <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-spreadsheet-fill text-success fs-4"></i>
@@ -1864,19 +1643,6 @@
                         <div class="mt-2 text-muted" style="font-size: 0.72rem;">
                             <i class="bi bi-info-circle me-1"></i>Header bisa 1-3 baris. Bulan, QTY, AMOUNT terdeteksi otomatis. Data dimulai setelah header terakhir.
                         </div>
-                    </div>
-
-                    <!-- Smart Mapping Info -->
-                    <div class="alert alert-success border border-success border-opacity-50 text-light p-3 mb-3 rounded-3 small" style="background: rgba(16, 185, 129, 0.1);">
-                        <div class="d-flex align-items-center gap-2 mb-2 fw-bold text-success fs-6">
-                            <i class="bi bi-cpu-fill"></i> Fitur Smart Mapping v2:
-                        </div>
-                        <ul class="mb-0 ps-3" style="font-size: 0.78rem;">
-                            <li><strong>Multi-row header</strong> (1-3 baris) otomatis terdeteksi — Bulan, Group, QTY/AMOUNT</li>
-                            <li><strong>QTY vs AMOUNT</strong> otomatis dibedakan per group (PO, Outstanding, Stock, Forecast, Incoming)</li>
-                            <li><strong>Auto-sync Forecast</strong> — Data otomatis tersinkron ke Master Forecast & dropdown bulan</li>
-                            <li><strong>Tanggal otomatis</strong> — Dropdown Mulai/Tahun otomatis mengikuti bulan di Excel</li>
-                        </ul>
                     </div>
 
                     <!-- Currency Selector -->
@@ -1949,7 +1715,7 @@
                         <div class="progress" style="height: 6px; background: rgba(255,255,255,0.1);">
                             <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" style="width: 100%"></div>
                         </div>
-                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Parsing header, mapping kolom, sinkronisasi forecast...</div>
+                        <div class="text-muted mt-1" style="font-size: 0.7rem;">Memproses data...</div>
                     </div>
                 </div>
                 <div class="modal-footer px-4 py-3 border-top border-secondary border-opacity-25" style="background: #1e293b !important;">
@@ -1980,7 +1746,7 @@
                 <button type="button" class="btn-close btn-close-white" onclick="closeDuplicateModal()"></button>
             </div>
             <div class="modal-body p-4" style="background: #0b1120 !important;">
-                <div class="alert alert-warning border border-warning border-opacity-50 text-light p-3 mb-3 rounded-3 small" style="background: rgba(245, 158, 11, 0.1);">
+                <div class="alert alert-warning border border-secondary border-opacity-25 text-light p-3 mb-3 rounded-3 small" style="background: rgba(245, 158, 11, 0.1);">
                     <div class="d-flex align-items-center gap-2 mb-2 fw-bold text-warning fs-6">
                         <i class="bi bi-info-circle-fill me-1"></i> Informasi Pengunggahan File Excel:
                     </div>
@@ -2018,7 +1784,7 @@
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
                                         @foreach($dup['rows'] as $rNum)
-                                        <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1">Baris {{ $rNum }}</span>
+                                        <span class="badge bg-warning bg-opacity-25 text-warning border border-secondary border-opacity-25 px-2 py-1">Baris {{ $rNum }}</span>
                                         @endforeach
                                     </div>
                                 </td>
@@ -2030,11 +1796,9 @@
                 </div>
             </div>
             <div class="modal-footer px-4 py-3 border-top border-secondary border-opacity-25 d-flex justify-content-between" style="background: #1e293b !important;">
-                <span class="text-muted small" style="font-size: 0.74rem;">
-                    <i class="bi bi-lightbulb me-1"></i>Tips: Buka Excel Anda dan gunakan tombol <code>Ctrl + F</code> untuk mencari Item Code di atas.
-                </span>
+                
                 <button type="button" class="btn btn-warning fw-bold rounded-pill px-5 shadow" onclick="closeDuplicateModal()">
-                    <i class="bi bi-check-circle-fill me-1"></i> Saya Mengerti &amp; Tutup
+                    <i class="bi bi-check-circle-fill me-1"></i> Tutup
                 </button>
             </div>
         </div>
@@ -2528,9 +2292,8 @@ function showImportProgress() {
                 <div class="modal-body">
                     <div class="alert alert-danger bg-danger bg-opacity-20 border border-danger border-opacity-50 text-white small mb-3">
                         <i class="bi bi-exclamation-triangle-fill me-2 fs-5 align-middle"></i>
-                        <strong>PERINGATAN:</strong> Tindakan ini akan <strong>MENGHAPUS SELURUH DATA</strong> Monitoring PT KAWAI &amp; Purchasing Outstanding (Step 1) dari sistem secara permanen.
+                        <strong>PERINGATAN:</strong> Tindakan ini akan menghapus seluruh data secara permanen.
                     </div>
-                    <p class="mb-1">Gunakan opsi ini jika Anda ingin mengosongkan tabel untuk memulai unggah ulang data baru dari nol.</p>
                     <p class="text-warning small mb-0">Apakah Anda yakin ingin melanjutkan?</p>
                 </div>
                 <div class="modal-footer border-secondary border-opacity-25">

@@ -482,7 +482,15 @@
                                     </option>
                                 @endforeach
                             </select>
-                            @if($selectedDeliveryCategory ?? '')
+                            <select name="supplier" class="form-select form-select-sm bg-dark border-secondary text-white" style="min-width: 170px;" onchange="this.form.submit()">
+                                <option value="">-- Semua Vendor --</option>
+                                @foreach($suppliers ?? [] as $sup)
+                                    <option value="{{ $sup }}" {{ (($selectedSupplier ?? '') === $sup) ? 'selected' : '' }}>
+                                        {{ strlen($sup) > 22 ? substr($sup, 0, 20) . '...' : $sup }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @if(($selectedDeliveryCategory ?? '') || ($selectedSupplier ?? ''))
                                 <a href="{{ route('purchasing.input') }}" class="btn btn-sm btn-outline-secondary" title="Reset Filter"><i class="bi bi-x-circle"></i></a>
                             @endif
                         </form>

@@ -1704,20 +1704,33 @@
                         </h5>
                         <small class="text-muted fs-7" id="top10CardSubtitle">Urutan 10 item code teratas berdasarkan kriteria terpilih</small>
                     </div>
-                    <!-- Top 10 Criteria Selector Pills -->
-                    <div class="segmented-control" role="group" id="top10CriteriaGroup">
-                        <button type="button" class="segmented-btn segmented-btn-xs active" id="btnTopAmount" onclick="switchTop10Criteria('amount')" title="Top 10 Amount ($) Total">
-                            <i class="bi bi-currency-dollar me-1"></i> Amount ($)
-                        </button>
-                        <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopPo" onclick="switchTop10Criteria('po')" title="Top 10 Target Qty PO">
-                            <i class="bi bi-box-seam me-1"></i> Qty PO
-                        </button>
-                        <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopActual" onclick="switchTop10Criteria('actual')" title="Top 10 Qty Penerimaan Realisasi">
-                            <i class="bi bi-truck me-1"></i> Qty Aktual
-                        </button>
-                        <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopPrice" onclick="switchTop10Criteria('price')" title="Top 10 Harga Unit ($)">
-                            <i class="bi bi-tag-fill me-1"></i> Harga Unit ($)
-                        </button>
+                    
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <!-- Currency Toggle for Top 10 -->
+                        <div class="btn-group btn-group-sm rounded-pill p-0.5 border border-secondary border-opacity-50" role="group" id="top10CurrencyGroup" style="background: rgba(15,23,42,0.6);">
+                            <button type="button" class="btn btn-xs rounded-pill active fw-bold text-white px-2.5 py-1" id="btnTopCurUsd" onclick="switchTop10Currency('USD')" style="background: #10b981; border: none;">
+                                <i class="bi bi-currency-dollar me-0.5"></i>USD ($)
+                            </button>
+                            <button type="button" class="btn btn-xs rounded-pill fw-bold text-muted px-2.5 py-1" id="btnTopCurIdr" onclick="switchTop10Currency('IDR')" style="background: transparent; border: none;">
+                                <i class="bi bi-cash-stack me-0.5"></i>IDR (Rp)
+                            </button>
+                        </div>
+
+                        <!-- Top 10 Criteria Selector Pills -->
+                        <div class="segmented-control" role="group" id="top10CriteriaGroup">
+                            <button type="button" class="segmented-btn segmented-btn-xs active" id="btnTopAmount" onclick="switchTop10Criteria('amount')" title="Top 10 Total Amount">
+                                <span id="labelTopAmount"><i class="bi bi-currency-dollar me-1"></i> Amount ($)</span>
+                            </button>
+                            <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopPo" onclick="switchTop10Criteria('po')" title="Top 10 Target Qty PO">
+                                <i class="bi bi-box-seam me-1"></i> Qty PO
+                            </button>
+                            <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopActual" onclick="switchTop10Criteria('actual')" title="Top 10 Qty Penerimaan Realisasi">
+                                <i class="bi bi-truck me-1"></i> Qty Aktual
+                            </button>
+                            <button type="button" class="segmented-btn segmented-btn-xs" id="btnTopPrice" onclick="switchTop10Criteria('price')" title="Top 10 Harga Unit">
+                                <span id="labelTopPrice"><i class="bi bi-tag-fill me-1"></i> Harga ($)</span>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -1730,8 +1743,8 @@
                                 <th>Deskripsi & Supplier</th>
                                 <th class="text-end text-primary">Qty PO</th>
                                 <th class="text-end text-info">Qty Aktual</th>
-                                <th class="text-end text-warning">Harga ($)</th>
-                                <th class="text-end text-success">Amount ($)</th>
+                                <th class="text-end text-warning" id="thTop10Price">Harga ($)</th>
+                                <th class="text-end text-success" id="thTop10Amount">Amount ($)</th>
                             </tr>
                         </thead>
                         <tbody id="top10TableBody">
@@ -4485,9 +4498,42 @@
     // Initialize main chart on load
     renderMainChart('qty', 'bar');
 
-    // 🏆 TABEL TOP 10 RANKING LOGIC
+    // 🏆 TABEL TOP 10 RANKING LOGIC (MULTI-CURRENCY USD & IDR)
     const top10ItemsData = @json($top10ItemsData ?? []);
     let currentTop10Criterion = 'amount';
+    let currentTop10Currency = 'USD';
+
+    function switchTop10Currency(currency) {
+        currentTop10Currency = currency;
+        const btnUsd = document.getElementById('btnTopCurUsd');
+        const btnIdr = document.getElementById('btnTopCurIdr');
+
+        if (currency === 'USD') {
+            if (btnUsd) { btnUsd.classList.add('text-white'); btnUsd.classList.remove('text-muted'); btnUsd.style.background = '#10b981'; }
+            if (btnIdr) { btnIdr.classList.add('text-muted'); btnIdr.classList.remove('text-white'); btnIdr.style.background = 'transparent'; }
+            const lblAmt = document.getElementById('labelTopAmount');
+            if (lblAmt) lblAmt.innerHTML = '<i class="bi bi-currency-dollar me-1"></i> Amount ($)';
+            const lblPrc = document.getElementById('labelTopPrice');
+            if (lblPrc) lblPrc.innerHTML = '<i class="bi bi-tag-fill me-1"></i> Harga ($)';
+            const thPrc = document.getElementById('thTop10Price');
+            if (thPrc) thPrc.innerText = 'Harga ($)';
+            const thAmt = document.getElementById('thTop10Amount');
+            if (thAmt) thAmt.innerText = 'Amount ($)';
+        } else {
+            if (btnIdr) { btnIdr.classList.add('text-white'); btnIdr.classList.remove('text-muted'); btnIdr.style.background = '#06b6d4'; }
+            if (btnUsd) { btnUsd.classList.add('text-muted'); btnUsd.classList.remove('text-white'); btnUsd.style.background = 'transparent'; }
+            const lblAmt = document.getElementById('labelTopAmount');
+            if (lblAmt) lblAmt.innerHTML = '<i class="bi bi-cash-stack me-1"></i> Amount (Rp)';
+            const lblPrc = document.getElementById('labelTopPrice');
+            if (lblPrc) lblPrc.innerHTML = '<i class="bi bi-tag-fill me-1"></i> Harga (Rp)';
+            const thPrc = document.getElementById('thTop10Price');
+            if (thPrc) thPrc.innerText = 'Harga (Rp)';
+            const thAmt = document.getElementById('thTop10Amount');
+            if (thAmt) thAmt.innerText = 'Amount (Rp)';
+        }
+
+        renderTop10Table(currentTop10Criterion);
+    }
 
     function switchTop10Criteria(criterion) {
         document.querySelectorAll('#top10CriteriaGroup button').forEach(btn => btn.classList.remove('active'));
@@ -4505,23 +4551,34 @@
         const subtitleEl = document.getElementById('top10CardSubtitle');
         if (!tbody) return;
 
+        const isUsd = (currentTop10Currency === 'USD');
+        const curSymbol = isUsd ? '$ ' : 'Rp ';
+
         let subtitleText = 'Urutan 10 item code teratas berdasarkan kriteria terpilih';
-        if (criterion === 'amount') subtitleText = '10 Item Code dengan Total Amount ($) Tertinggi';
+        if (criterion === 'amount') subtitleText = `10 Item Code dengan Total Amount (${isUsd ? '$' : 'Rp'}) Tertinggi`;
         if (criterion === 'po') subtitleText = '10 Item Code dengan Target Qty PO Tertinggi';
         if (criterion === 'actual') subtitleText = '10 Item Code dengan Realisasi Qty Penerimaan Tertinggi';
-        if (criterion === 'price') subtitleText = '10 Item Code dengan Harga Unit ($) Tertinggi';
+        if (criterion === 'price') subtitleText = `10 Item Code dengan Harga Unit (${isUsd ? '$' : 'Rp'}) Tertinggi`;
 
         if (subtitleEl) subtitleEl.innerText = subtitleText;
 
         let sorted = [...top10ItemsData];
         if (criterion === 'amount') {
-            sorted.sort((a, b) => (b.total_amount || 0) - (a.total_amount || 0));
+            sorted.sort((a, b) => {
+                const valA = isUsd ? (a.total_amount_usd || a.total_amount || 0) : (a.total_amount_idr || 0);
+                const valB = isUsd ? (b.total_amount_usd || b.total_amount || 0) : (b.total_amount_idr || 0);
+                return valB - valA;
+            });
         } else if (criterion === 'po') {
             sorted.sort((a, b) => (b.sum_po_qty || 0) - (a.sum_po_qty || 0));
         } else if (criterion === 'actual') {
             sorted.sort((a, b) => (b.sum_actual_qty || 0) - (a.sum_actual_qty || 0));
         } else if (criterion === 'price') {
-            sorted.sort((a, b) => (b.price || 0) - (a.price || 0));
+            sorted.sort((a, b) => {
+                const prcA = isUsd ? (a.price_usd || a.price || 0) : (a.price_idr || 0);
+                const prcB = isUsd ? (b.price_usd || b.price || 0) : (b.price_idr || 0);
+                return prcB - prcA;
+            });
         }
 
         const top10 = sorted.slice(0, 10);
@@ -4548,12 +4605,38 @@
             const descEsc = escapeHtml(item.description);
             const suppEsc = escapeHtml(item.supplier);
 
+            // Formatted price and amount based on selected currency mode
+            let formattedPrice = '';
+            let formattedAmount = '';
+            const nativeCur = item.currency || 'USD';
+            const isNativeIdr = (nativeCur === 'IDR');
+
+            if (isUsd) {
+                const prcUsd = Number(item.price_usd || item.price || 0);
+                const amtUsd = Number(item.total_amount_usd || item.total_amount || 0);
+                formattedPrice = '$ ' + prcUsd.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+                formattedAmount = '$ ' + amtUsd.toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            } else {
+                const prcIdr = Math.round(Number(item.price_idr || ((item.price_usd || item.price || 0) * 16600)));
+                const amtIdr = Math.round(Number(item.total_amount_idr || ((item.total_amount_usd || item.total_amount || 0) * 16600)));
+                formattedPrice = 'Rp ' + prcIdr.toLocaleString('id-ID');
+                formattedAmount = 'Rp ' + amtIdr.toLocaleString('id-ID');
+            }
+
+            // Currency tag pill
+            const curBadge = isNativeIdr 
+                ? `<span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50" style="font-size:0.68rem;">IDR</span>` 
+                : `<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50" style="font-size:0.68rem;">USD</span>`;
+
             html += `<tr>
                 <td class="text-center">${rankBadge}</td>
                 <td>
-                    <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2.5 py-0.5 font-monospace fw-bold text-nowrap" onclick="jumpToItemGrid('${itemCodeEsc}')">
-                        ${itemCodeEsc} <i class="bi bi-arrow-down-short"></i>
-                    </button>
+                    <div class="d-flex align-items-center gap-1.5">
+                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2.5 py-0.5 font-monospace fw-bold text-nowrap" onclick="jumpToItemGrid('${itemCodeEsc}')">
+                            ${itemCodeEsc} <i class="bi bi-arrow-down-short"></i>
+                        </button>
+                        ${curBadge}
+                    </div>
                 </td>
                 <td>
                     <div class="fw-bold text-white fs-7 text-truncate" style="max-width: 170px;" title="${descEsc}">${descEsc}</div>
@@ -4561,8 +4644,8 @@
                 </td>
                 <td class="text-end font-monospace ${poClass}">${Number(item.sum_po_qty || 0).toLocaleString('de-DE')}</td>
                 <td class="text-end font-monospace ${actualClass}">${Number(item.sum_actual_qty || 0).toLocaleString('de-DE')}</td>
-                <td class="text-end font-monospace ${priceClass}">$ ${Number(item.price || 0).toLocaleString('de-DE', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td>
-                <td class="text-end font-monospace ${amountClass}">${formatCurrencyVal(Number(item.total_amount || 0))}</td>
+                <td class="text-end font-monospace ${priceClass}">${formattedPrice}</td>
+                <td class="text-end font-monospace ${amountClass}">${formattedAmount}</td>
             </tr>`;
         });
 

@@ -240,6 +240,189 @@
             border-color: #8b5cf6;
             background: rgba(139,92,246,0.12);
         }
+
+        /* ═══ MODERN NON-MONOTONE BUTTON SUITE ═══ */
+        .btn-kawai-primary {
+            background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 4px 14px rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-primary:hover {
+            background: linear-gradient(135deg, #9333ea 0%, #7c3aed 100%);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.5);
+            transform: translateY(-1.5px);
+            color: #ffffff !important;
+        }
+
+        .btn-kawai-filter {
+            background: linear-gradient(135deg, #8b5cf6 0%, #4f46e5 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(139, 92, 246, 0.45);
+            box-shadow: 0 3px 12px rgba(139, 92, 246, 0.28);
+            border-radius: 20px;
+            font-weight: 600;
+            padding: 0.45rem 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-filter:hover {
+            background: linear-gradient(135deg, #9333ea 0%, #4338ca 100%);
+            box-shadow: 0 6px 18px rgba(139, 92, 246, 0.45);
+            transform: translateY(-1.5px);
+            color: #ffffff !important;
+        }
+
+        .btn-kawai-sum {
+            background: linear-gradient(135deg, #06b6d4 0%, #0284c7 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(6, 182, 212, 0.45);
+            box-shadow: 0 3px 12px rgba(6, 182, 212, 0.3);
+            border-radius: 20px;
+            font-weight: 600;
+            padding: 0.45rem 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-sum:hover {
+            background: linear-gradient(135deg, #0891b2 0%, #0369a1 100%);
+            box-shadow: 0 6px 18px rgba(6, 182, 212, 0.5);
+            transform: translateY(-1.5px);
+            color: #ffffff !important;
+        }
+
+        .btn-kawai-reset {
+            background: rgba(239, 68, 68, 0.12);
+            color: #fca5a5 !important;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 20px;
+            font-weight: 600;
+            padding: 0.45rem 1.15rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-reset:hover {
+            background: rgba(239, 68, 68, 0.28);
+            color: #ffffff !important;
+            border-color: rgba(239, 68, 68, 0.65);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3);
+            transform: translateY(-1.5px);
+        }
+        .btn-kawai-reset.has-active-filters {
+            border-color: rgba(239, 68, 68, 0.6);
+            background: rgba(239, 68, 68, 0.2);
+            box-shadow: 0 0 10px rgba(239, 68, 68, 0.25);
+        }
+
+        .btn-kawai-secondary {
+            background: rgba(255, 255, 255, 0.06);
+            color: #e2e8f0 !important;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-secondary:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: rgba(255, 255, 255, 0.3);
+            color: #ffffff !important;
+            transform: translateY(-1.5px);
+        }
+
+        .btn-kawai-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: #ffffff !important;
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+            border-radius: 10px;
+            font-weight: 600;
+            padding: 0.5rem 1rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            transition: all 0.22s ease-in-out;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn-kawai-danger:hover {
+            background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+            box-shadow: 0 6px 20px rgba(239, 68, 68, 0.5);
+            transform: translateY(-1.5px);
+            color: #ffffff !important;
+        }
+
+        .btn-kawai-more {
+            background: rgba(255, 255, 255, 0.05);
+            color: #94a3b8;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 10px;
+            width: 38px;
+            height: 38px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        .btn-kawai-more:hover {
+            background: rgba(255, 255, 255, 0.12);
+            color: #ffffff;
+            border-color: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Floating Selection SUM & Action Bar */
+        .floating-selection-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(120%);
+            z-index: 1050;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(139, 92, 246, 0.4);
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.25);
+            border-radius: 50px;
+            padding: 0.6rem 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.3s ease;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .floating-selection-bar.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
     </style>
 </head>
 <body>
@@ -376,28 +559,28 @@
             </div>
         </div>
 
-        {{-- Card 4: Total Potential Supply --}}
+        {{-- Card 4: Net Supply Gap & Status Pasokan --}}
         <div class="col-12 col-sm-6 col-xl-3">
             <div class="kpi-card {{ $kpiNetSupplyGap >= 0 ? 'kpi-card-emerald' : 'kpi-card-rose' }}">
                 <div class="kpi-header">
-                    <span class="kpi-title">TOTAL POTENTIAL SUPPLY</span>
+                    <span class="kpi-title">NET SUPPLY GAP (STATUS)</span>
                     <div class="kpi-icon-box {{ $kpiNetSupplyGap >= 0 ? 'icon-emerald' : 'icon-rose' }}">
-                        <i class="bi bi-shield-check"></i>
+                        <i class="bi {{ $kpiNetSupplyGap >= 0 ? 'bi-shield-check' : 'bi-exclamation-triangle-fill' }}"></i>
                     </div>
                 </div>
                 <div class="kpi-value {{ $kpiNetSupplyGap >= 0 ? 'text-success' : 'text-danger' }}">
-                    {{ number_format($kpiTotalPotentialSupply) }} <span class="kpi-unit">PCS</span>
+                    {{ $kpiNetSupplyGap >= 0 ? '+' : '' }}{{ number_format($kpiNetSupplyGap) }} <span class="kpi-unit">PCS</span>
                 </div>
                 <div class="kpi-footer">
                     <div class="d-flex align-items-center justify-content-between w-100">
                         <span class="text-muted small font-monospace">Coverage: {{ $kpiCoveragePercentage }}%</span>
                         @if(($kpiAdditionalRequirement ?? 0) > 0)
-                            <span class="badge bg-danger bg-opacity-25 text-white" title="Kebutuhan Tambahan (Demand - Supply)">
-                                Butuh: +{{ number_format($kpiAdditionalRequirement) }}
+                            <span class="badge bg-danger bg-opacity-25 text-white" title="Kekurangan Pasokan Total">
+                                Defisit: -{{ number_format($kpiAdditionalRequirement) }}
                             </span>
                         @else
                             <span class="badge bg-success bg-opacity-25 text-white">
-                                Surplus: +{{ number_format($kpiNetSupplyGap) }}
+                                Surplus Pasokan
                             </span>
                         @endif
                     </div>
@@ -455,19 +638,31 @@
         </div>
     </div>
 
-    <!-- ═══ FILTER BAR ═══ -->
+    <!-- ═══ ENHANCED FILTER BAR (WITH SUM & RESET BUTTONS) ═══ -->
     <div class="glass-card mb-4 p-3">
-        <form method="GET" action="{{ route('purchasing.actual-inventory') }}" class="d-flex flex-wrap align-items-center justify-content-between gap-3">
-            <div class="d-flex align-items-center gap-2 flex-wrap">
-                <div class="d-flex align-items-center gap-2">
-                    <i class="bi bi-funnel-fill text-purple" style="color: #a78bfa;"></i>
+        <form method="GET" action="{{ route('purchasing.actual-inventory') }}" class="d-flex flex-wrap align-items-center justify-content-between gap-3" id="actualInventoryFilterForm">
+            <div class="d-flex align-items-center gap-2 flex-wrap flex-grow-1">
+                <div class="d-flex align-items-center gap-2 me-1">
+                    <i class="bi bi-funnel-fill text-purple fs-6" style="color: #a78bfa;"></i>
                     <span class="fw-bold text-white small">Filter Data:</span>
                 </div>
 
                 {{-- Search Box --}}
-                <div class="input-group input-group-sm" style="width: 240px;">
+                <div class="input-group input-group-sm" style="width: 220px;">
                     <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
                     <input type="text" name="search" class="form-control bg-dark border-secondary text-white" placeholder="Cari Part / Desc / Supplier..." value="{{ $search }}">
+                </div>
+
+                {{-- Period / Month Filter --}}
+                <div>
+                    <select name="period" class="filter-select" onchange="this.form.submit()">
+                        <option value="ALL">-- Semua Periode --</option>
+                        @foreach($availablePeriods ?? [] as $per)
+                            <option value="{{ $per->key }}" {{ ($periodFilter === $per->key) ? 'selected' : '' }}>
+                                Periode: {{ $per->label }}
+                            </option>
+                        @endforeach
+                    </select>
                 </div>
 
                 {{-- Plant Filter --}}
@@ -486,6 +681,16 @@
                         <option value="ALL">-- Semua Supplier --</option>
                         @foreach($availableSuppliers as $sup)
                             <option value="{{ $sup }}" {{ ($supplierFilter === $sup) ? 'selected' : '' }}>Supplier: {{ $sup }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                {{-- Item Code Filter (Default ALL per semua Item Code) --}}
+                <div>
+                    <select name="item_code" class="filter-select" onchange="this.form.submit()">
+                        <option value="ALL">-- Semua Item Code (All) --</option>
+                        @foreach($availableItemCodes as $code)
+                            <option value="{{ $code }}" {{ ($itemCode === $code) ? 'selected' : '' }}>Item: {{ $code }}</option>
                         @endforeach
                     </select>
                 </div>
@@ -512,73 +717,412 @@
                 </div>
             </div>
 
-            <div class="d-flex align-items-center gap-2">
-                <button type="submit" class="btn btn-sm btn-purple text-white px-3 fw-bold rounded-pill" style="background: #8b5cf6;">
-                    <i class="bi bi-filter me-1"></i> Terapkan
+            {{-- Action Buttons: Terapkan Filter, SUM Calculator, Reset Filter --}}
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <button type="submit" class="btn btn-sm btn-kawai-filter" title="Terapkan Parameter Pencarian &amp; Filter">
+                    <i class="bi bi-funnel-fill"></i> Terapkan
                 </button>
-                @if($search || $plantFilter !== 'ALL' || $supplierFilter !== 'ALL' || $statusFilter !== 'ALL' || ($itemCode && $itemCode !== 'ALL') || $perPageParam != '50')
-                    <a href="{{ route('purchasing.actual-inventory') }}" class="btn btn-sm btn-outline-secondary rounded-pill px-3">
-                        <i class="bi bi-x-circle me-1"></i> Reset
-                    </a>
-                @endif
+
+                <button type="button" class="btn btn-sm btn-kawai-sum" data-bs-toggle="modal" data-bs-target="#modalSummarySum" title="Kalkulator &amp; Ringkasan Akumulasi (SUM Total Data)">
+                    <i class="bi bi-calculator-fill"></i> ∑ SUM Total
+                </button>
+
+                <a href="{{ route('purchasing.actual-inventory') }}" 
+                   class="btn btn-sm btn-kawai-reset {{ ($search || $plantFilter !== 'ALL' || $supplierFilter !== 'ALL' || $periodFilter !== 'ALL' || $statusFilter !== 'ALL' || ($itemCode && $itemCode !== 'ALL') || $perPageParam != '50') ? 'has-active-filters' : '' }}" 
+                   title="Reset Semua Parameter Filter ke Default">
+                    <i class="bi bi-arrow-counterclockwise"></i> Reset Filter
+                    @if($search || $plantFilter !== 'ALL' || $supplierFilter !== 'ALL' || $periodFilter !== 'ALL' || $statusFilter !== 'ALL' || ($itemCode && $itemCode !== 'ALL'))
+                        <span class="badge bg-danger rounded-pill ms-1 px-1.5 py-0.2" style="font-size: 0.65rem;">Aktif</span>
+                    @endif
+                </a>
             </div>
         </form>
     </div>
 
-    <!-- ═══ EXECUTIVE CHARTS (TOP 10 CRITICAL MATERIALS & STATUS DISTRIBUTION) ═══ -->
-    <div class="row g-4 mb-4">
-        {{-- Chart 1: Top 10 Executive Comparison (4 Bars) --}}
-        <div class="col-12 col-xl-8">
-            <div class="glass-card h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                    <div>
-                        <h5 class="fw-bold text-white mb-0 brand-font">
-                            <i class="bi bi-bar-chart-fill text-purple me-2" style="color: #a78bfa;"></i>Inventory Demand vs Actual Inventory vs Outstanding vs Potential Supply
-                        </h5>
-                        <small class="text-muted">Perbandingan 4 dimensi: Kebutuhan (Inventory Demand) vs Stok Fisik vs Pesanan Berjalan (PO) vs Total Pasokan</small>
-                    </div>
-                    <span class="badge bg-dark border border-secondary text-info font-monospace" style="font-size: 0.75rem;" title="Diagram menampilkan 10 material teratas berdasarkan volume kebutuhan/pasokan dari total {{ $kpiTotalPositions }} posisi di tabel bawah">
-                        Top 10 Spotlight (Total {{ $kpiTotalPositions }} Posisi)
-                    </span>
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <!-- ═══ HIERARCHICAL DRILL-DOWN DASHBOARD (VENDOR -> ITEM CODE -> 3D) ═══ -->
+    <!-- ═════════════════════════════════════════════════════════════════════ -->
+    <div class="glass-card mb-4 p-4" style="border: 1px solid rgba(139, 92, 246, 0.2); box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);">
+        
+        {{-- BREADCRUMB & DRILLDOWN STATE NAVIGATOR --}}
+        <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 pb-3 border-bottom border-secondary border-opacity-25">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="badge text-white px-2.5 py-1.5 rounded-pill font-monospace" style="background: #8b5cf6;">
+                    <i class="bi bi-diagram-3-fill me-1"></i>Analisis Data
+                </span>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-0 font-monospace small">
+                        <li class="breadcrumb-item">
+                            <a href="javascript:void(0)" onclick="resetToVendorOverview()" class="text-info text-decoration-none fw-bold">
+                                <i class="bi bi-buildings me-1"></i>Vendor Overview ({{ count($vendorOverviewList) }} Vendor)
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item text-warning fw-bold d-none" id="bcVendorItem">
+                            <a href="javascript:void(0)" onclick="backToVendorItems()" class="text-warning text-decoration-none" id="bcVendorName">
+                                Vendor Name
+                            </a>
+                        </li>
+                        <li class="breadcrumb-item active text-white fw-bold d-none" id="bcItemCode">
+                            <span id="bcItemCodeText">ITEM-001</span>
+                        </li>
+                    </ol>
+                </nav>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-dark border border-secondary text-success font-monospace" id="validationBadgeCompleteness">
+                    <i class="bi bi-shield-check me-1"></i>{{ count($vendorOverviewList) }} Vendor
+                </span>
+                <button type="button" class="btn btn-xs btn-outline-secondary rounded-pill px-2.5 py-1" onclick="resetToVendorOverview()" title="Kembali ke Ringkasan Semua Vendor">
+                    <i class="bi bi-arrow-counterclockwise me-1"></i>Reset Level
+                </button>
+            </div>
+        </div>
+
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- ── LEVEL 1: VENDOR OVERVIEW TABLE (ALL DISTINCT VENDORS) ────── --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- ── LEVEL 1: VENDOR OVERVIEW & DIAGNOSTIC AREA CHART ──────────── --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        <div id="drilldownLevel1">
+            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                <div>
+                    <h5 class="fw-bold text-white mb-0 brand-font">
+                        <i class="bi bi-building me-2 text-warning"></i>Monitoring Pasokan Vendor
+                    </h5>
                 </div>
-                <div style="position: relative; height: 340px; width: 100%;">
-                    <canvas id="chartTopInventoryComparison"></canvas>
+                <div class="d-flex align-items-center gap-2">
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-xs btn-outline-secondary active" id="btnViewModeAll" onclick="setVendorViewMode('all')">
+                            <i class="bi bi-grid-fill me-1"></i>Grafik &amp; Tabel
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" id="btnViewModeChart" onclick="setVendorViewMode('chart')">
+                            <i class="bi bi-graph-up me-1"></i>Grafik Saja
+                        </button>
+                        <button type="button" class="btn btn-xs btn-outline-secondary" id="btnViewModeTable" onclick="setVendorViewMode('table')">
+                            <i class="bi bi-table me-1"></i>Tabel Saja
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ── 1. DIAGRAM AREA STATUS PASOKAN SELURUH VENDOR ── --}}
+            <div class="p-3 rounded-3 bg-dark bg-opacity-75 border border-secondary border-opacity-30 mb-3" id="wrapperVendorAreaChart">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2 pb-2 border-bottom border-secondary border-opacity-25">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-1.5 rounded-3 bg-opacity-20 border border-opacity-40" style="background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa;">
+                            <i class="bi bi-graph-up-arrow fs-6"></i>
+                        </div>
+                        <div>
+                            <h6 class="fw-bold text-white mb-0 brand-font">
+                                Kebutuhan vs Stok vs PO Per Vendor
+                            </h6>
+                        </div>
+                    </div>
+                    
+                    {{-- Status Quick Filters for Chart --}}
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="btn-group btn-group-sm" role="group">
+                            <button type="button" class="btn btn-xs btn-outline-secondary active px-2.5 py-1" id="vChartBtnAll" onclick="filterVendorAreaChart('ALL')">
+                                Semua Vendor ({{ count($vendorOverviewList) }})
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-danger px-2.5 py-1" id="vChartBtnCritical" onclick="filterVendorAreaChart('Critical')">
+                                <i class="bi bi-exclamation-triangle-fill me-1"></i>Critical ({{ $vendorOverviewList->where('status', 'Critical')->count() }})
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-warning px-2.5 py-1" id="vChartBtnAttention" onclick="filterVendorAreaChart('Attention')">
+                                <i class="bi bi-shield-fill-check me-1"></i>Attention ({{ $vendorOverviewList->where('status', 'Attention')->count() }})
+                            </button>
+                            <button type="button" class="btn btn-xs btn-outline-success px-2.5 py-1" id="vChartBtnHealthy" onclick="filterVendorAreaChart('Healthy')">
+                                <i class="bi bi-check-circle-fill me-1"></i>Healthy ({{ $vendorOverviewList->where('status', 'Healthy')->count() }})
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Chart Canvas --}}
+                <div style="position: relative; height: 270px; width: 100%; cursor: pointer;" title="Klik pada area atau titik grafik untuk diagnosa vendor">
+                    <canvas id="chartVendorSupplyArea"></canvas>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-2 pt-2 border-top border-secondary border-opacity-20 flex-wrap gap-2 text-muted small">
+                    <span class="fs-8"></span>
+                    <div class="d-flex align-items-center gap-3 fs-8 font-monospace">
+                        <span><span class="badge rounded-circle p-1 me-1" style="background: #3b82f6;"></span>Target</span>
+                        <span><span class="badge rounded-circle p-1 me-1" style="background: #a855f7;"></span>Stok Fisik</span>
+                        <span><span class="badge rounded-circle p-1 me-1" style="background: #f59e0b;"></span>Outstanding PO</span>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ── 2. TABEL DAFTAR VENDOR LENGKAP ── --}}
+            <div id="wrapperVendorTable">
+                <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-list-columns-reverse text-info"></i>
+                        <span class="text-white fw-bold small">Daftar Vendor</span>
+                    </div>
+                    <div class="input-group input-group-sm" style="max-width: 280px;">
+                        <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-dark border-secondary text-white" id="searchVendorInput" placeholder="Cari Nama Vendor / Kode..." oninput="filterVendorOverviewTable(this.value)">
+                    </div>
+                </div>
+
+                <div class="table-responsive rounded-3 border border-secondary border-opacity-30 style-scrollbar mb-2" style="max-height: 360px;">
+                    <table class="table table-dark table-hover table-sm align-middle mb-0" id="tableVendorOverview">
+                        <thead class="table-dark text-muted font-monospace small sticky-top" style="background: #0f172a; border-bottom: 2px solid rgba(139, 92, 246, 0.4);">
+                            <tr>
+                                <th class="ps-3">Nama Vendor &amp; Kode</th>
+                                <th class="text-center">Komposisi Item</th>
+                                <th class="text-end text-info">Total In Demand</th>
+                                <th class="text-end" style="color: #a78bfa;">Total Actual Stock</th>
+                                <th class="text-end text-warning">Total Outstanding PO</th>
+                                <th class="text-end">Inventory Gap</th>
+                                <th class="text-center">Status Vendor</th>
+                                <th class="text-center pe-3" style="width: 220px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-monospace" id="tbodyVendorOverview">
+                            @forelse($vendorOverviewList as $idx => $v)
+                            <tr class="vendor-overview-row" data-vendor-name="{{ $v['supplier_name'] }}" data-vendor-code="{{ $v['supplier_code'] }}" data-vendor-status="{{ $v['status'] }}" style="cursor: pointer;" onclick="openVendorDiagnosticModal('{{ addslashes($v['supplier_name']) }}')">
+                                <td class="ps-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="p-1.5 rounded bg-dark border border-secondary border-opacity-30 text-warning">
+                                            <i class="bi bi-building"></i>
+                                        </div>
+                                        <div>
+                                            <strong class="text-white font-sans d-block">{{ $v['supplier_name'] }}</strong>
+                                            <small class="text-muted fs-8">Kode: {{ $v['supplier_code'] }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-flex flex-column align-items-center gap-1">
+                                        <span class="badge text-white rounded-pill px-2.5 py-0.5" style="background: #8b5cf6; font-size: 0.75rem;">
+                                            {{ $v['total_item_codes'] }} Item
+                                        </span>
+                                        <div class="d-flex gap-1" style="font-size: 0.65rem;">
+                                            @if($v['critical_items_count'] > 0)
+                                                <span class="badge bg-danger bg-opacity-25 text-danger px-1" title="{{ $v['critical_items_count'] }} Item Defisit Kritis">{{ $v['critical_items_count'] }} Defisit</span>
+                                            @endif
+                                            @if($v['healthy_items_count'] > 0)
+                                                <span class="badge bg-success bg-opacity-25 text-success px-1" title="{{ $v['healthy_items_count'] }} Item Aman">{{ $v['healthy_items_count'] }} Aman</span>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-end text-info fw-bold">{{ number_format($v['total_in_demand']) }} PCS</td>
+                                <td class="text-end fw-bold" style="color: #a78bfa;">{{ number_format($v['total_actual_inventory']) }} PCS</td>
+                                <td class="text-end text-warning fw-bold">{{ number_format($v['total_outstanding']) }} PCS</td>
+                                <td class="text-end fw-bold {{ $v['total_inventory_gap'] <= 0 ? 'text-success' : 'text-danger' }}">
+                                    {{ $v['total_inventory_gap'] > 0 ? '+' : '' }}{{ number_format($v['total_inventory_gap']) }} PCS
+                                </td>
+                                <td class="text-center">
+                                    @if($v['status'] === 'Healthy')
+                                        <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-40 px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Healthy</span>
+                                    @elseif($v['status'] === 'Attention')
+                                        <span class="badge bg-primary bg-opacity-20 text-info border border-info border-opacity-40 px-2 py-1"><i class="bi bi-shield-fill-check me-1"></i>Attention</span>
+                                    @elseif($v['status'] === 'Critical')
+                                        <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-40 px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>
+                                    @else
+                                        <span class="badge bg-secondary bg-opacity-20 text-light border border-secondary border-opacity-40 px-2 py-1"><i class="bi bi-info-circle me-1"></i>Check Data</span>
+                                    @endif
+                                </td>
+                                <td class="text-center pe-3">
+                                    <div class="d-flex align-items-center justify-content-center gap-1.5" onclick="event.stopPropagation();">
+                                        <button type="button" class="btn btn-xs btn-outline-purple rounded-pill px-2.5 py-1 fw-semibold" onclick="openVendorDiagnosticModal('{{ addslashes($v['supplier_name']) }}')" title="Diagnosa">
+                                            <i class="bi bi-search me-1"></i>Diagnosa
+                                        </button>
+                                        <button type="button" class="btn btn-xs btn-outline-info rounded-pill px-2.5 py-1 fw-semibold" onclick="drillDownToVendor('{{ addslashes($v['supplier_name']) }}')" title="Lihat Item">
+                                            <i class="bi bi-arrow-right-circle me-1"></i>Pilih Item
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            @empty
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    <i class="bi bi-inbox fs-2 d-block opacity-50 mb-2"></i>
+                                    Tidak ada data vendor pada filter saat ini.
+                                </td>
+                            </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex justify-content-between align-items-center text-muted small font-monospace px-1">
+                    <span>Menampilkan <strong>{{ count($vendorOverviewList) }}</strong> vendor</span>
                 </div>
             </div>
         </div>
 
-        {{-- Chart 2: Status Distribution Donut --}}
-        <div class="col-12 col-xl-4">
-            <div class="glass-card h-100">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="fw-bold text-white mb-0 brand-font">
-                        <i class="bi bi-pie-chart-fill text-info me-2"></i>Distribusi Status Supply
-                    </h5>
-                    <span class="badge bg-purple text-white rounded-pill px-2.5" style="background: #8b5cf6;">{{ $kpiTotalUniqueItems }} Item</span>
-                </div>
-                <div style="position: relative; height: 260px; width: 100%;">
-                    <canvas id="chartInventoryStatusDoughnut"></canvas>
-                </div>
-                <div class="d-flex justify-content-around text-center mt-3 pt-2 border-top border-secondary border-opacity-25">
-                    <div>
-                        <span class="text-success fw-bold d-block fs-6">{{ $kpiSurplusCount }}</span>
-                        <small class="text-muted" style="font-size:0.7rem;">Surplus</small>
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- ── LEVEL 2: VENDOR ITEM CODE DRILL-DOWN TABLE ────────────────── --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        <div id="drilldownLevel2" class="d-none">
+            <div class="p-3 rounded-3 bg-dark bg-opacity-60 border border-secondary border-opacity-25 mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle px-2" onclick="resetToVendorOverview()" title="Kembali ke Daftar Vendor">
+                            <i class="bi bi-arrow-left"></i>
+                        </button>
+                        <div>
+                            <h6 class="fw-bold text-white mb-0">
+                                <i class="bi bi-box-seam text-info me-1.5"></i>Item Codes: <span class="text-warning" id="activeVendorTitle">-</span>
+                            </h6>
+                            <small class="text-muted" id="activeVendorSubtitle"></small>
+                        </div>
                     </div>
-                    <div>
-                        <span class="text-primary fw-bold d-block fs-6">{{ $kpiCoveredByPoCount }}</span>
-                        <small class="text-muted" style="font-size:0.7rem;">Covered PO</small>
-                    </div>
-                    <div>
-                        <span class="text-danger fw-bold d-block fs-6">{{ $kpiCriticalDeficitCount }}</span>
-                        <small class="text-muted" style="font-size:0.7rem;">Defisit</small>
-                    </div>
-                    <div>
-                        <span class="text-light fw-bold d-block fs-6">{{ $kpiOptimalCount }}</span>
-                        <small class="text-muted" style="font-size:0.7rem;">Optimal</small>
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="input-group input-group-sm" style="width: 250px;">
+                            <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                            <input type="text" class="form-control bg-dark border-secondary text-white" id="searchItemTableInput" placeholder="Cari Item / Deskripsi..." oninput="filterVendorItemsTable(this.value)">
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <div class="table-responsive rounded-3 border border-secondary border-opacity-30 style-scrollbar mb-2" style="max-height: 320px;">
+                <table class="table table-dark table-hover table-sm align-middle mb-0" id="tableVendorItems">
+                    <thead class="table-dark text-muted font-monospace small sticky-top" style="background: #0f172a; border-bottom: 2px solid rgba(6, 182, 212, 0.4);">
+                        <tr>
+                            <th class="ps-3">Item Code</th>
+                            <th>Deskripsi Material</th>
+                            <th class="text-center">Plant</th>
+                            <th class="text-end text-info">In Demand</th>
+                            <th class="text-end" style="color: #a78bfa;">Actual Inventory</th>
+                            <th class="text-end text-warning">Outstanding PO</th>
+                            <th class="text-end">Inventory Gap</th>
+                            <th class="text-center">Status</th>
+                            <th class="text-center pe-3" style="width: 130px;">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="font-monospace" id="tbodyVendorItems">
+                        <!-- Populated dynamically via JS -->
+                    </tbody>
+                </table>
+            </div>
         </div>
+
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        {{-- ── LEVEL 3: FOCUSED ITEM CODE COMPARISON (AREA + BULLET CHART) ─ --}}
+        {{-- ═════════════════════════════════════════════════════════════════ --}}
+        <div id="drilldownLevel3" class="d-none mt-3">
+            
+            {{-- SUMMARY METRICS STRIP --}}
+            <div class="p-3 rounded-3 bg-dark bg-opacity-80 border border-secondary border-opacity-30 mb-3">
+                <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2 pb-2 border-bottom border-secondary border-opacity-20">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="p-2 rounded-3 bg-opacity-20 border border-opacity-40" style="background: rgba(139, 92, 246, 0.2); border-color: rgba(139, 92, 246, 0.4); color: #a78bfa;">
+                            <i class="bi bi-search fs-5"></i>
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2">
+                                <h5 class="fw-bold text-white mb-0 font-monospace" id="l3PartNumber">MAT-001</h5>
+                                <span class="badge bg-secondary" id="l3PlantBadge">KIP1</span>
+                                <span class="badge-status" id="l3StatusBadge">Healthy</span>
+                            </div>
+                            <small class="text-muted font-sans" id="l3Description">Material Description</small>
+                        </div>
+                    </div>
+                    <div class="text-end font-monospace">
+                        <small class="text-muted d-block fs-8" id="l3VendorText">VENDOR: -</small>
+                        <span class="text-white fw-bold fs-7" id="l3ValuationText">Valuasi: $0.00</span>
+                    </div>
+                </div>
+
+                {{-- 4 Metric Counter Cards --}}
+                <div class="row g-2 text-center font-monospace">
+                    <div class="col-6 col-md-3">
+                        <div class="p-2.5 rounded bg-dark border border-info border-opacity-30">
+                            <small class="text-info d-block fs-8">IN DEMAND (TARGET)</small>
+                            <strong class="fs-5 text-info" id="l3InDemand">0</strong>
+                            <small class="text-muted d-block fs-8">PCS</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2.5 rounded bg-dark border border-secondary border-opacity-30" style="border-color: rgba(139, 92, 246, 0.4) !important;">
+                            <small class="d-block fs-8" style="color: #a78bfa;">ACTUAL INVENTORY</small>
+                            <strong class="fs-5" style="color: #a78bfa;" id="l3ActualInventory">0</strong>
+                            <small class="text-muted d-block fs-8">PCS</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2.5 rounded bg-dark border border-warning border-opacity-30">
+                            <small class="text-warning d-block fs-8">OUTSTANDING PO</small>
+                            <strong class="fs-5 text-warning" id="l3Outstanding">0</strong>
+                            <small class="text-muted d-block fs-8">PCS</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md-3">
+                        <div class="p-2.5 rounded bg-dark border border-secondary border-opacity-30">
+                            <small class="text-muted d-block fs-8">INVENTORY GAP (DEMAND - ACTUAL)</small>
+                            <strong class="fs-5" id="l3InventoryGap">0</strong>
+                            <small class="text-muted d-block fs-8">PCS</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {{-- EXACTLY TWO PRIMARY CHARTS: AREA CHART & BULLET CHART --}}
+            <div class="row g-3">
+                {{-- Chart 1: Area Chart (Historical / Monthly Trend) --}}
+                <div class="col-12 col-lg-7">
+                    <div class="p-3 rounded-3 bg-dark bg-opacity-75 border border-secondary border-opacity-30 h-100">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                <h6 class="fw-bold text-white mb-0 brand-font">
+                                    <i class="bi bi-graph-up text-purple me-1.5" style="color: #a78bfa;"></i>1. Area Chart: Tren Pasokan Per Periode Bulan
+                                </h6>
+                                <small class="text-muted">In Demand vs Actual Inventory vs Outstanding per snapshot bulan</small>
+                            </div>
+                            <span class="badge bg-dark border border-secondary text-info font-monospace fs-8" id="areaPeriodCountBadge">
+                                Multi-Period Timeline
+                            </span>
+                        </div>
+                        <div style="position: relative; height: 260px; width: 100%;">
+                            <canvas id="chartL3Area"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Chart 2: Bullet Chart (Current Condition & Coverage Target Gauge) --}}
+                <div class="col-12 col-lg-5">
+                    <div class="p-3 rounded-3 bg-dark bg-opacity-75 border border-secondary border-opacity-30 h-100 d-flex flex-column justify-content-between">
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <h6 class="fw-bold text-white mb-0 brand-font">
+                                        <i class="bi bi-bullseye text-info me-1.5"></i>2. Bullet Chart: Kecukupan Pasokan
+                                    </h6>
+                                    <small class="text-muted">Target: In Demand | Aktual: Stok Fisik | Indikator: PO</small>
+                                </div>
+                            </div>
+                            <div style="position: relative; height: 180px; width: 100%;">
+                                <canvas id="chartL3Bullet"></canvas>
+                            </div>
+                        </div>
+
+                        {{-- Bullet Chart Quick Legend & Insight --}}
+                        <div class="p-2 rounded bg-dark border border-secondary border-opacity-20 font-monospace small mt-2">
+                            <div class="d-flex justify-content-between align-items-center fs-8 mb-1">
+                                <span><span class="badge bg-danger rounded-circle p-1 me-1"></span>Target Kebutuhan (In Demand):</span>
+                                <strong class="text-info" id="bulletTargetText">0 PCS</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center fs-8 mb-1">
+                                <span><span class="badge rounded-circle p-1 me-1" style="background: #8b5cf6;"></span>Stok Fisik Aktual (Actual):</span>
+                                <strong style="color: #a78bfa;" id="bulletActualText">0 PCS</strong>
+                            </div>
+                            <div class="d-flex justify-content-between align-items-center fs-8">
+                                <span><span class="badge bg-warning rounded-circle p-1 me-1"></span>Pesanan Berjalan (Outstanding PO):</span>
+                                <strong class="text-warning" id="bulletPoText">0 PCS</strong>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
     <!-- ═══ RECONCILIATION & AUDIT INTEGRITY PANEL ═══ -->
@@ -587,13 +1131,10 @@
             <div class="d-flex align-items-center gap-2">
                 <i class="bi bi-calculator text-purple fs-5" style="color: #a78bfa;"></i>
                 <div>
-                    <span class="fw-bold text-white small d-block">Panel Rekonsiliasi Matematika: Dashboard KPI vs Detail Tabel</span>
-                    <small class="text-muted" style="font-size: 0.72rem;">Verifikasi otomatis: Nilai Kartu KPI sama persis dengan total akumulasi baris tabel fisik.</small>
+                    <span class="fw-bold text-white small d-block">Rekonsiliasi KPI</span>
                 </div>
             </div>
-            <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2.5 py-1.5 font-monospace" style="font-size: 0.75rem;">
-                <i class="bi bi-shield-check me-1"></i>Audit: 100% Konsisten
-            </span>
+            <span class="badge bg-success bg-opacity-25 text-success px-2 py-1 font-monospace" style="font-size: 0.75rem;"><i class="bi bi-shield-check me-1"></i>Konsisten</span>
         </div>
         <div class="row g-2 text-center font-monospace">
             <div class="col-6 col-md-2">
@@ -616,8 +1157,8 @@
             </div>
             <div class="col-6 col-md-2">
                 <div class="p-2 rounded bg-dark bg-opacity-60 border border-secondary border-opacity-25">
-                    <small class="text-muted d-block" style="font-size: 0.68rem; letter-spacing: 0.05em;">Σ POTENTIAL SUPPLY</small>
-                    <span class="fw-bold text-success fs-7">{{ number_format($kpiTotalPotentialSupply) }} PCS</span>
+                    <small class="text-muted d-block" style="font-size: 0.68rem; letter-spacing: 0.05em;">NET SUPPLY GAP</small>
+                    <span class="fw-bold fs-7 {{ $kpiNetSupplyGap >= 0 ? 'text-success' : 'text-danger' }}">{{ $kpiNetSupplyGap >= 0 ? '+' : '' }}{{ number_format($kpiNetSupplyGap) }} PCS</span>
                 </div>
             </div>
             <div class="col-6 col-md-2">
@@ -642,7 +1183,6 @@
                 <h5 class="fw-bold text-white mb-0 brand-font">
                     <i class="bi bi-table text-purple me-2" style="color: #a78bfa;"></i>Tabel Data Aktual Inventory (Stok Fisik &amp; Integrasi Supply)
                 </h5>
-                <small class="text-muted">Menampilkan daftar data stok fisik aktual yang telah diunggah ke sistem. Centang checkbox untuk <strong>Delete Selection</strong> atau gunakan tombol <strong>Hapus Semua Data</strong> untuk reset.</small>
             </div>
             <div class="d-flex align-items-center gap-2">
                 <span class="badge bg-dark border border-secondary text-light font-monospace">
@@ -668,10 +1208,9 @@
                         <th>Material Code</th>
                         <th>Deskripsi Barang</th>
                         <th class="text-end" style="color: #c4b5fd;">Actual Inv</th>
-                        <th class="text-center">Snapshot Date</th>
+                        <th class="text-center">Periode &amp; Tgl Snapshot</th>
                         <th class="text-end text-info">Inventory Demand</th>
                         <th class="text-end text-warning">Outstanding PO</th>
-                        <th class="text-end text-success">Potential Supply</th>
                         <th class="text-end">Supply Gap</th>
                         <th class="text-center">Coverage</th>
                         <th class="text-center">Status Supply</th>
@@ -687,6 +1226,11 @@
                                    value="{{ $row->inventory_id ?? $row->part_number }}" 
                                    data-id="{{ $row->inventory_id ?? '' }}" 
                                    data-part="{{ $row->part_number }}"
+                                   data-stock="{{ $row->actual_stock }}"
+                                   data-demand="{{ $row->inventory_demand }}"
+                                   data-po="{{ $row->outstanding_po_qty }}"
+                                   data-gap="{{ $row->net_supply_gap }}"
+                                   data-valusd="{{ $row->inventory_val_usd }}"
                                    onchange="updateSelectedInventoryCount()">
                         </td>
                         <td class="text-center font-monospace text-muted">
@@ -709,8 +1253,13 @@
                             <span class="fw-bold" style="color: #a78bfa; font-size: 0.92rem;">{{ number_format($row->actual_stock) }}</span>
                             <br><small class="text-muted font-monospace" style="font-size: 0.72rem;" title="Nilai Finansial Stok Fisik (${{ number_format($row->inventory_val_usd, 2) }})">${{ number_format($row->inventory_val_usd, 2) }}</small>
                         </td>
-                        <td class="text-center font-monospace text-muted fs-8">
-                            {{ $row->last_stock_date }}
+                        <td class="text-center font-monospace">
+                            @if(!empty($row->period_label) && $row->period_label !== '-')
+                                <span class="badge bg-dark border border-secondary text-info fs-8 px-2 py-0.5" style="font-size: 0.73rem;">
+                                    <i class="bi bi-calendar3 me-0.5"></i>{{ $row->period_label }}
+                                </span>
+                            @endif
+                            <div class="text-muted fs-8 mt-0.5">{{ $row->last_stock_date }}</div>
                         </td>
                         <td class="text-end font-monospace text-info">
                             <span class="fw-semibold">{{ number_format($row->inventory_demand) }}</span>
@@ -718,9 +1267,6 @@
                         </td>
                         <td class="text-end font-monospace text-warning fw-semibold">
                             {{ number_format($row->outstanding_po_qty) }}
-                        </td>
-                        <td class="text-end font-monospace text-success fw-bold">
-                            {{ number_format($row->potential_supply) }}
                         </td>
                         <td class="text-end font-monospace fw-bold {{ $row->net_supply_gap >= 0 ? 'text-success' : 'text-danger' }}">
                             {{ $row->net_supply_gap >= 0 ? '+' : '' }}{{ number_format($row->net_supply_gap) }}
@@ -762,7 +1308,7 @@
                     </tr>
                     @empty
                     <tr>
-                        <td colspan="16" class="text-center py-5">
+                        <td colspan="15" class="text-center py-5">
                             <div class="empty-state">
                                 <i class="bi bi-boxes" style="font-size: 3rem; color: var(--text-muted); opacity: 0.5;"></i>
                                 <h6 class="text-white mt-3 mb-1">Belum Ada Data Aktual Inventory</h6>
@@ -793,9 +1339,6 @@
                         <td class="text-end text-warning py-2.5">
                             {{ number_format($kpiTotalOutstandingPo) }}
                         </td>
-                        <td class="text-end text-success py-2.5">
-                            {{ number_format($kpiTotalPotentialSupply) }}
-                        </td>
                         <td class="text-end py-2.5 {{ $kpiNetSupplyGap >= 0 ? 'text-success' : 'text-danger' }}">
                             {{ $kpiNetSupplyGap >= 0 ? '+' : '' }}{{ number_format($kpiNetSupplyGap) }}
                         </td>
@@ -824,6 +1367,221 @@
         @endif
     </div>
 
+    <!-- ═══ FLOATING LIVE SELECTION SUM BAR ═══ -->
+    <div class="floating-selection-bar" id="floatingSelectionBar">
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge text-white px-2.5 py-1 rounded-pill fw-bold" style="background: #8b5cf6;">
+                <i class="bi bi-check2-square me-1"></i><span id="floatSelectedCount">0</span> Item Terpilih
+            </span>
+        </div>
+        <div class="d-flex align-items-center gap-3 font-monospace small text-white border-start border-secondary border-opacity-50 ps-3">
+            <div>
+                <small class="text-muted d-block" style="font-size: 0.65rem;">∑ STOK FISIK</small>
+                <span class="fw-bold" style="color: #a78bfa;" id="floatSumStock">0</span> PCS
+            </div>
+            <div>
+                <small class="text-muted d-block" style="font-size: 0.65rem;">∑ DEMAND</small>
+                <span class="fw-bold text-info" id="floatSumDemand">0</span> PCS
+            </div>
+            <div>
+                <small class="text-muted d-block" style="font-size: 0.65rem;">∑ OUTSTANDING PO</small>
+                <span class="fw-bold text-warning" id="floatSumPo">0</span> PCS
+            </div>
+            <div>
+                <small class="text-muted d-block" style="font-size: 0.65rem;">∑ VALUASI ($)</small>
+                <span class="fw-bold text-success" id="floatSumValUsd">$0.00</span>
+            </div>
+        </div>
+        <div class="d-flex align-items-center gap-2 border-start border-secondary border-opacity-50 ps-3">
+            <button type="button" class="btn btn-sm btn-kawai-sum px-3 py-1 rounded-pill" onclick="openSumModalWithSelection()" title="Buka Detail Kalkulasi Item Terpilih">
+                <i class="bi bi-calculator me-1"></i>Detail SUM
+            </button>
+            <button type="button" class="btn btn-sm btn-kawai-danger px-3 py-1 rounded-pill" onclick="triggerDeleteSelectionModal()" title="Hapus Data Terpilih">
+                <i class="bi bi-trash3-fill me-1"></i>Hapus (<span id="floatDeleteCount">0</span>)
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-circle px-2 py-1" onclick="clearAllSelection()" title="Batalkan Pilihan">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+    </div>
+
+</div>
+
+<!-- ═══ MODAL KALKULATOR & RINGKASAN AKUMULASI (SUM TOTAL) ═══ -->
+<div class="modal fade" id="modalSummarySum" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content" style="border: 1px solid rgba(6, 182, 212, 0.4); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);">
+            <div class="modal-header pb-2" style="border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="d-flex align-items-center gap-2">
+                    <div class="p-2 rounded-3" style="background: rgba(6, 182, 212, 0.15); border: 1px solid rgba(6, 182, 212, 0.35);">
+                        <i class="bi bi-calculator-fill text-info fs-5"></i>
+                    </div>
+                    <div>
+                        <h5 class="modal-title brand-font text-white mb-0">Ringkasan &amp; Kalkulator Akumulasi (SUM Total)</h5>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                {{-- Nav Tabs --}}
+                <ul class="nav nav-pills mb-3 gap-2" id="sumModalTabs" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active rounded-pill px-3 py-1.5 fw-semibold fs-7" id="tab-filtered-sum" data-bs-toggle="pill" data-bs-target="#pane-filtered-sum" type="button" role="tab">
+                            <i class="bi bi-funnel-fill me-1"></i>∑ Total Data Terfilter ({{ $filteredMatrix->count() }} Data)
+                        </button>
+                    </li>
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link rounded-pill px-3 py-1.5 fw-semibold fs-7" id="tab-selection-sum" data-bs-toggle="pill" data-bs-target="#pane-selection-sum" type="button" role="tab">
+                            <i class="bi bi-check2-square me-1"></i>∑ Item Terpilih (<span id="modalTabSelectedCount">0</span>)
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="sumModalTabContent">
+                    {{-- Tab 1: Total Filtered --}}
+                    <div class="tab-pane fade show active" id="pane-filtered-sum" role="tabpanel">
+                        <div class="row g-3 text-center font-monospace mb-3">
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">TOTAL ACTUAL STOCK (FISIK)</small>
+                                    <span class="fw-bold fs-5" style="color: #a78bfa;">{{ number_format($kpiTotalInventoryQty) }}</span>
+                                    <span class="text-muted small">PCS</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">TOTAL INVENTORY DEMAND</small>
+                                    <span class="fw-bold text-info fs-5">{{ number_format($kpiTotalInventoryDemand) }}</span>
+                                    <span class="text-muted small">PCS</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">TOTAL OUTSTANDING PO</small>
+                                    <span class="fw-bold text-warning fs-5">{{ number_format($kpiTotalOutstandingPo) }}</span>
+                                    <span class="text-muted small">PCS</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">NET SUPPLY GAP</small>
+                                    <span class="fw-bold fs-5 {{ $kpiNetSupplyGap >= 0 ? 'text-success' : 'text-danger' }}">
+                                        {{ $kpiNetSupplyGap >= 0 ? '+' : '' }}{{ number_format($kpiNetSupplyGap) }}
+                                    </span>
+                                    <span class="text-muted small">PCS</span>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">VALUASI INVENTORY ($ USD)</small>
+                                    <span class="fw-bold text-white fs-5">${{ number_format($kpiTotalInventoryValUsd, 2) }}</span>
+                                    <div class="text-muted fs-8">≈ Rp {{ number_format($kpiTotalInventoryValIdr, 0, ',', '.') }}</div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-4">
+                                <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                    <small class="text-muted d-block fs-8">RATA-RATA COVERAGE</small>
+                                    <span class="fw-bold text-primary fs-5">{{ $kpiCoveragePercentage }}%</span>
+                                    <div class="text-muted fs-8">Tingkat Kecukupan</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- Status Distribution pills --}}
+                        <div class="p-3 rounded bg-dark bg-opacity-50 border border-secondary border-opacity-25 d-flex justify-content-around text-center flex-wrap gap-2">
+                            <div>
+                                <span class="badge bg-success bg-opacity-20 text-success border border-success border-opacity-30 px-2.5 py-1 mb-1">
+                                    <i class="bi bi-check-circle-fill me-1"></i>Surplus
+                                </span>
+                                <strong class="d-block text-white font-monospace">{{ $kpiSurplusCount }} Item</strong>
+                            </div>
+                            <div>
+                                <span class="badge bg-primary bg-opacity-20 text-primary border border-primary border-opacity-30 px-2.5 py-1 mb-1">
+                                    <i class="bi bi-shield-fill-check me-1"></i>Covered by PO
+                                </span>
+                                <strong class="d-block text-white font-monospace">{{ $kpiCoveredByPoCount }} Item</strong>
+                            </div>
+                            <div>
+                                <span class="badge bg-danger bg-opacity-20 text-danger border border-danger border-opacity-30 px-2.5 py-1 mb-1">
+                                    <i class="bi bi-exclamation-triangle-fill me-1"></i>Defisit / Perlu PO
+                                </span>
+                                <strong class="d-block text-white font-monospace">{{ $kpiCriticalDeficitCount }} Item</strong>
+                            </div>
+                            <div>
+                                <span class="badge bg-secondary bg-opacity-20 text-light border border-secondary border-opacity-30 px-2.5 py-1 mb-1">
+                                    <i class="bi bi-check-all me-1"></i>Optimal
+                                </span>
+                                <strong class="d-block text-white font-monospace">{{ $kpiOptimalCount }} Item</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Tab 2: Selected Checkboxes --}}
+                    <div class="tab-pane fade" id="pane-selection-sum" role="tabpanel">
+                        <div id="selectionSumEmptyState" class="text-center py-4 text-muted">
+                            <i class="bi bi-check2-square fs-1 text-secondary mb-2 d-block opacity-50"></i>
+                            <h6 class="text-white fw-bold">Belum Ada Baris Data yang Dipilih</h6>
+                            <p class="small mb-3">Centang kotak checkbox pada baris tabel untuk melihat kalkulasi penjumlahan instan item-item spesifik.</p>
+                            <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" onclick="document.getElementById('checkAllInventory').click(); updateSelectedInventoryCount();">
+                                <i class="bi bi-check-all me-1"></i>Pilih Semua di Halaman Ini
+                            </button>
+                        </div>
+
+                        <div id="selectionSumContent" class="d-none">
+                            <div class="row g-3 text-center font-monospace mb-3">
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-purple border-opacity-30" style="border-color: rgba(139, 92, 246, 0.4) !important;">
+                                        <small class="text-muted d-block fs-8">∑ STOK FISIK TERPILIH</small>
+                                        <span class="fw-bold fs-5" style="color: #a78bfa;" id="modalSumSelStock">0</span>
+                                        <span class="text-muted small">PCS</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-info border-opacity-30">
+                                        <small class="text-muted d-block fs-8">∑ DEMAND TERPILIH</small>
+                                        <span class="fw-bold text-info fs-5" id="modalSumSelDemand">0</span>
+                                        <span class="text-muted small">PCS</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-warning border-opacity-30">
+                                        <small class="text-muted d-block fs-8">∑ OUTSTANDING PO TERPILIH</small>
+                                        <span class="fw-bold text-warning fs-5" id="modalSumSelPo">0</span>
+                                        <span class="text-muted small">PCS</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                        <small class="text-muted d-block fs-8">∑ NET GAP TERPILIH</small>
+                                        <span class="fw-bold fs-5" id="modalSumSelGap">0</span>
+                                        <span class="text-muted small">PCS</span>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-success border-opacity-30">
+                                        <small class="text-muted d-block fs-8">∑ VALUASI ($ USD)</small>
+                                        <span class="fw-bold text-success fs-5" id="modalSumSelValUsd">$0.00</span>
+                                        <div class="text-muted fs-8">Total Nilai Finansial</div>
+                                    </div>
+                                </div>
+                                <div class="col-6 col-md-4">
+                                    <div class="p-3 rounded bg-dark bg-opacity-75 border border-secondary border-opacity-30">
+                                        <small class="text-muted d-block fs-8">TOTAL BARIS DIPILIH</small>
+                                        <span class="fw-bold text-white fs-5" id="modalSumSelCount">0</span>
+                                        <div class="text-muted fs-8">Posisi Material</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer d-flex justify-content-between">
+                <span class="text-muted small"><i class="bi bi-shield-check text-success me-1"></i>Kalkulasi Terintegrasi</span>
+                <button type="button" class="btn btn-sm btn-kawai-secondary rounded-pill px-3" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <!-- ═══ MODAL IMPORT EXCEL DENGAN PREVIEW INTERAKTIF ═══ -->
@@ -838,11 +1596,72 @@
             </div>
             <div class="modal-body p-4">
                 {{-- Dropzone / File Select --}}
-                <div class="dropzone-box mb-4" id="dropzoneInventory" onclick="document.getElementById('fileInputInventory').click()">
+                <div class="dropzone-box mb-3" id="dropzoneInventory" onclick="document.getElementById('fileInputInventory').click()">
                     <i class="bi bi-cloud-arrow-up-fill text-purple fs-1 mb-2 d-block" style="color: #a78bfa;"></i>
                     <h6 class="text-white fw-bold mb-1">Pilih atau Tarik File Excel / CSV ke Sini</h6>
-                    <p class="text-muted small mb-0">Mendukung format: <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code></p>
+                    <p class="text-muted small mb-0">Mendukung format: <code>.xlsx</code>, <code>.xls</code>, <code>.csv</code> (Contoh: <em>inventory juni syahrul.xlsx</em>)</p>
                     <input type="file" id="fileInputInventory" accept=".xlsx,.xls,.csv" style="display:none;" onchange="handleExcelFileSelect(this)">
+                </div>
+
+                {{-- Tanggal / Periode Snapshot Selector --}}
+                <div class="row g-3 mb-3 align-items-center p-3 rounded-3" style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08);">
+                    <div class="col-12">
+                        <label class="form-label text-white small fw-bold mb-1">
+                            <i class="bi bi-calendar3 text-purple me-1"></i> Tanggal / Periode Snapshot Inventory:
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input type="date" id="importSnapshotDate" class="form-control bg-dark border-secondary text-white" value="{{ date('Y-m-d') }}" onchange="updatePreviewSnapshotDate(this.value)">
+                            <span class="input-group-text bg-secondary bg-opacity-25 border-secondary text-info small" id="detectedPeriodBadge">
+                                <i class="bi bi-magic me-1"></i> Auto-detect
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                {{-- Pemetaan Kolom Excel (Column Mapping) --}}
+                <div id="columnMappingBox" class="p-3 mb-3 rounded-3 d-none" style="background: rgba(30, 41, 59, 0.7); border: 1px solid rgba(59, 130, 246, 0.3);">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-white small fw-bold">
+                            <i class="bi bi-layout-three-columns text-info me-1"></i> Pemetaan Kolom Excel (Otomatis Terdeteksi):
+                        </span>
+                    </div>
+                    <div class="row g-2">
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-muted fs-8 mb-0.5">Supplier Code</label>
+                            <select id="mapColSuppCode" class="form-select form-select-sm bg-dark text-white border-secondary fs-8" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Tidak Ada --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-muted fs-8 mb-0.5">Supplier Name</label>
+                            <select id="mapColSuppName" class="form-select form-select-sm bg-dark text-white border-secondary fs-8" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Tidak Ada --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-muted fs-8 mb-0.5">Plant / Pabrik</label>
+                            <select id="mapColPlant" class="form-select form-select-sm bg-dark text-white border-secondary fs-8" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Default (KIP1) --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-warning fs-8 mb-0.5 fw-bold"><i class="bi bi-star-fill text-warning me-0.5" style="font-size:0.65rem;"></i>Material Code *</label>
+                            <select id="mapColMatCode" class="form-select form-select-sm bg-dark text-warning border-warning fs-8 fw-bold" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Wajib Dipilih --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-muted fs-8 mb-0.5">Description</label>
+                            <select id="mapColDesc" class="form-select form-select-sm bg-dark text-white border-secondary fs-8" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Otomatis Master --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 col-6">
+                            <label class="form-label text-success fs-8 mb-0.5 fw-bold"><i class="bi bi-star-fill text-success me-0.5" style="font-size:0.65rem;"></i>Actual Stock *</label>
+                            <select id="mapColInvQty" class="form-select form-select-sm bg-dark text-success border-success fs-8 fw-bold" onchange="reapplyColumnMapping()">
+                                <option value="-1">-- Wajib Dipilih --</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
 
                 {{-- Status Alert Box Preview --}}
@@ -1087,6 +1906,145 @@
     </div>
 </div>
 
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+{{-- ── MODAL DIAGNOSA KESEHATAN VENDOR & ITEM CODE BERMASALAH (POPUP) ── --}}
+{{-- ═════════════════════════════════════════════════════════════════════ --}}
+<div class="modal fade" id="modalVendorDiagnostic" tabindex="-1" aria-labelledby="diagVendorName" aria-hidden="true" style="z-index: 1060;">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content" style="border: 1px solid rgba(139, 92, 246, 0.4); box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);">
+            {{-- Modal Header --}}
+            <div class="modal-header pb-3" style="background: rgba(15, 23, 42, 0.95); border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+                <div class="d-flex align-items-center gap-3 flex-wrap">
+                    <div class="p-2.5 rounded-3 bg-dark border border-secondary border-opacity-30 text-warning fs-4">
+                        <i class="bi bi-building"></i>
+                    </div>
+                    <div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <h5 class="modal-title brand-font text-white mb-0" id="diagVendorName">NAMA VENDOR</h5>
+                            <span class="badge bg-secondary font-monospace" id="diagVendorCode">KODE: -</span>
+                            <span id="diagVendorStatusBadge" class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-40">CRITICAL</span>
+                        </div>
+                        <p class="text-muted small mb-0 mt-1" id="diagVendorSubtitle"></p>
+                    </div>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+
+            {{-- Modal Body --}}
+            <div class="modal-body p-4 style-scrollbar" style="background: #111827;">
+                
+                {{-- Status Diagnostic Reason Banner --}}
+                <div class="p-3 rounded-3 mb-3 d-flex align-items-center gap-3" id="diagReasonBanner" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.35);">
+                    <i class="bi bi-exclamation-triangle-fill fs-3 text-danger" id="diagReasonIcon"></i>
+                    <div>
+                        <strong class="d-block text-white" id="diagReasonTitle">Ringkasan Diagnosa Status Vendor</strong>
+                        <span class="small text-light" id="diagReasonDesc">Deskripsi detail diagnosa...</span>
+                    </div>
+                </div>
+
+                {{-- 5 Metric Cards --}}
+                <div class="row g-2 text-center font-monospace mb-4">
+                    <div class="col-6 col-md">
+                        <div class="p-2.5 rounded bg-dark border border-secondary border-opacity-30">
+                            <small class="text-muted d-block fs-8">TOTAL ITEM CODES</small>
+                            <strong class="fs-5 text-white" id="diagTotalItems">0</strong>
+                            <small class="text-muted d-block fs-8">SKU Terdaftar</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2.5 rounded bg-dark border border-danger border-opacity-40" style="background: rgba(239, 68, 68, 0.08) !important;">
+                            <small class="text-danger d-block fs-8">ITEM DEFISIT (CRITICAL)</small>
+                            <strong class="fs-5 text-danger" id="diagCriticalCount">0</strong>
+                            <small class="text-muted d-block fs-8">Perlu PO Tambahan</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2.5 rounded bg-dark border border-warning border-opacity-40" style="background: rgba(245, 158, 11, 0.08) !important;">
+                            <small class="text-warning d-block fs-8">ITEM TERCOVER PO</small>
+                            <strong class="fs-5 text-warning" id="diagAttentionCount">0</strong>
+                            <small class="text-muted d-block fs-8">PO On Schedule</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2.5 rounded bg-dark border border-success border-opacity-40" style="background: rgba(16, 185, 129, 0.08) !important;">
+                            <small class="text-success d-block fs-8">ITEM AMAN (HEALTHY)</small>
+                            <strong class="fs-5 text-success" id="diagHealthyCount">0</strong>
+                            <small class="text-muted d-block fs-8">Stok Mencukupi</small>
+                        </div>
+                    </div>
+                    <div class="col-6 col-md">
+                        <div class="p-2.5 rounded bg-dark border border-info border-opacity-40" style="background: rgba(6, 182, 212, 0.08) !important;">
+                            <small class="text-info d-block fs-8">TOTAL DEFISIT PASOKAN</small>
+                            <strong class="fs-5 text-info" id="diagTotalDeficit">0 PCS</strong>
+                            <small class="text-muted d-block fs-8">Kekurangan Fisik</small>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Nav Tabs & Search Filter --}}
+                <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2 pb-2 border-bottom border-secondary border-opacity-25">
+                    <div class="d-flex align-items-center gap-1.5 flex-wrap">
+                        <button class="btn btn-sm btn-outline-danger rounded-pill px-3 py-1 fw-semibold fs-7 active" id="tabDiagCritical" type="button" onclick="filterDiagModalCategory('Critical')">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i>Item Bermasalah / Kritis (<span id="tabCountCritical">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-semibold fs-7" id="tabDiagAttention" type="button" onclick="filterDiagModalCategory('Attention')">
+                            <i class="bi bi-shield-fill-check me-1"></i>Tercover PO (<span id="tabCountAttention">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-outline-success rounded-pill px-3 py-1 fw-semibold fs-7" id="tabDiagHealthy" type="button" onclick="filterDiagModalCategory('Healthy')">
+                            <i class="bi bi-check-circle-fill me-1"></i>Item Aman (<span id="tabCountHealthy">0</span>)
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary rounded-pill px-3 py-1 fw-semibold fs-7" id="tabDiagAll" type="button" onclick="filterDiagModalCategory('ALL')">
+                            Semua Item (<span id="tabCountAll">0</span>)
+                        </button>
+                    </div>
+
+                    <div class="input-group input-group-sm" style="width: 250px;">
+                        <span class="input-group-text bg-dark border-secondary text-muted"><i class="bi bi-search"></i></span>
+                        <input type="text" class="form-control bg-dark border-secondary text-white" id="searchDiagModalInput" placeholder="Cari Item / Deskripsi..." oninput="filterDiagModalSearch(this.value)">
+                    </div>
+                </div>
+
+                {{-- Table of Diagnostic Items --}}
+                <div class="table-responsive rounded-3 border border-secondary border-opacity-30 style-scrollbar" style="max-height: 340px;">
+                    <table class="table table-dark table-hover table-sm align-middle mb-0" id="tableDiagItems">
+                        <thead class="table-dark text-muted font-monospace small sticky-top" style="background: #0f172a; border-bottom: 2px solid rgba(139, 92, 246, 0.4);">
+                            <tr>
+                                <th class="ps-3">Item Code</th>
+                                <th>Deskripsi Material</th>
+                                <th class="text-center">Plant</th>
+                                <th class="text-end text-info">In Demand</th>
+                                <th class="text-end" style="color: #a78bfa;">Actual Stock</th>
+                                <th class="text-end text-warning">Outstanding PO</th>
+                                <th class="text-end">Supply Gap</th>
+                                <th class="text-center">Coverage</th>
+                                <th class="text-center">Status</th>
+                                <th>Status</th>
+                                <th class="text-center pe-3" style="width: 110px;">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-monospace" id="tbodyDiagItems">
+                            {{-- Populated dynamically via JS --}}
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+
+            {{-- Modal Footer --}}
+            <div class="modal-footer d-flex justify-content-between align-items-center" style="background: rgba(15, 23, 42, 0.95); border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                <div>
+                    <button type="button" class="btn btn-sm btn-outline-info rounded-pill px-3" id="btnModalDrilldownL2" onclick="proceedFromModalToL2()">
+                        <i class="bi bi-arrow-right-circle me-1"></i>Lihat Semua Item
+                    </button>
+                </div>
+                <button type="button" class="btn btn-sm btn-kawai-secondary rounded-pill px-4" data-bs-dismiss="modal">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
@@ -1111,18 +2069,97 @@
         const countSpan = document.getElementById('selectedInventoryCount');
         const btnDeleteSelection = document.getElementById('btnDeleteSelection');
         const masterCheck = document.getElementById('checkAllInventory');
+        const floatingBar = document.getElementById('floatingSelectionBar');
+
+        let sumStock = 0;
+        let sumDemand = 0;
+        let sumPo = 0;
+        let sumGap = 0;
+        let sumValUsd = 0;
+
+        checkedBoxes.forEach(cb => {
+            sumStock += parseFloat(cb.getAttribute('data-stock') || 0);
+            sumDemand += parseFloat(cb.getAttribute('data-demand') || 0);
+            sumPo += parseFloat(cb.getAttribute('data-po') || 0);
+            sumGap += parseFloat(cb.getAttribute('data-gap') || 0);
+            sumValUsd += parseFloat(cb.getAttribute('data-valusd') || 0);
+        });
 
         if (countSpan) countSpan.innerText = count;
         
+        // Update Floating Live Selection Bar
+        if (floatingBar) {
+            if (count > 0) {
+                floatingBar.classList.add('show');
+                const floatSel = document.getElementById('floatSelectedCount');
+                const floatDel = document.getElementById('floatDeleteCount');
+                const floatStk = document.getElementById('floatSumStock');
+                const floatDem = document.getElementById('floatSumDemand');
+                const floatPo  = document.getElementById('floatSumPo');
+                const floatVal = document.getElementById('floatSumValUsd');
+
+                if (floatSel) floatSel.innerText = count;
+                if (floatDel) floatDel.innerText = count;
+                if (floatStk) floatStk.innerText = Math.round(sumStock).toLocaleString('id-ID');
+                if (floatDem) floatDem.innerText = Math.round(sumDemand).toLocaleString('id-ID');
+                if (floatPo) floatPo.innerText = Math.round(sumPo).toLocaleString('id-ID');
+                if (floatVal) floatVal.innerText = '$' + sumValUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+                floatingBar.classList.remove('show');
+            }
+        }
+
+        // Update Modal Selection Tab
+        const modalTabSelectedCount = document.getElementById('modalTabSelectedCount');
+        if (modalTabSelectedCount) modalTabSelectedCount.innerText = count;
+
+        const selEmptyState = document.getElementById('selectionSumEmptyState');
+        const selContent = document.getElementById('selectionSumContent');
+        if (selEmptyState && selContent) {
+            if (count > 0) {
+                selEmptyState.classList.add('d-none');
+                selContent.classList.remove('d-none');
+                document.getElementById('modalSumSelStock').innerText = Math.round(sumStock).toLocaleString('id-ID');
+                document.getElementById('modalSumSelDemand').innerText = Math.round(sumDemand).toLocaleString('id-ID');
+                document.getElementById('modalSumSelPo').innerText = Math.round(sumPo).toLocaleString('id-ID');
+                document.getElementById('modalSumSelGap').innerText = (sumGap >= 0 ? '+' : '') + Math.round(sumGap).toLocaleString('id-ID');
+                document.getElementById('modalSumSelValUsd').innerText = '$' + sumValUsd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                document.getElementById('modalSumSelCount').innerText = count;
+            } else {
+                selEmptyState.classList.remove('d-none');
+                selContent.classList.add('d-none');
+            }
+        }
+
         if (count > 0) {
-            btnDeleteSelection.classList.remove('d-none');
+            btnDeleteSelection?.classList.remove('d-none');
         } else {
-            btnDeleteSelection.classList.add('d-none');
+            btnDeleteSelection?.classList.add('d-none');
         }
 
         if (masterCheck) {
             masterCheck.checked = (total > 0 && count === total);
             masterCheck.indeterminate = (count > 0 && count < total);
+        }
+    }
+
+    function clearAllSelection() {
+        document.querySelectorAll('.row-checkbox-inventory').forEach(cb => cb.checked = false);
+        const masterCheck = document.getElementById('checkAllInventory');
+        if (masterCheck) {
+            masterCheck.checked = false;
+            masterCheck.indeterminate = false;
+        }
+        updateSelectedInventoryCount();
+    }
+
+    function openSumModalWithSelection() {
+        const modal = new bootstrap.Modal(document.getElementById('modalSummarySum'));
+        modal.show();
+        const tabEl = document.getElementById('tab-selection-sum');
+        if (tabEl) {
+            const tabTrigger = new bootstrap.Tab(tabEl);
+            tabTrigger.show();
         }
     }
 
@@ -1269,6 +2306,48 @@
     }
 
     // ── SHEETJS EXCEL PARSER & INTERACTIVE PREVIEW ──
+    let rawSheetDataCache = [];
+
+    function detectPeriodFromText(text) {
+        if (!text) return null;
+        const lower = String(text).toLowerCase();
+        
+        // Daftar Bulan ID & EN
+        const monthDefs = [
+            { name: 'januari', short: 'jan', num: '01' },
+            { name: 'februari', short: 'feb', num: '02' },
+            { name: 'maret', short: 'mar', num: '03' },
+            { name: 'april', short: 'apr', num: '04' },
+            { name: 'mei', short: 'may', num: '05' },
+            { name: 'juni', short: 'jun', num: '06' },
+            { name: 'juli', short: 'jul', num: '07' },
+            { name: 'agustus', short: 'aug', num: '08' },
+            { name: 'september', short: 'sep', num: '09' },
+            { name: 'oktober', short: 'oct', num: '10' },
+            { name: 'november', short: 'nov', num: '11' },
+            { name: 'desember', short: 'dec', num: '12' }
+        ];
+
+        let foundMonth = null;
+        for (let m of monthDefs) {
+            const regex = new RegExp(`\\b(${m.name}|${m.short})\\b|(${m.name}|${m.short})\\d+`, 'i');
+            if (regex.test(lower) || lower.includes(m.name) || (m.short.length >= 3 && lower.includes(m.short))) {
+                foundMonth = m.num;
+                break;
+            }
+        }
+
+        // Cari Tahun 4 digit (2020 - 2035)
+        const yearMatch = lower.match(/\b(202[0-9]|203[0-5])\b/) || lower.match(/(202[0-9]|203[0-5])/);
+        const foundYear = yearMatch ? yearMatch[1] : (new Date().getFullYear().toString());
+
+        if (foundMonth) {
+            const lastDay = new Date(parseInt(foundYear), parseInt(foundMonth), 0).getDate();
+            return `${foundYear}-${foundMonth}-${String(lastDay).padStart(2, '0')}`;
+        }
+        return null;
+    }
+
     function handleExcelFileSelect(input) {
         const file = input.files[0];
         if (!file) return;
@@ -1285,6 +2364,34 @@
                 
                 // Read as 2D Array to handle any header position
                 const sheetData = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: '' });
+                rawSheetDataCache = sheetData;
+
+                // Auto-detect period from filename, sheet name, and top rows
+                let detectedDate = detectPeriodFromText(file.name) 
+                    || detectPeriodFromText(firstSheetName);
+
+                if (!detectedDate && sheetData.length > 0) {
+                    for (let r = 0; r < Math.min(5, sheetData.length); r++) {
+                        const rowStr = (sheetData[r] || []).join(' ');
+                        const d = detectPeriodFromText(rowStr);
+                        if (d) {
+                            detectedDate = d;
+                            break;
+                        }
+                    }
+                }
+
+                if (detectedDate) {
+                    const dateInput = document.getElementById('importSnapshotDate');
+                    if (dateInput) {
+                        dateInput.value = detectedDate;
+                        const badge = document.getElementById('detectedPeriodBadge');
+                        if (badge) {
+                            badge.innerHTML = `<i class="bi bi-check2-circle text-success me-1"></i> Terdeteksi: ${detectedDate}`;
+                        }
+                    }
+                }
+
                 renderExcelPreview2D(sheetData);
             } catch (err) {
                 if (window.notify) {
@@ -1295,6 +2402,17 @@
             }
         };
         reader.readAsArrayBuffer(file);
+    }
+
+    function updatePreviewSnapshotDate(newDate) {
+        if (!newDate) return;
+        const badge = document.getElementById('detectedPeriodBadge');
+        if (badge) {
+            badge.innerHTML = `<i class="bi bi-pencil-fill text-warning me-1"></i> Manual: ${newDate}`;
+        }
+        if (rawSheetDataCache && rawSheetDataCache.length > 0) {
+            renderExcelPreview2D(rawSheetDataCache);
+        }
     }
 
     // Drag & Drop event bindings
@@ -1329,32 +2447,157 @@
         return isNaN(num) ? 0 : Math.round(num);
     }
 
-    function renderExcelPreview2D(sheetData) {
-        parsedExcelRows = [];
-        const tbody = document.getElementById('previewTableBody');
-        tbody.innerHTML = '';
+    function classifyExcelColumn(headerText) {
+        const raw = String(headerText || '').trim().toLowerCase();
+        const clean = raw.replace(/[^a-z0-9]/g, '');
+        if (!clean) return null;
 
+        // 1. Supplier Code (MUST check before mat_code)
+        if (
+            clean.includes('suppliercode') || clean.includes('vendorcode') ||
+            clean.includes('kodesupplier') || clean.includes('kodevendor') ||
+            clean.includes('kdsupp') || clean.includes('kdvendor') ||
+            clean.includes('suppcode') || clean.includes('vendorcode') ||
+            (clean.includes('supplier') && clean.includes('code')) ||
+            (clean.includes('vendor') && clean.includes('code')) ||
+            clean === 'kdpemasok' || clean === 'kdsp'
+        ) {
+            return 'supp_code';
+        }
+
+        // 2. Supplier Name
+        if (
+            clean.includes('suppliername') || clean.includes('vendorname') ||
+            clean.includes('namasupplier') || clean.includes('namavendor') ||
+            clean.includes('namapemasok') || clean === 'supplier' || clean === 'vendor' ||
+            clean === 'pemasok' || clean === 'pt' || clean === 'namasupp'
+        ) {
+            return 'supp_name';
+        }
+
+        // 3. Plant / Factory
+        if (
+            clean === 'plant' || clean === 'factory' || clean === 'pabrik' ||
+            clean === 'lokasi' || clean === 'site' || clean.includes('plant') ||
+            clean.includes('factorycode') || clean.includes('kdpabrik')
+        ) {
+            return 'plant';
+        }
+
+        // 4. Actual Inventory / Stock Qty (MUST check before material/item)
+        if (
+            clean.includes('actualinventory') || clean.includes('aktualinventory') ||
+            clean.includes('actualstock') || clean.includes('aktualstok') ||
+            clean.includes('currentstock') || clean.includes('stokfisik') ||
+            clean.includes('physicalstock') || clean.includes('endingstock') ||
+            clean.includes('saldoakhir') || clean === 'inventory' || clean === 'stock' ||
+            clean === 'stok' || clean === 'saldo' || clean === 'qty' || clean === 'quantity' ||
+            clean === 'jumlah' || clean === 'kuantitas' || clean === 'pcs' ||
+            clean.includes('m0inventory') || clean.includes('m0stock')
+        ) {
+            return 'inv_qty';
+        }
+
+        // 5. Material Code / Part Number (STRICT: Never match if supplier/vendor/desc/plant present)
+        if (
+            clean.includes('materialcode') || clean.includes('partnumber') ||
+            clean.includes('itemcode') || clean.includes('kodematerial') ||
+            clean.includes('kodebarang') || clean.includes('kodeitem') ||
+            clean.includes('kodepart') || clean.includes('partno') ||
+            clean.includes('drawingno') || clean === 'drawing' ||
+            clean.includes('matcode') || clean.includes('matno') ||
+            clean.includes('partcode') || clean === 'komponen' ||
+            (clean.includes('material') && !clean.includes('name') && !clean.includes('desc') && !clean.includes('supplier')) ||
+            (clean.includes('part') && !clean.includes('name') && !clean.includes('desc') && !clean.includes('supplier') && !clean.includes('vendor')) ||
+            (clean.includes('item') && !clean.includes('name') && !clean.includes('desc') && !clean.includes('description') && !clean.includes('supplier'))
+        ) {
+            return 'mat_code';
+        }
+
+        // 6. Description
+        if (
+            clean.includes('description') || clean.includes('deskripsi') ||
+            clean.includes('namabarang') || clean.includes('namamaterial') ||
+            clean.includes('itemdescription') || clean.includes('keterangan') ||
+            clean.includes('itemname') || clean.includes('partname') ||
+            clean.includes('spec') || clean.includes('spesifikasi') || clean === 'desc'
+        ) {
+            return 'desc';
+        }
+
+        // 7. Snapshot Date / Periode
+        if (
+            clean.includes('snapshotdate') || clean.includes('tanggalinventory') ||
+            clean.includes('tanggal') || clean === 'date' || clean.includes('periode') ||
+            clean.includes('period') || clean === 'tgl'
+        ) {
+            return 'date';
+        }
+
+        return null;
+    }
+
+    let activeColMap = {
+        mat_code: -1,
+        inv_qty: -1,
+        plant: -1,
+        supp_code: -1,
+        supp_name: -1,
+        desc: -1,
+        date: -1
+    };
+    let activeHeaderRow = [];
+    let activeBestHeaderIdx = 0;
+
+    function populateColumnDropdowns(headerRow) {
+        const fields = [
+            { id: 'mapColSuppCode', key: 'supp_code', defaultLabel: '-- Tidak Ada --' },
+            { id: 'mapColSuppName', key: 'supp_name', defaultLabel: '-- Tidak Ada --' },
+            { id: 'mapColPlant',    key: 'plant',     defaultLabel: '-- Default (KIP1) --' },
+            { id: 'mapColMatCode',  key: 'mat_code',  defaultLabel: '-- Wajib Dipilih --' },
+            { id: 'mapColDesc',     key: 'desc',      defaultLabel: '-- Otomatis Master --' },
+            { id: 'mapColInvQty',   key: 'inv_qty',   defaultLabel: '-- Wajib Dipilih --' }
+        ];
+
+        fields.forEach(f => {
+            const el = document.getElementById(f.id);
+            if (!el) return;
+            el.innerHTML = `<option value="-1">${f.defaultLabel}</option>`;
+            for (let c = 0; c < headerRow.length; c++) {
+                const colName = String(headerRow[c] || `Kolom ${c + 1}`).trim();
+                const opt = document.createElement('option');
+                opt.value = c;
+                opt.text = `[Kolom ${String.fromCharCode(65 + c)}] ${colName}`;
+                if (activeColMap[f.key] === c) {
+                    opt.selected = true;
+                }
+                el.appendChild(opt);
+            }
+        });
+
+        const box = document.getElementById('columnMappingBox');
+        if (box) box.classList.remove('d-none');
+    }
+
+    function reapplyColumnMapping() {
+        activeColMap.supp_code = parseInt(document.getElementById('mapColSuppCode')?.value ?? -1);
+        activeColMap.supp_name = parseInt(document.getElementById('mapColSuppName')?.value ?? -1);
+        activeColMap.plant     = parseInt(document.getElementById('mapColPlant')?.value ?? -1);
+        activeColMap.mat_code  = parseInt(document.getElementById('mapColMatCode')?.value ?? -1);
+        activeColMap.desc      = parseInt(document.getElementById('mapColDesc')?.value ?? -1);
+        activeColMap.inv_qty   = parseInt(document.getElementById('mapColInvQty')?.value ?? -1);
+
+        if (rawSheetDataCache && rawSheetDataCache.length > 0) {
+            renderRowsWithActiveMap(rawSheetDataCache);
+        }
+    }
+
+    function renderExcelPreview2D(sheetData) {
         if (!sheetData || sheetData.length === 0) {
             document.getElementById('statTotalRows').innerText = 'Total: 0 Baris';
             document.getElementById('btnConfirmImport').disabled = true;
             return;
         }
-
-        let validCount = 0;
-        let duplicateCount = 0;
-        let deficitCount = 0;
-        const seenCombinations = new Set();
-        const todayStr = new Date().toISOString().split('T')[0];
-
-        const headerKeywords = {
-            mat_code: ['materialcode', 'itemcode', 'partnumber', 'partno', 'drawing', 'material', 'kodebarang', 'kodematerial', 'kodeitem', 'kodepart', 'komponen', 'mat', 'pn', 'sku', 'code', 'barang', 'item', 'part', 'matno', 'matcode', 'drawingno'],
-            inv_qty: ['actualinventory', 'aktualinventory', 'actualstock', 'aktualstok', 'currentstock', 'stokfisik', 'physicalstock', 'endingstock', 'saldoakhir', 'inventory', 'stock', 'stok', 'm0inventory', 'm0stock', 'm0', 'saldo', 'qty', 'quantity', 'jumlah', 'kuantitas', 'vol', 'volume', 'total', 'output', 'pcs', 'juli', 'jul'],
-            plant: ['plant', 'factorycode', 'factory', 'pabrik', 'lokasi', 'site', 'gedung', 'kdpabrik', 'line', 'unit', 'plantcode'],
-            supp_code: ['suppliercode', 'vendorcode', 'kodesupplier', 'kodevendor', 'kdsupp', 'kdvendor', 'kdsp', 'suppcode', 'vendorcode'],
-            supp_name: ['suppliername', 'vendorname', 'namasupplier', 'namavendor', 'namapemasok', 'pemasok', 'supplier', 'vendor', 'namasupp', 'pt'],
-            desc: ['description', 'deskripsibarang', 'deskripsi', 'namabarang', 'namamaterial', 'keterangan', 'itemname', 'materialname', 'partname', 'namapart', 'spec', 'spesifikasi', 'desc', 'itemdescription'],
-            date: ['snapshotdate', 'tanggalinventory', 'tanggal', 'date', 'periode', 'period', 'tgl', 'proddate']
-        };
 
         // 1. Detect Header Row Index (Scan first 25 rows)
         let bestHeaderIdx = -1;
@@ -1365,15 +2608,9 @@
             if (!Array.isArray(row)) continue;
             let score = 0;
             for (let cell of row) {
-                const clean = String(cell || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-                if (!clean) continue;
-                for (let type in headerKeywords) {
-                    for (let kw of headerKeywords[type]) {
-                        if (clean === kw || clean.includes(kw) || (kw.length >= 5 && kw.includes(clean))) {
-                            score += (kw.length >= 4 ? 2 : 1);
-                            break;
-                        }
-                    }
+                const cType = classifyExcelColumn(cell);
+                if (cType) {
+                    score += (cType === 'mat_code' || cType === 'inv_qty' ? 3 : 1);
                 }
             }
             if (score > maxHeaderScore) {
@@ -1383,10 +2620,12 @@
         }
 
         if (bestHeaderIdx === -1) bestHeaderIdx = 0;
+        activeBestHeaderIdx = bestHeaderIdx;
         const headerRow = sheetData[bestHeaderIdx] || [];
+        activeHeaderRow = headerRow;
 
-        // 2. Map Column Indices
-        const colMap = {
+        // 2. Map Column Indices Unambiguously
+        activeColMap = {
             mat_code: -1,
             inv_qty: -1,
             plant: -1,
@@ -1397,56 +2636,72 @@
         };
 
         for (let c = 0; c < headerRow.length; c++) {
-            const clean = String(headerRow[c] || '').toLowerCase().replace(/[^a-z0-9]/g, '');
-            if (!clean) continue;
-
-            for (let field in colMap) {
-                if (colMap[field] === -1) {
-                    for (let kw of headerKeywords[field]) {
-                        if (clean === kw || clean.includes(kw) || (clean.length >= 4 && kw.includes(clean))) {
-                            colMap[field] = c;
-                            break;
-                        }
-                    }
-                }
+            const cell = headerRow[c];
+            const cType = classifyExcelColumn(cell);
+            if (cType && activeColMap[cType] === -1) {
+                activeColMap[cType] = c;
             }
         }
 
-        // Heuristic fallback if mat_code or inv_qty not detected
-        if (colMap.mat_code === -1 || colMap.inv_qty === -1) {
+        // 3. Fallback for Standard Kawai 6-column format (Col A=Supplier Code, B=Supplier Name, C=Plant, D=Material Code, E=Description, F=Actual Inventory)
+        if (activeColMap.mat_code === -1 && headerRow.length >= 4) {
+            if (activeColMap.supp_code === 0 && headerRow[3]) activeColMap.mat_code = 3;
+            if (activeColMap.supp_code === 0 && headerRow[1] && activeColMap.supp_name === -1) activeColMap.supp_name = 1;
+            if (activeColMap.supp_code === 0 && headerRow[2] && activeColMap.plant === -1) activeColMap.plant = 2;
+            if (activeColMap.supp_code === 0 && headerRow[4] && activeColMap.desc === -1) activeColMap.desc = 4;
+            if (activeColMap.supp_code === 0 && headerRow[5] && activeColMap.inv_qty === -1) activeColMap.inv_qty = 5;
+        }
+
+        // Heuristic fallback for mat_code & inv_qty
+        if (activeColMap.mat_code === -1 || activeColMap.inv_qty === -1) {
             for (let c = 0; c < headerRow.length; c++) {
+                if (c === activeColMap.supp_code || c === activeColMap.supp_name || c === activeColMap.plant) continue;
                 let numCount = 0;
                 let codeCount = 0;
                 for (let r = bestHeaderIdx + 1; r < Math.min(bestHeaderIdx + 20, sheetData.length); r++) {
                     const val = String((sheetData[r] && sheetData[r][c]) || '').trim();
                     if (/^-?\d+(\.\d+)?$/.test(val)) numCount++;
-                    if (/^[A-Za-z0-9\-\.]{4,20}$/.test(val) && isNaN(Number(val))) codeCount++;
+                    if (/^[A-Za-z0-9\-\.]{3,20}$/.test(val) && isNaN(Number(val))) codeCount++;
                 }
-                if (colMap.inv_qty === -1 && numCount > 5) colMap.inv_qty = c;
-                if (colMap.mat_code === -1 && (codeCount > 3 || (numCount > 5 && colMap.inv_qty !== c))) colMap.mat_code = c;
+                if (activeColMap.inv_qty === -1 && numCount > 5) activeColMap.inv_qty = c;
+                if (activeColMap.mat_code === -1 && (codeCount > 3 || (numCount > 5 && activeColMap.inv_qty !== c))) activeColMap.mat_code = c;
             }
         }
 
+        populateColumnDropdowns(headerRow);
+        renderRowsWithActiveMap(sheetData);
+    }
+
+    function renderRowsWithActiveMap(sheetData) {
+        parsedExcelRows = [];
+        const tbody = document.getElementById('previewTableBody');
+        tbody.innerHTML = '';
+
+        let validCount = 0;
+        let duplicateCount = 0;
+        let deficitCount = 0;
+        const seenCombinations = new Set();
+        const activeSnapshotDate = document.getElementById('importSnapshotDate')?.value || (new Date().toISOString().split('T')[0]);
         let totalRawRows = 0;
 
-        for (let r = bestHeaderIdx + 1; r < sheetData.length; r++) {
+        for (let r = activeBestHeaderIdx + 1; r < sheetData.length; r++) {
             const row = sheetData[r];
             if (!Array.isArray(row) || row.every(cell => String(cell || '').trim() === '')) continue;
             totalRawRows++;
 
-            const matCode = colMap.mat_code !== -1 ? String(row[colMap.mat_code] || '').trim() : '';
-            if (!matCode || matCode.toUpperCase() === 'ITEM CODE' || matCode.toUpperCase() === 'MATERIAL CODE' || matCode.toUpperCase().startsWith('TOTAL')) {
+            const matCode = activeColMap.mat_code !== -1 ? String(row[activeColMap.mat_code] || '').trim() : '';
+            if (!matCode || matCode.toUpperCase() === 'ITEM CODE' || matCode.toUpperCase() === 'MATERIAL CODE' || matCode.toUpperCase() === 'PART NUMBER' || matCode.toUpperCase().startsWith('TOTAL')) {
                 continue;
             }
 
-            const rawInv = colMap.inv_qty !== -1 ? row[colMap.inv_qty] : 0;
+            const rawInv = activeColMap.inv_qty !== -1 ? row[activeColMap.inv_qty] : 0;
             const cleanInv = parseNumericStockJS(rawInv);
 
-            const plant   = (colMap.plant !== -1 && row[colMap.plant]) ? String(row[colMap.plant]).trim().toUpperCase() : 'KIP 1';
-            const supCode = (colMap.supp_code !== -1 && row[colMap.supp_code]) ? String(row[colMap.supp_code]).trim().toUpperCase() : '';
-            const supName = (colMap.supp_name !== -1 && row[colMap.supp_name]) ? String(row[colMap.supp_name]).trim() : '';
-            const desc    = (colMap.desc !== -1 && row[colMap.desc]) ? String(row[colMap.desc]).trim() : '';
-            const snapDate = (colMap.date !== -1 && row[colMap.date]) ? String(row[colMap.date]).trim() : todayStr;
+            const plant   = (activeColMap.plant !== -1 && row[activeColMap.plant]) ? String(row[activeColMap.plant]).trim().toUpperCase() : 'KIP 1';
+            const supCode = (activeColMap.supp_code !== -1 && row[activeColMap.supp_code]) ? String(row[activeColMap.supp_code]).trim().toUpperCase() : '';
+            const supName = (activeColMap.supp_name !== -1 && row[activeColMap.supp_name]) ? String(row[activeColMap.supp_name]).trim() : '';
+            const desc    = (activeColMap.desc !== -1 && row[activeColMap.desc]) ? String(row[activeColMap.desc]).trim() : '';
+            const snapDate = (activeColMap.date !== -1 && row[activeColMap.date]) ? String(row[activeColMap.date]).trim() : activeSnapshotDate;
 
             const comboKey = plant + '|' + matCode;
             const isDuplicate = seenCombinations.has(comboKey);
@@ -1477,11 +2732,11 @@
 
                 tr.innerHTML = `
                     <td class="text-muted font-monospace">${r + 1}</td>
-                    <td class="font-monospace">${supCode || '-'}</td>
-                    <td>${supName || '-'}</td>
+                    <td class="font-monospace text-info">${supCode || '-'}</td>
+                    <td class="text-truncate" style="max-width: 140px;">${supName || '-'}</td>
                     <td><span class="badge-plant">${plant}</span></td>
-                    <td><strong class="text-white font-monospace">${matCode}</strong></td>
-                    <td class="text-truncate" style="max-width: 160px;" title="${desc}">${desc || '-'}</td>
+                    <td><strong class="text-warning font-monospace fs-7">${matCode}</strong></td>
+                    <td class="text-truncate" style="max-width: 170px;" title="${desc}">${desc || '-'}</td>
                     <td class="text-end font-monospace fw-bold ${cleanInv < 0 ? 'text-danger' : 'text-success'}">${cleanInv.toLocaleString('id-ID')}</td>
                     <td class="text-muted fs-8">${snapDate}</td>
                     <td>${statusBadge}</td>
@@ -1514,8 +2769,8 @@
         
         const btn = document.getElementById('btnConfirmImport');
         if (btn) {
-            btn.disabled = (parsedExcelRows.length === 0);
-            if (parsedExcelRows.length > 0) {
+            btn.disabled = (parsedExcelRows.length === 0 || activeColMap.mat_code === -1 || activeColMap.inv_qty === -1);
+            if (parsedExcelRows.length > 0 && activeColMap.mat_code !== -1) {
                 btn.classList.add('shadow-lg');
                 btn.style.filter = 'drop-shadow(0 0 10px rgba(16,185,129,0.5))';
             } else {
@@ -1575,135 +2830,962 @@
         });
     }
 
-    // ── CHARTS INITIALIZATION ──
+    // ── DATASETS & DRILL-DOWN INITIALIZATION ──
+    const vendorOverviewList = @json($vendorOverviewList ?? []);
+    const vendorChartData    = @json($vendorChartData ?? []);
+    const statusDist         = @json($chartStatusDistribution ?? []);
+    
+    // Explicit Drill-Down & Diagnostic States
+    let selectedVendor       = null;
+    let selectedItemCode     = null;
+    let selectedVendorDiag   = null;
+    let currentDiagCategory  = 'ALL';
+    let currentDiagSearch    = '';
+    let chartVendorAreaInst  = null;
+    let chartL3AreaInstance  = null;
+    let chartL3BulletInstance= null;
+
     document.addEventListener('DOMContentLoaded', function() {
-        initInventoryCharts();
+        // Automatically verify completeness badge
+        const badge = document.getElementById('validationBadgeCompleteness');
+        if (badge) {
+            badge.innerHTML = `<i class="bi bi-shield-check me-1"></i>${vendorOverviewList.length} Vendor`;
+        }
+
+        // Initialize Vendor Supply & Health Area Chart
+        renderVendorSupplyAreaChart('ALL');
     });
 
-    function initInventoryCharts() {
-        const chartLabels          = @json($chartLabels ?? []);
-        const chartInventoryDemand = @json($chartInventoryDemand ?? ($chartForecastStock ?? []));
-        const chartActualInventory = @json($chartActualInventory ?? []);
-        const chartOutstandingPo   = @json($chartOutstandingPo ?? []);
-        const chartPotentialSupply = @json($chartPotentialSupply ?? []);
-        const statusDist           = @json($chartStatusDistribution ?? []);
+    // ═══════════════════════════════════════════════════════════
+    // ── LEVEL 1: VENDOR AREA CHART & VIEW TOGGLE FUNCTIONS ────
+    // ═══════════════════════════════════════════════════════════
 
-        // 1. Grouped Bar Chart: Top 10 Executive Comparison (4 Bars)
-        const ctxBar = document.getElementById('chartTopInventoryComparison');
-        if (ctxBar) {
-            new Chart(ctxBar, {
-                type: 'bar',
-                data: {
-                    labels: chartLabels.length > 0 ? chartLabels : ['No Data'],
-                    datasets: [
-                        {
-                            label: 'Inventory Demand (Forecast)',
-                            data: chartInventoryDemand,
-                            backgroundColor: 'rgba(59, 130, 246, 0.85)',
-                            borderColor: '#3b82f6',
-                            borderWidth: 1,
-                            borderRadius: 6,
-                        },
-                        {
-                            label: 'Actual Inventory (Fisik)',
-                            data: chartActualInventory,
-                            backgroundColor: 'rgba(168, 85, 247, 0.85)',
-                            borderColor: '#a855f7',
-                            borderWidth: 1,
-                            borderRadius: 6,
-                        },
-                        {
-                            label: 'Outstanding PO',
-                            data: chartOutstandingPo,
-                            backgroundColor: 'rgba(245, 158, 11, 0.85)',
-                            borderColor: '#f59e0b',
-                            borderWidth: 1,
-                            borderRadius: 6,
-                        },
-                        {
-                            label: 'Potential Supply',
-                            data: chartPotentialSupply,
-                            backgroundColor: 'rgba(16, 185, 129, 0.85)',
-                            borderColor: '#10b981',
-                            borderWidth: 1,
-                            borderRadius: 6,
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { labels: { color: '#cbd5e1', font: { family: 'Outfit', weight: 600 } } },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            borderColor: 'rgba(139, 92, 246, 0.3)',
-                            borderWidth: 1,
-                            callbacks: {
-                                label: function(ctx) {
-                                    return ctx.dataset.label + ': ' + Number(ctx.raw).toLocaleString('id-ID') + ' PCS';
-                                }
-                            }
-                        }
+    function setVendorViewMode(mode) {
+        const chartBox = document.getElementById('wrapperVendorAreaChart');
+        const tableBox = document.getElementById('wrapperVendorTable');
+        const btnAll   = document.getElementById('btnViewModeAll');
+        const btnChart = document.getElementById('btnViewModeChart');
+        const btnTable = document.getElementById('btnViewModeTable');
+
+        [btnAll, btnChart, btnTable].forEach(b => b?.classList.remove('active', 'btn-secondary', 'btn-outline-secondary'));
+        [btnAll, btnChart, btnTable].forEach(b => b?.classList.add('btn-outline-secondary'));
+
+        if (mode === 'chart') {
+            chartBox?.classList.remove('d-none');
+            tableBox?.classList.add('d-none');
+            btnChart?.classList.add('active', 'btn-secondary');
+            btnChart?.classList.remove('btn-outline-secondary');
+        } else if (mode === 'table') {
+            chartBox?.classList.add('d-none');
+            tableBox?.classList.remove('d-none');
+            btnTable?.classList.add('active', 'btn-secondary');
+            btnTable?.classList.remove('btn-outline-secondary');
+        } else {
+            chartBox?.classList.remove('d-none');
+            tableBox?.classList.remove('d-none');
+            btnAll?.classList.add('active', 'btn-secondary');
+            btnAll?.classList.remove('btn-outline-secondary');
+        }
+
+        if (chartVendorAreaInst && mode !== 'table') {
+            setTimeout(() => chartVendorAreaInst.resize(), 100);
+        }
+    }
+
+    function filterVendorAreaChart(statusFilter) {
+        ['vChartBtnAll', 'vChartBtnCritical', 'vChartBtnAttention', 'vChartBtnHealthy'].forEach(id => {
+            const btn = document.getElementById(id);
+            if (btn) btn.classList.remove('active');
+        });
+
+        if (statusFilter === 'Critical') document.getElementById('vChartBtnCritical')?.classList.add('active');
+        else if (statusFilter === 'Attention') document.getElementById('vChartBtnAttention')?.classList.add('active');
+        else if (statusFilter === 'Healthy') document.getElementById('vChartBtnHealthy')?.classList.add('active');
+        else document.getElementById('vChartBtnAll')?.classList.add('active');
+
+        renderVendorSupplyAreaChart(statusFilter);
+    }
+
+    function renderVendorSupplyAreaChart(statusFilter = 'ALL') {
+        const canvas = document.getElementById('chartVendorSupplyArea');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let filteredVendors = vendorOverviewList;
+        if (statusFilter !== 'ALL') {
+            filteredVendors = vendorOverviewList.filter(v => v.status === statusFilter);
+        }
+
+        if (filteredVendors.length === 0) {
+            filteredVendors = vendorOverviewList; // Fallback if filter empty
+        }
+
+        const labels = filteredVendors.map(v => {
+            const name = v.supplier_name || 'Vendor';
+            return name.length > 20 ? name.substring(0, 18) + '...' : name;
+        });
+        const fullNames = filteredVendors.map(v => v.supplier_name);
+        const inDemandData = filteredVendors.map(v => v.total_in_demand || 0);
+        const actualData   = filteredVendors.map(v => v.total_actual_inventory || 0);
+        const poData       = filteredVendors.map(v => v.total_outstanding || 0);
+        const statuses     = filteredVendors.map(v => v.status);
+        const criticalCnts = filteredVendors.map(v => v.critical_items_count || 0);
+        const healthyCnts  = filteredVendors.map(v => v.healthy_items_count || 0);
+
+        // Linear Gradients with Soft Glow
+        const gDemand = ctx.createLinearGradient(0, 0, 0, 240);
+        gDemand.addColorStop(0, 'rgba(59, 130, 246, 0.42)');
+        gDemand.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+
+        const gActual = ctx.createLinearGradient(0, 0, 0, 240);
+        gActual.addColorStop(0, 'rgba(168, 85, 247, 0.45)');
+        gActual.addColorStop(1, 'rgba(168, 85, 247, 0.02)');
+
+        const gPo = ctx.createLinearGradient(0, 0, 0, 240);
+        gPo.addColorStop(0, 'rgba(245, 158, 11, 0.40)');
+        gPo.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+
+        // Point Styling Based on Vendor Health Status
+        const pointBgColors = statuses.map(s => {
+            if (s === 'Critical') return '#ef4444';
+            if (s === 'Attention') return '#f59e0b';
+            if (s === 'Healthy') return '#10b981';
+            return '#94a3b8';
+        });
+
+        if (chartVendorAreaInst) {
+            chartVendorAreaInst.destroy();
+        }
+
+        chartVendorAreaInst = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'In Demand (Target Kebutuhan)',
+                        data: inDemandData,
+                        backgroundColor: gDemand,
+                        borderColor: '#3b82f6',
+                        borderWidth: 2.5,
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        hitRadius: 30,
+                        pointBackgroundColor: pointBgColors,
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5
                     },
-                    scales: {
-                        x: { ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: 'bold' } }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                        y: {
-                            beginAtZero: true,
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { family: 'Outfit', weight: 'bold' },
-                                callback: function(val) { return Number(val).toLocaleString('id-ID'); }
-                            },
-                            grid: { color: 'rgba(255,255,255,0.05)' }
-                        }
+                    {
+                        label: 'Actual Inventory (Stok Fisik)',
+                        data: actualData,
+                        backgroundColor: gActual,
+                        borderColor: '#a855f7',
+                        borderWidth: 2.5,
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 6,
+                        pointHoverRadius: 10,
+                        hitRadius: 30,
+                        pointBackgroundColor: '#a855f7',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 1.5
+                    },
+                    {
+                        label: 'Outstanding PO (Pesanan Berjalan)',
+                        data: poData,
+                        backgroundColor: gPo,
+                        borderColor: '#f59e0b',
+                        borderWidth: 2,
+                        borderDash: [4, 4],
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 5,
+                        pointHoverRadius: 8,
+                        hitRadius: 30,
+                        pointBackgroundColor: '#f59e0b'
                     }
-                }
-            });
-        }
-
-        // 2. Doughnut Chart: Status Distribution
-        const ctxPie = document.getElementById('chartInventoryStatusDoughnut');
-        if (ctxPie) {
-            new Chart(ctxPie, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Surplus / Cukup', 'Terpenuhi via PO', 'Defisit / Perlu PO', 'Optimal / No Demand'],
-                    datasets: [{
-                        data: [
-                            statusDist.surplus || 0,
-                            statusDist.covered_by_po || 0,
-                            statusDist.critical_deficit || 0,
-                            statusDist.optimal || 0
-                        ],
-                        backgroundColor: [
-                            'rgba(16, 185, 129, 0.85)',
-                            'rgba(59, 130, 246, 0.85)',
-                            'rgba(239, 68, 68, 0.85)',
-                            'rgba(100, 116, 139, 0.85)'
-                        ],
-                        borderColor: '#111827',
-                        borderWidth: 2
-                    }]
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                onHover: (event, chartElement) => {
+                    const canvasEl = event.native ? event.native.target : (event.chart ? event.chart.canvas : event.target);
+                    if (canvasEl) {
+                        canvasEl.style.cursor = 'pointer';
+                    }
                 },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { color: '#cbd5e1', font: { family: 'Outfit', weight: 600 } } },
-                        tooltip: {
-                            backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                            callbacks: {
-                                label: function(ctx) {
-                                    return ctx.label + ': ' + ctx.raw + ' Material';
-                                }
+                onClick: (event, elements, chart) => {
+                    const evt = event.native || event;
+                    let targetIndex = -1;
+
+                    if (elements && elements.length > 0) {
+                        targetIndex = elements[0].index;
+                    } else if (chart) {
+                        const nearest = chart.getElementsAtEventForMode(evt, 'index', { intersect: false }, false);
+                        if (nearest && nearest.length > 0) {
+                            targetIndex = nearest[0].index;
+                        } else {
+                            const nearestX = chart.getElementsAtEventForMode(evt, 'nearest', { intersect: false, axis: 'x' }, false);
+                            if (nearestX && nearestX.length > 0) {
+                                targetIndex = nearestX[0].index;
                             }
                         }
                     }
+
+                    if (targetIndex >= 0 && fullNames[targetIndex]) {
+                        openVendorDiagnosticModal(fullNames[targetIndex]);
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: '#cbd5e1', font: { family: 'Outfit', weight: 600, size: 11 }, usePointStyle: true }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                        borderColor: 'rgba(139, 92, 246, 0.5)',
+                        borderWidth: 1,
+                        padding: 12,
+                        titleFont: { family: 'Outfit', weight: 'bold', size: 13 },
+                        callbacks: {
+                            title: (tooltipItems) => {
+                                const idx = tooltipItems[0].dataIndex;
+                                return `${fullNames[idx]} [${statuses[idx].toUpperCase()}]`;
+                            },
+                            afterTitle: (tooltipItems) => {
+                                const idx = tooltipItems[0].dataIndex;
+                                return `Status: ${statuses[idx]} (${criticalCnts[idx]} Defisit / ${healthyCnts[idx]} Aman)`;
+                            },
+                            label: (ctx) => `  ${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('id-ID')} PCS`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                        ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: 'bold', size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.07)' },
+                        ticks: {
+                            color: '#94a3b8',
+                            font: { family: 'Outfit' },
+                            callback: val => Number(val).toLocaleString('id-ID') + ' PCS'
+                        }
+                    }
                 }
+            }
+        });
+
+        // Direct Native Canvas Click Listener Failsafe
+        canvas.onclick = function(e) {
+            if (!chartVendorAreaInst) return;
+            const elements = chartVendorAreaInst.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+            if (elements && elements.length > 0) {
+                const idx = elements[0].index;
+                if (fullNames[idx]) {
+                    openVendorDiagnosticModal(fullNames[idx]);
+                }
+            } else {
+                const elementsX = chartVendorAreaInst.getElementsAtEventForMode(e, 'nearest', { intersect: false, axis: 'x' }, false);
+                if (elementsX && elementsX.length > 0) {
+                    const idx = elementsX[0].index;
+                    if (fullNames[idx]) {
+                        openVendorDiagnosticModal(fullNames[idx]);
+                    }
+                }
+            }
+        };
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ── POPUP MODAL DIAGNOSA KESEHATAN VENDOR & ITEM CODE ─────
+    // ═══════════════════════════════════════════════════════════
+
+    function openVendorDiagnosticModal(vendorName) {
+        if (!vendorName) return;
+        const vendorObj = vendorOverviewList.find(v => v.supplier_name === vendorName);
+        if (!vendorObj) return;
+
+        selectedVendorDiag = vendorName;
+        currentDiagSearch = '';
+        const searchInput = document.getElementById('searchDiagModalInput');
+        if (searchInput) searchInput.value = '';
+
+        // 1. Header Information
+        const nameEl = document.getElementById('diagVendorName');
+        const codeEl = document.getElementById('diagVendorCode');
+        if (nameEl) nameEl.innerText = vendorObj.supplier_name;
+        if (codeEl) codeEl.innerText = `KODE: ${vendorObj.supplier_code || '-'}`;
+
+        const statusBadge = document.getElementById('diagVendorStatusBadge');
+        if (statusBadge) {
+            if (vendorObj.status === 'Healthy') {
+                statusBadge.className = 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2.5 py-1 font-monospace';
+                statusBadge.innerHTML = '<i class="bi bi-check-circle-fill me-1"></i>HEALTHY (AMAN)';
+            } else if (vendorObj.status === 'Attention') {
+                statusBadge.className = 'badge bg-primary bg-opacity-25 text-info border border-info border-opacity-50 px-2.5 py-1 font-monospace';
+                statusBadge.innerHTML = '<i class="bi bi-shield-fill-check me-1"></i>ATTENTION (TERCOVER PO)';
+            } else if (vendorObj.status === 'Critical') {
+                statusBadge.className = 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-2.5 py-1 font-monospace';
+                statusBadge.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>CRITICAL (DEFISIT)';
+            } else {
+                statusBadge.className = 'badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50 px-2.5 py-1 font-monospace';
+                statusBadge.innerHTML = '<i class="bi bi-info-circle me-1"></i>CHECK DATA';
+            }
+        }
+
+        // 2. Reason Banner
+        const banner = document.getElementById('diagReasonBanner');
+        const bannerIcon = document.getElementById('diagReasonIcon');
+        const bannerTitle = document.getElementById('diagReasonTitle');
+        const bannerDesc = document.getElementById('diagReasonDesc');
+
+        if (vendorObj.status === 'Critical') {
+            banner.style.background = 'rgba(239, 68, 68, 0.12)';
+            banner.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+            bannerIcon.className = 'bi bi-exclamation-triangle-fill fs-3 text-danger';
+            bannerTitle.innerText = `Status: Critical`;
+            bannerDesc.innerText = vendorObj.status_reason || `Terdapat ${vendorObj.critical_items_count || 0} item code yang kekurangan stok fisik dan belum mencukupi kebutuhan produksi.`;
+        } else if (vendorObj.status === 'Attention') {
+            banner.style.background = 'rgba(245, 158, 11, 0.12)';
+            banner.style.borderColor = 'rgba(245, 158, 11, 0.4)';
+            bannerIcon.className = 'bi bi-shield-fill-check fs-3 text-warning';
+            bannerTitle.innerText = `Status: Attention`;
+            bannerDesc.innerText = vendorObj.status_reason || `Stok fisik di bawah kebutuhan, namun aman tercover pesanan PO berjalan.`;
+        } else {
+            banner.style.background = 'rgba(16, 185, 129, 0.12)';
+            banner.style.borderColor = 'rgba(16, 185, 129, 0.4)';
+            bannerIcon.className = 'bi bi-check-circle-fill fs-3 text-success';
+            bannerTitle.innerText = `Status: Healthy`;
+            bannerDesc.innerText = vendorObj.status_reason || `Seluruh item code memiliki stok fisik yang mencukupi rencana kebutuhan produksi.`;
+        }
+
+        // 3. Metric Counters
+        document.getElementById('diagTotalItems').innerText = vendorObj.items.length;
+        document.getElementById('diagCriticalCount').innerText = vendorObj.critical_items_count || 0;
+        document.getElementById('diagAttentionCount').innerText = vendorObj.attention_items_count || 0;
+        document.getElementById('diagHealthyCount').innerText = vendorObj.healthy_items_count || 0;
+        document.getElementById('diagTotalDeficit').innerText = `${Number(vendorObj.total_additional_req || 0).toLocaleString('id-ID')} PCS`;
+
+        // 4. Tab Counters
+        document.getElementById('tabCountCritical').innerText = vendorObj.critical_items_count || 0;
+        document.getElementById('tabCountAttention').innerText = vendorObj.attention_items_count || 0;
+        document.getElementById('tabCountHealthy').innerText = vendorObj.healthy_items_count || 0;
+        document.getElementById('tabCountAll').innerText = vendorObj.items.length;
+
+        // 5. Default Active Tab: Critical if critical items exist, otherwise ALL
+        if ((vendorObj.critical_items_count || 0) > 0) {
+            filterDiagModalCategory('Critical');
+        } else if ((vendorObj.attention_items_count || 0) > 0) {
+            filterDiagModalCategory('Attention');
+        } else {
+            filterDiagModalCategory('ALL');
+        }
+
+        // 6. Show Modal
+        const modalEl = document.getElementById('modalVendorDiagnostic');
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
+    }
+
+    function filterDiagModalCategory(cat) {
+        currentDiagCategory = cat;
+
+        const btnCrit = document.getElementById('tabDiagCritical');
+        const btnAtt  = document.getElementById('tabDiagAttention');
+        const btnHlth = document.getElementById('tabDiagHealthy');
+        const btnAll  = document.getElementById('tabDiagAll');
+
+        if (btnCrit) {
+            if (cat === 'Critical') {
+                btnCrit.classList.add('active', 'btn-danger', 'text-white');
+                btnCrit.classList.remove('btn-outline-danger');
+            } else {
+                btnCrit.classList.remove('active', 'btn-danger', 'text-white');
+                btnCrit.classList.add('btn-outline-danger');
+            }
+        }
+
+        if (btnAtt) {
+            if (cat === 'Attention') {
+                btnAtt.classList.add('active', 'btn-warning', 'text-dark');
+                btnAtt.classList.remove('btn-outline-warning');
+            } else {
+                btnAtt.classList.remove('active', 'btn-warning', 'text-dark');
+                btnAtt.classList.add('btn-outline-warning');
+            }
+        }
+
+        if (btnHlth) {
+            if (cat === 'Healthy') {
+                btnHlth.classList.add('active', 'btn-success', 'text-white');
+                btnHlth.classList.remove('btn-outline-success');
+            } else {
+                btnHlth.classList.remove('active', 'btn-success', 'text-white');
+                btnHlth.classList.add('btn-outline-success');
+            }
+        }
+
+        if (btnAll) {
+            if (cat === 'ALL') {
+                btnAll.classList.add('active', 'btn-secondary', 'text-white');
+                btnAll.classList.remove('btn-outline-secondary');
+            } else {
+                btnAll.classList.remove('active', 'btn-secondary', 'text-white');
+                btnAll.classList.add('btn-outline-secondary');
+            }
+        }
+
+        renderDiagModalTableItems();
+    }
+
+    function filterDiagModalSearch(query) {
+        currentDiagSearch = String(query || '').toLowerCase().trim();
+        renderDiagModalTableItems();
+    }
+
+    function renderDiagModalTableItems() {
+        const tbody = document.getElementById('tbodyDiagItems');
+        if (!tbody || !selectedVendorDiag) return;
+        tbody.innerHTML = '';
+
+        const vendorObj = vendorOverviewList.find(v => v.supplier_name === selectedVendorDiag);
+        if (!vendorObj || !vendorObj.items) return;
+
+        let filteredItems = vendorObj.items;
+
+        // Apply Category Filter
+        if (currentDiagCategory !== 'ALL') {
+            filteredItems = filteredItems.filter(item => item.status === currentDiagCategory);
+        }
+
+        // Apply Search Filter
+        if (currentDiagSearch) {
+            filteredItems = filteredItems.filter(item => {
+                const p = String(item.part_number || '').toLowerCase();
+                const d = String(item.description || '').toLowerCase();
+                return p.includes(currentDiagSearch) || d.includes(currentDiagSearch);
             });
         }
+
+        if (filteredItems.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="11" class="text-center py-4 text-muted">
+                <i class="bi bi-inbox fs-3 d-block opacity-40 mb-1"></i>
+                Tidak ada item code pada kriteria filter ini.
+            </td></tr>`;
+            return;
+        }
+
+        filteredItems.forEach(item => {
+            const tr = document.createElement('tr');
+            const gap = Number(item.inventory_gap || 0);
+            const gapClass = (gap <= 0) ? 'text-success' : 'text-danger';
+            const gapSign = (gap > 0) ? '+' : '';
+
+            let statusBadge = '<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-40 px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Healthy</span>';
+            if (item.status === 'Critical') {
+                statusBadge = '<span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-40 px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>';
+            } else if (item.status === 'Attention') {
+                statusBadge = '<span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-40 px-2 py-1"><i class="bi bi-shield-fill-check me-1"></i>Attention</span>';
+            } else if (item.status === 'Check Data') {
+                statusBadge = '<span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-40 px-2 py-1"><i class="bi bi-info-circle me-1"></i>Check Data</span>';
+            }
+
+            const covPct = Number(item.coverage_pct || 100);
+            const covBadgeClass = covPct >= 100 ? 'bg-success' : (covPct >= 50 ? 'bg-primary' : 'bg-danger');
+
+            tr.innerHTML = `
+                <td class="ps-3"><strong class="text-warning font-monospace fs-7">${item.part_number}</strong></td>
+                <td class="text-light text-truncate" style="max-width: 200px;" title="${item.description || '-'}">${item.description || '-'}</td>
+                <td class="text-center"><span class="badge-plant">${item.factory_code || 'KIP1'}</span></td>
+                <td class="text-end text-info fw-bold">${Number(item.in_demand || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end fw-bold" style="color: #a78bfa;">${Number(item.actual_inventory || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end text-warning fw-bold">${Number(item.outstanding || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end fw-bold ${gapClass}">${gapSign}${gap.toLocaleString('id-ID')} PCS</td>
+                <td class="text-center">
+                    <span class="badge ${covBadgeClass} bg-opacity-25 text-light border border-secondary border-opacity-40 px-2 py-0.5">
+                        ${covPct}%
+                    </span>
+                </td>
+                <td class="text-center">${statusBadge}</td>
+                <td style="font-size: 0.78rem;" class="text-muted text-truncate" style="max-width: 260px;" title="${item.issue_reason || item.action_note || '-'}">
+                    <span class="${item.status === 'Critical' ? 'text-danger fw-semibold' : (item.status === 'Attention' ? 'text-info' : 'text-light')}">
+                        ${item.issue_reason || item.action_note || '-'}
+                    </span>
+                </td>
+                <td class="text-center pe-3">
+                    <button type="button" class="btn btn-xs btn-outline-purple rounded-pill px-2.5 py-1 fw-bold" onclick="jumpToItemCode3DFromModal('${item.part_number}')" title="Buka grafik analisis 3D untuk item ini">
+                        <i class="bi bi-graph-up me-0.5"></i>3D
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function jumpToItemCode3DFromModal(partNumber) {
+        if (!selectedVendorDiag) return;
+        const targetVendor = selectedVendorDiag;
+
+        // Hide Modal
+        const modalEl = document.getElementById('modalVendorDiagnostic');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        // Trigger Drill-down to Vendor & Item
+        setTimeout(() => {
+            drillDownToVendor(targetVendor);
+            setTimeout(() => {
+                drillDownToItemCode(partNumber);
+                // Smooth scroll to Level 3
+                document.getElementById('drilldownLevel3')?.scrollIntoView({ behavior: 'smooth' });
+            }, 150);
+        }, 300);
+    }
+
+    function proceedFromModalToL2() {
+        if (!selectedVendorDiag) return;
+        const targetVendor = selectedVendorDiag;
+
+        const modalEl = document.getElementById('modalVendorDiagnostic');
+        const modal = bootstrap.Modal.getInstance(modalEl);
+        if (modal) modal.hide();
+
+        setTimeout(() => {
+            drillDownToVendor(targetVendor);
+            document.getElementById('drilldownLevel2')?.scrollIntoView({ behavior: 'smooth' });
+        }, 300);
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ── LEVEL 1: TABLE SEARCH & DRILL-DOWN TO LEVEL 2 ─────────
+    // ═══════════════════════════════════════════════════════════
+
+    function filterVendorOverviewTable(query) {
+        const q = String(query || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#tbodyVendorOverview tr.vendor-overview-row');
+        rows.forEach(r => {
+            const vName = String(r.getAttribute('data-vendor-name') || '').toLowerCase();
+            const vCode = String(r.getAttribute('data-vendor-code') || '').toLowerCase();
+            if (!q || vName.includes(q) || vCode.includes(q)) {
+                r.classList.remove('d-none');
+            } else {
+                r.classList.add('d-none');
+            }
+        });
+    }
+
+    function drillDownToVendor(vendorName) {
+        const vendorObj = vendorOverviewList.find(v => v.supplier_name === vendorName);
+        if (!vendorObj) return;
+
+        selectedVendor = vendorName;
+        selectedItemCode = null;
+
+        // 1. Update Breadcrumb
+        const bcVendor = document.getElementById('bcVendorItem');
+        const bcVendorName = document.getElementById('bcVendorName');
+        const bcItemCode = document.getElementById('bcItemCode');
+
+        if (bcVendor && bcVendorName) {
+            bcVendor.classList.remove('d-none');
+            bcVendorName.innerText = vendorName;
+        }
+        if (bcItemCode) bcItemCode.classList.add('d-none');
+
+        // 2. Switch View Panels: Hide L1, Show L2, Hide L3 until item clicked
+        document.getElementById('drilldownLevel1')?.classList.add('d-none');
+        document.getElementById('drilldownLevel2')?.classList.remove('d-none');
+        document.getElementById('drilldownLevel3')?.classList.add('d-none');
+
+        // 3. Update Level 2 Headers
+        const titleEl = document.getElementById('activeVendorTitle');
+        const subEl = document.getElementById('activeVendorSubtitle');
+        if (titleEl) titleEl.innerText = `${vendorName} (${vendorObj.supplier_code || '-'})`;
+        if (subEl) subEl.innerText = `${vendorObj.items.length} item`;
+
+        // 4. Populate Table of Item Codes for this vendor
+        populateVendorItemsTable(vendorObj.items);
+
+        // 5. If vendor has items, automatically select first item to populate Level 3
+        if (vendorObj.items && vendorObj.items.length > 0) {
+            drillDownToItemCode(vendorObj.items[0].part_number);
+        }
+    }
+
+    function populateVendorItemsTable(items) {
+        const tbody = document.getElementById('tbodyVendorItems');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+
+        if (!items || items.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center py-4 text-muted">Tidak ada item code untuk vendor ini.</td></tr>`;
+            return;
+        }
+
+        items.forEach((item, idx) => {
+            const tr = document.createElement('tr');
+            tr.className = 'vendor-item-row';
+            tr.id = `itemRow_${item.part_number}`;
+            tr.setAttribute('data-part', item.part_number);
+            tr.setAttribute('data-desc', item.description || '');
+            tr.style.cursor = 'pointer';
+            tr.onclick = () => drillDownToItemCode(item.part_number);
+
+            const gap = Number(item.inventory_gap || 0);
+            const gapClass = (gap <= 0) ? 'text-success' : 'text-danger';
+            const gapSign = (gap > 0) ? '+' : '';
+
+            let statusBadge = '<span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-40 px-2 py-1"><i class="bi bi-check-circle-fill me-1"></i>Healthy</span>';
+            if (item.status === 'Critical') {
+                statusBadge = '<span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-40 px-2 py-1"><i class="bi bi-exclamation-triangle-fill me-1"></i>Critical</span>';
+            } else if (item.status === 'Attention') {
+                statusBadge = '<span class="badge bg-primary bg-opacity-25 text-info border border-info border-opacity-40 px-2 py-1"><i class="bi bi-shield-fill-check me-1"></i>Attention</span>';
+            } else if (item.status === 'Check Data') {
+                statusBadge = '<span class="badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-40 px-2 py-1"><i class="bi bi-info-circle me-1"></i>Check Data</span>';
+            }
+
+            tr.innerHTML = `
+                <td class="ps-3"><strong class="text-warning font-monospace">${item.part_number}</strong></td>
+                <td class="text-light text-truncate" style="max-width: 220px;" title="${item.description || '-'}">${item.description || '-'}</td>
+                <td class="text-center"><span class="badge-plant">${item.factory_code || 'KIP1'}</span></td>
+                <td class="text-end text-info fw-bold">${Number(item.in_demand || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end fw-bold" style="color: #a78bfa;">${Number(item.actual_inventory || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end text-warning fw-bold">${Number(item.outstanding || 0).toLocaleString('id-ID')} PCS</td>
+                <td class="text-end fw-bold ${gapClass}">${gapSign}${gap.toLocaleString('id-ID')} PCS</td>
+                <td class="text-center">${statusBadge}</td>
+                <td class="text-center pe-3">
+                    <button type="button" class="btn btn-xs btn-outline-purple rounded-pill px-2.5 py-1 fw-bold" onclick="event.stopPropagation(); drillDownToItemCode('${item.part_number}')">
+                        <i class="bi bi-bar-chart-fill me-1"></i>Analisis 3D
+                    </button>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterVendorItemsTable(query) {
+        const q = String(query || '').toLowerCase().trim();
+        const rows = document.querySelectorAll('#tbodyVendorItems tr.vendor-item-row');
+        rows.forEach(r => {
+            const part = String(r.getAttribute('data-part') || '').toLowerCase();
+            const desc = String(r.getAttribute('data-desc') || '').toLowerCase();
+            if (!q || part.includes(q) || desc.includes(q)) {
+                r.classList.remove('d-none');
+            } else {
+                r.classList.add('d-none');
+            }
+        });
+    }
+
+    // ═══════════════════════════════════════════════════════════
+    // ── LEVEL 3: FOCUSED ITEM CODE COMPARISON FUNCTIONS ───────
+    // ═══════════════════════════════════════════════════════════
+
+    function drillDownToItemCode(partNumber) {
+        if (!selectedVendor) return;
+        const vendorObj = vendorOverviewList.find(v => v.supplier_name === selectedVendor);
+        if (!vendorObj) return;
+
+        const itemObj = vendorObj.items.find(i => i.part_number === partNumber);
+        if (!itemObj) return;
+
+        selectedItemCode = partNumber;
+
+        // 1. Update Breadcrumb
+        const bcItem = document.getElementById('bcItemCode');
+        const bcItemText = document.getElementById('bcItemCodeText');
+        if (bcItem && bcItemText) {
+            bcItem.classList.remove('d-none');
+            bcItemText.innerText = partNumber;
+        }
+
+        // 2. Highlight Row in Table
+        document.querySelectorAll('#tbodyVendorItems tr.vendor-item-row').forEach(tr => {
+            tr.classList.remove('table-active', 'border-purple');
+            tr.style.backgroundColor = '';
+        });
+        const activeRow = document.getElementById(`itemRow_${partNumber}`);
+        if (activeRow) {
+            activeRow.style.backgroundColor = 'rgba(139, 92, 246, 0.15)';
+        }
+
+        // 3. Reveal Level 3 Panel
+        const l3Panel = document.getElementById('drilldownLevel3');
+        if (l3Panel) l3Panel.classList.remove('d-none');
+
+        // 4. Update Level 3 Header & Metrics Strip
+        document.getElementById('l3PartNumber').innerText = itemObj.part_number;
+        document.getElementById('l3Description').innerText = itemObj.description || 'Material Item';
+        document.getElementById('l3PlantBadge').innerText = itemObj.factory_code || 'KIP1';
+        document.getElementById('l3VendorText').innerText = `VENDOR: ${selectedVendor} (${vendorObj.supplier_code || '-'})`;
+        document.getElementById('l3ValuationText').innerText = `Valuasi: $${Number(itemObj.val_usd || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+        // Numbers
+        document.getElementById('l3InDemand').innerText = Number(itemObj.in_demand || 0).toLocaleString('id-ID');
+        document.getElementById('l3ActualInventory').innerText = Number(itemObj.actual_inventory || 0).toLocaleString('id-ID');
+        document.getElementById('l3Outstanding').innerText = Number(itemObj.outstanding || 0).toLocaleString('id-ID');
+
+        const gap = Number(itemObj.inventory_gap || (itemObj.in_demand - itemObj.actual_inventory));
+        const gapEl = document.getElementById('l3InventoryGap');
+        if (gapEl) {
+            gapEl.innerText = (gap > 0 ? '+' : '') + gap.toLocaleString('id-ID');
+            gapEl.className = 'fs-5 fw-bold ' + (gap <= 0 ? 'text-success' : 'text-danger');
+        }
+
+        // Status Badge
+        const statusBadgeEl = document.getElementById('l3StatusBadge');
+        if (statusBadgeEl) {
+            if (itemObj.status === 'Healthy') {
+                statusBadgeEl.className = 'badge-status badge-surplus';
+                statusBadgeEl.innerHTML = '<i class="bi bi-check-circle-fill"></i> Healthy';
+            } else if (itemObj.status === 'Attention') {
+                statusBadgeEl.className = 'badge-status badge-covered';
+                statusBadgeEl.innerHTML = '<i class="bi bi-shield-fill-check"></i> Attention';
+            } else if (itemObj.status === 'Critical') {
+                statusBadgeEl.className = 'badge-status badge-deficit';
+                statusBadgeEl.innerHTML = '<i class="bi bi-exclamation-triangle-fill"></i> Critical';
+            } else {
+                statusBadgeEl.className = 'badge-status badge-optimal';
+                statusBadgeEl.innerHTML = '<i class="bi bi-info-circle"></i> Check Data';
+            }
+        }
+
+        // 5. Render Primary Chart 1: Area Chart
+        renderL3AreaChart(itemObj);
+
+        // 6. Render Primary Chart 2: Bullet Chart
+        renderL3BulletChart(itemObj);
+    }
+
+    // ── CHART 1: AREA CHART (MONTHLY / HISTORICAL TREND) ──
+    function renderL3AreaChart(item) {
+        const canvas = document.getElementById('chartL3Area');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        let labels = [];
+        let demandData = [];
+        let actualData = [];
+        let poData = [];
+
+        if (item.periods && item.periods.length > 0) {
+            labels     = item.periods.map(p => p.period_label || p.last_stock_date || 'Snapshot');
+            demandData = item.periods.map(p => p.in_demand || 0);
+            actualData = item.periods.map(p => p.actual_inventory || 0);
+            poData     = item.periods.map(p => p.outstanding || 0);
+
+            const countBadge = document.getElementById('areaPeriodCountBadge');
+            if (countBadge) countBadge.innerText = `${item.periods.length} Periode Snapshot`;
+        } else {
+            labels     = ['Periode Saat Ini'];
+            demandData = [item.in_demand || 0];
+            actualData = [item.actual_inventory || 0];
+            poData     = [item.outstanding || 0];
+        }
+
+        // Gradients
+        const g1 = ctx.createLinearGradient(0, 0, 0, 240);
+        g1.addColorStop(0, 'rgba(59, 130, 246, 0.45)');
+        g1.addColorStop(1, 'rgba(59, 130, 246, 0.02)');
+
+        const g2 = ctx.createLinearGradient(0, 0, 0, 240);
+        g2.addColorStop(0, 'rgba(168, 85, 247, 0.45)');
+        g2.addColorStop(1, 'rgba(168, 85, 247, 0.02)');
+
+        const g3 = ctx.createLinearGradient(0, 0, 0, 240);
+        g3.addColorStop(0, 'rgba(245, 158, 11, 0.45)');
+        g3.addColorStop(1, 'rgba(245, 158, 11, 0.02)');
+
+        if (chartL3AreaInstance) {
+            chartL3AreaInstance.destroy();
+        }
+
+        chartL3AreaInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'In Demand (Kebutuhan)',
+                        data: demandData,
+                        backgroundColor: g1,
+                        borderColor: '#3b82f6',
+                        borderWidth: 2.5,
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#3b82f6'
+                    },
+                    {
+                        label: 'Actual Inventory (Fisik)',
+                        data: actualData,
+                        backgroundColor: g2,
+                        borderColor: '#a855f7',
+                        borderWidth: 2.5,
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#a855f7'
+                    },
+                    {
+                        label: 'Outstanding PO',
+                        data: poData,
+                        backgroundColor: g3,
+                        borderColor: '#f59e0b',
+                        borderWidth: 2.5,
+                        fill: 'origin',
+                        tension: 0.35,
+                        pointRadius: 4,
+                        pointHoverRadius: 7,
+                        pointBackgroundColor: '#f59e0b'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: {
+                    legend: { labels: { color: '#cbd5e1', font: { family: 'Outfit', weight: 600, size: 11 } } },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        borderColor: 'rgba(139, 92, 246, 0.4)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: ctx => `  ${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('id-ID')} PCS`
+                        }
+                    }
+                },
+                scales: {
+                    x: { grid: { color: 'rgba(255, 255, 255, 0.05)' }, ticks: { color: '#94a3b8', font: { family: 'Outfit', weight: 'bold' } } },
+                    y: { beginAtZero: true, grid: { color: 'rgba(255, 255, 255, 0.07)' }, ticks: { color: '#94a3b8', font: { family: 'Outfit' }, callback: val => Number(val).toLocaleString('id-ID') + ' PCS' } }
+                }
+            }
+        });
+    }
+
+    // ── CHART 2: BULLET CHART (TARGET VS ACTUAL VS OUTSTANDING GAUGE) ──
+    function renderL3BulletChart(item) {
+        const canvas = document.getElementById('chartL3Bullet');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        const inDemand = Number(item.in_demand || 0);
+        const actualInv = Number(item.actual_inventory || 0);
+        const outstPo = Number(item.outstanding || 0);
+
+        // Update Text Indicators
+        document.getElementById('bulletTargetText').innerText = inDemand.toLocaleString('id-ID') + ' PCS';
+        document.getElementById('bulletActualText').innerText = actualInv.toLocaleString('id-ID') + ' PCS';
+        document.getElementById('bulletPoText').innerText = outstPo.toLocaleString('id-ID') + ' PCS';
+
+        if (chartL3BulletInstance) {
+            chartL3BulletInstance.destroy();
+        }
+
+        // Render Horizontal Bullet Comparison Bars
+        chartL3BulletInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Target vs Realisasi Pasokan'],
+                datasets: [
+                    {
+                        label: 'Target: In Demand',
+                        data: [inDemand],
+                        backgroundColor: 'rgba(59, 130, 246, 0.85)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Realisasi: Actual Stock',
+                        data: [actualInv],
+                        backgroundColor: 'rgba(168, 85, 247, 0.85)',
+                        borderColor: '#a855f7',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    },
+                    {
+                        label: 'Indikator: Outstanding PO',
+                        data: [outstPo],
+                        backgroundColor: 'rgba(245, 158, 11, 0.85)',
+                        borderColor: '#f59e0b',
+                        borderWidth: 1,
+                        borderRadius: 6,
+                        barPercentage: 0.7,
+                        categoryPercentage: 0.8
+                    }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { color: '#cbd5e1', font: { family: 'Outfit', size: 10, weight: 600 } }
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                        borderColor: 'rgba(6, 182, 212, 0.4)',
+                        borderWidth: 1,
+                        callbacks: {
+                            label: ctx => `  ${ctx.dataset.label}: ${Number(ctx.raw || 0).toLocaleString('id-ID')} PCS`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255, 255, 255, 0.08)' },
+                        ticks: { color: '#94a3b8', font: { family: 'Outfit', size: 10 }, callback: val => Number(val).toLocaleString('id-ID') }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { display: false }
+                    }
+                }
+            }
+        });
+    }
+
+    // ── NAVIGATION HELPERS ──
+    function resetToVendorOverview() {
+        selectedVendor = null;
+        selectedItemCode = null;
+
+        document.getElementById('bcVendorItem')?.classList.add('d-none');
+        document.getElementById('bcItemCode')?.classList.add('d-none');
+
+        document.getElementById('drilldownLevel1')?.classList.remove('d-none');
+        document.getElementById('drilldownLevel2')?.classList.add('d-none');
+        document.getElementById('drilldownLevel3')?.classList.add('d-none');
+    }
+
+    function backToVendorItems() {
+        if (!selectedVendor) return;
+        selectedItemCode = null;
+
+        document.getElementById('bcItemCode')?.classList.add('d-none');
+        document.getElementById('drilldownLevel2')?.classList.remove('d-none');
+        document.getElementById('drilldownLevel3')?.classList.add('d-none');
     }
 </script>
 

@@ -47,11 +47,29 @@ class InputNormalizer
         $cleaned = preg_replace('/[\x{00A0}\x{200B}\x{FEFF}]/u', ' ', (string) $value);
         $cleaned = trim(preg_replace('/\s+/', ' ', $cleaned));
 
-        // Standardisasi PT / CV
-        $cleaned = preg_replace('/^P\.?T\.?\s+/i', 'PT. ', $cleaned);
-        $cleaned = preg_replace('/^C\.?V\.?\s+/i', 'CV. ', $cleaned);
+        // Standardisasi PT / CV (bisa dengan atau tanpa spasi setelah titik, misal "PT.DUNIA" -> "PT. DUNIA")
+        $cleaned = preg_replace('/^P\.?\s*T\.?\s*/i', 'PT. ', $cleaned);
+        $cleaned = preg_replace('/^C\.?\s*V\.?\s*/i', 'CV. ', $cleaned);
 
-        return strtoupper($cleaned);
+        return strtoupper(trim($cleaned));
+    }
+
+    /**
+     * Mengembalikan daftar variasi penulisan nama supplier (misal: "PT. DUNIA KAYU JAYA" & "PT.DUNIA KAYU JAYA")
+     * untuk query SQL yang toleran terhadap perbedaan spasi di database.
+     */
+    public static function getSupplierVariations(?string $value): array
+    {
+        if (empty($value) || $value === 'All' || $value === 'ALL') {
+            return [];
+        }
+
+        $normalized = self::normalizeSupplierName($value);
+        $raw        = strtoupper(trim((string)$value));
+        $noSpacePt  = preg_replace('/^PT\.\s+/i', 'PT.', $normalized);
+        $noSpaceCv  = preg_replace('/^CV\.\s+/i', 'CV.', $normalized);
+
+        return array_values(array_unique(array_filter([$raw, $normalized, $noSpacePt, $noSpaceCv])));
     }
 
     /**

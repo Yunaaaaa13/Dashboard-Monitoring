@@ -84,12 +84,6 @@
             background-color: var(--accent-emerald);
             border-radius: 50%;
             margin-right: 6px;
-            box-shadow: 0 0 10px var(--accent-emerald);
-            animation: pulse-dot 2s infinite;
-        }
-        @keyframes pulse-dot {
-            0%,100% { opacity: 1; box-shadow: 0 0 6px var(--accent-emerald); }
-            50%      { opacity: 0.7; box-shadow: 0 0 14px var(--accent-emerald); }
         }
 
         /* ── GLASS CARD ── */
@@ -103,9 +97,7 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .glass-card:hover {
-            transform: translateY(-3px);
-            border-color: rgba(226,179,74,0.3);
-            box-shadow: 0 15px 35px rgba(0,0,0,0.45), 0 0 12px rgba(226,179,74,0.1);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
         }
         .glass-card-static {
             background: var(--card-bg);
@@ -140,7 +132,7 @@
 
         /* ── HERO BANNER ── */
         .exchange-hero {
-            background: linear-gradient(135deg, rgba(226,179,74,0.12) 0%, rgba(6,182,212,0.08) 50%, rgba(16,185,129,0.1) 100%);
+            background: rgba(226,179,74,0.08);
             border: 1px solid rgba(226,179,74,0.25);
             border-radius: 20px;
             padding: 2rem 2.5rem;
@@ -148,34 +140,12 @@
             position: relative;
             overflow: hidden;
         }
-        .exchange-hero::before {
-            content: '';
-            position: absolute;
-            top: -60px; right: -60px;
-            width: 220px; height: 220px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(226,179,74,0.18) 0%, transparent 70%);
-            pointer-events: none;
-        }
-        .exchange-hero::after {
-            content: '₿';
-            position: absolute;
-            bottom: -20px; right: 30px;
-            font-size: 9rem;
-            font-weight: 900;
-            opacity: 0.04;
-            color: var(--accent-gold);
-            pointer-events: none;
-            font-family: 'Outfit', monospace;
-        }
         .hero-rate-display {
             font-family: 'Outfit', monospace;
-            font-size: 3.5rem;
+            font-size: 2.5rem;
             font-weight: 900;
             letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #fbbf24 0%, #34d399 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #fbbf24;
             line-height: 1;
         }
         .hero-rate-label {
@@ -236,7 +206,7 @@
             background: rgba(10,14,23,0.95);
             color: #fff;
             border-color: var(--accent-gold);
-            box-shadow: 0 0 0 0.2rem rgba(226,179,74,0.2);
+            box-shadow: 0 0 0 0.15rem rgba(226,179,74,0.1);
             outline: none;
         }
         .form-control-dark::placeholder { color: #6b7280; }
@@ -318,7 +288,7 @@
                 <i class="bi bi-music-note-beamed text-warning fs-4" style="line-height: 1; vertical-align: middle;"></i>
                 <span class="brand-logo-text" style="font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; background: linear-gradient(135deg, #ffffff 0%, #e2b34a 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">PT KAWAI INDONESIA</span>
             </div>
-            <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color: #9ca3af !important;">Dashboard Tax Exchange Rate — Kurs Pajak Mingguan &amp; Bulanan</div>
+            <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color: #9ca3af !important;">Dashboard Kurs Pajak</div>
         </a>
 
         <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -509,7 +479,7 @@
                     <div class="kpi-value" style="color:#f87171;">
                         {{ $yearHighest ? number_format($yearHighest, 0, ',', '.') : '—' }}
                     </div>
-                    <div class="text-muted" style="font-size:0.78rem;">Puncak kurs tertinggi tahun ini</div>
+
                 </div>
                 <div class="kpi-icon flex-shrink-0" style="background:rgba(248,113,113,0.15);border:1px solid rgba(248,113,113,0.4);color:#f87171;">
                     <i class="bi bi-arrow-up-circle-fill"></i>
@@ -525,7 +495,7 @@
                     <div class="kpi-value" style="color:#34d399;">
                         {{ $yearLowest ? number_format($yearLowest, 0, ',', '.') : '—' }}
                     </div>
-                    <div class="text-muted" style="font-size:0.78rem;">Kurs terendah tahun ini</div>
+
                 </div>
                 <div class="kpi-icon flex-shrink-0" style="background:rgba(52,211,153,0.15);border:1px solid rgba(52,211,153,0.4);color:#34d399;">
                     <i class="bi bi-arrow-down-circle-fill"></i>
@@ -545,7 +515,7 @@
                         <h5 class="fw-bold mb-0" style="font-size:1rem;">
                             <i class="bi bi-graph-up text-warning me-2"></i>Tren Kurs Bulanan — {{ $selectedYear }}
                         </h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Rata-rata kurs per bulan sepanjang tahun</p>
+
                     </div>
                     <span class="badge rounded-pill px-3 py-1.5" style="background:rgba(226,179,74,0.18);color:#e2b34a;border:1px solid rgba(226,179,74,0.4); font-size:0.75rem;">
                         {{ \App\Models\TaxExchangeRate::$currencyMap[$selectedCurrency]['label'] ?? 'USD/IDR' }}
@@ -576,7 +546,7 @@
                     <a href="{{ route('exchange-rate.index', ['year'=>$selectedYear, 'month'=>'all', 'currency'=>$selectedCurrency]) }}"
                        class="month-pill {{ $selectedMonth === 'all' ? 'active' : '' }}"
                        style="{{ $selectedMonth === 'all' ? 'background:#10b981; color:#000; border-color:#10b981; font-weight:800;' : 'border-color:rgba(16,185,129,0.5); color:#34d399;' }}"
-                       title="Tampilkan seluruh bulan dari awal hingga akhir tahun">
+                       title="Semua bulan">
                         <i class="bi bi-grid-fill me-1"></i> ALL (Semua)
                     </a>
                     <span class="text-secondary mx-1">|</span>
@@ -585,7 +555,7 @@
                     <a href="{{ route('exchange-rate.index', ['year'=>$latestOverallRecord->exch_year, 'month'=>$latestOverallRecord->exch_month, 'currency'=>$selectedCurrency]) }}"
                        class="month-pill {{ $selectedMonth == $latestOverallRecord->exch_month ? 'active' : '' }}"
                        style="border-color:rgba(251,191,36,0.6); color:#fbbf24; background:rgba(251,191,36,0.12);"
-                       title="Loncat ke bulan data terakhir diupload">
+                       title="Bulan terakhir">
                         <i class="bi bi-star-fill text-warning me-1"></i> Terkini ({{ substr(\App\Models\TaxExchangeRate::$monthNames[$latestOverallRecord->exch_month] ?? '', 0, 3) }})
                     </a>
                     <span class="text-secondary mx-1">|</span>
@@ -611,19 +581,19 @@
         <ul class="nav nav-pills custom-er-tabs gap-2" id="erPillsTab" role="tablist" style="background:rgba(18,24,38,0.7); padding:6px; border-radius:999px; border:1px solid var(--card-border);">
             <li class="nav-item" role="presentation">
                 <button class="nav-link active er-tab-btn px-4 py-2 fw-bold rounded-pill" id="tab-realisasi-btn" data-bs-toggle="pill" data-bs-target="#pills-realisasi" type="button" role="tab">
-                    <i class="bi bi-calendar-week text-warning me-1.5"></i> 1. Kurs Incoming (Mingguan)
+                    <i class="bi bi-calendar-week text-warning me-1.5"></i> Kurs Incoming
                 </button>
             </li>
             <li class="nav-item" role="presentation">
                 <button class="nav-link er-tab-btn px-4 py-2 fw-bold rounded-pill" id="tab-budget-btn" data-bs-toggle="pill" data-bs-target="#pills-budget" type="button" role="tab">
-                    <i class="bi bi-pie-chart-fill me-1.5" style="color:#00d2ff;"></i> 2. Kurs Budget Forecast (Bulanan 1 - 12)
+                    <i class="bi bi-pie-chart-fill me-1.5" style="color:#00d2ff;"></i> Budget Forecast
                 </button>
             </li>
         </ul>
 
         <div class="d-flex align-items-center gap-2">
             <button class="btn btn-sm btn-outline-cyan fw-bold px-3.5 py-1.5 rounded-pill d-flex align-items-center gap-1.5" data-bs-toggle="modal" data-bs-target="#modalBulkBudgetForecast" style="font-size:0.82rem; border-color:rgba(0,210,255,0.4); color:#00d2ff; background:rgba(0,210,255,0.1);">
-                <i class="bi bi-lightning-charge-fill text-info"></i> Edit Massal 12 Bulan (Forecast)
+                <i class="bi bi-lightning-charge-fill text-info"></i> Edit Massal
             </button>
         </div>
     </div>
@@ -642,7 +612,7 @@
                         {{-- Dropdown Filter Bulan Tabel --}}
                         <select onchange="window.location.href=this.value" class="form-select-dark form-select-sm" style="border-radius:20px; font-weight:600; padding:0.3rem 1.8rem 0.3rem 0.75rem; font-size:0.8rem; border-color:rgba(226,179,74,0.4);">
                             <option value="{{ route('exchange-rate.index', ['year'=>$selectedYear, 'month'=>'all', 'currency'=>$selectedCurrency]) }}" {{ $selectedMonth === 'all' ? 'selected' : '' }}>
-                                Filter: ALL (Semua Bulan 1-12)
+                                Filter: Semua Bulan
                             </option>
                             @foreach(\App\Models\TaxExchangeRate::$monthNames as $num => $name)
                             <option value="{{ route('exchange-rate.index', ['year'=>$selectedYear, 'month'=>$num, 'currency'=>$selectedCurrency]) }}" {{ $selectedMonth == $num ? 'selected' : '' }}>
@@ -733,7 +703,7 @@
                                     <div style="opacity:0.45;">
                                         <i class="bi bi-currency-exchange" style="font-size:3rem; display:block; margin-bottom:0.75rem;"></i>
                                         <p class="fw-semibold mb-1">Belum ada data kurs incoming mingguan</p>
-                                        <p style="font-size:0.82rem;">Klik <strong>Input Kurs Mingguan</strong> atau <strong>Import Excel</strong> untuk menambahkan data.</p>
+
                                     </div>
                                 </td>
                             </tr>
@@ -754,9 +724,7 @@
                             <i class="bi bi-pie-chart-fill text-info me-2"></i>Tabel Budget Forecast Kurs — Tahun {{ $selectedYear }}
                             <span class="badge ms-2 rounded-pill" style="background:rgba(0,210,255,0.2);color:#00d2ff;font-size:0.72rem;">12 Periode Bulanan</span>
                         </h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">
-                            Target &amp; patokan kurs budget per bulan. Komparasi lengkap variansi selisih dapat dilihat di <a href="{{ route('purchasing.analysis') }}" class="text-info fw-bold text-decoration-underline"><i class="bi bi-box-arrow-up-right me-1"></i>Step 6: Hasil Akhir &amp; Komparasi</a>.
-                        </p>
+
                     </div>
                     <div class="d-flex gap-2">
                         <button class="btn btn-sm btn-info fw-bold px-3 rounded-pill d-flex align-items-center gap-1.5 text-dark" data-bs-toggle="modal" data-bs-target="#modalBulkBudgetForecast" style="font-size:0.82rem;">
@@ -847,7 +815,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Input Kurs Manual</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Tambah data kurs pajak mingguan baru & tentukan pengupload</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -907,7 +875,7 @@
                         <div class="col-12">
                             <label class="form-label"><i class="bi bi-person-fill me-1 text-warning"></i> User / Pengupload (Last User)</label>
                             <input type="text" name="last_user" class="form-control form-control-dark" value="{{ old('last_user', Auth::user()->name ?? 'Administrator') }}" placeholder="Ketik nama pengupload (contoh: Bella / Admin)" required>
-                            <div class="form-text text-muted" style="font-size:0.75rem;">Nama user yang tercatat sebagai pemilik/pengupload data kurs ini.</div>
+
                         </div>
                     </div>
                     <div class="d-flex justify-content-end gap-2 mt-4">
@@ -935,7 +903,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Edit Data Kurs & User</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Perbarui nilai kurs dan nama user pengupload</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1022,7 +990,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Import Data Kurs dari Excel / CSV</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Upload file Excel atau CSV sesuai format template</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1094,7 +1062,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Input Budget Forecast Kurs</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Tentukan target kurs budget untuk periode bulanan</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1156,7 +1124,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Edit Budget Forecast Kurs</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Perbarui target kurs budget untuk bulan terpilih</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1210,7 +1178,7 @@
                     </div>
                     <div>
                         <h5 class="modal-title fw-bold text-white mb-0">Edit Massal Budget Forecast (12 Bulan)</h5>
-                        <p class="text-muted mb-0" style="font-size:0.78rem;">Input atau perbarui target kurs budget untuk seluruh bulan (Jan - Des {{ $selectedYear }})</p>
+
                     </div>
                 </div>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
@@ -1560,7 +1528,7 @@ m.show();
 // ── SweetAlert Pop-Up Notifikasi Selesai (Hapus / Simpan / Edit) ──
 @if(session('success'))
 Swal.fire({
-    title: '<span style="color: #fbbf24; font-family: Outfit, sans-serif; font-weight: 700;">Berhasil & Selesai!</span>',
+    title: '<span style="color: #fbbf24; font-family: Outfit, sans-serif; font-weight: 700;">Berhasil!</span>',
     html: '<div style="color: #f8fafc; font-size: 0.95rem; line-height: 1.5;">' + @json(session('success')) + '</div>',
     icon: 'success',
     background: '#0f1623',

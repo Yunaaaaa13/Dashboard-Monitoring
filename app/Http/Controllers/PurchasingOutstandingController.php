@@ -23,12 +23,23 @@ class PurchasingOutstandingController extends Controller
     {
         PurchasingOutstanding::clearCalcCaches();
         $statusFilter = $request->get('status', 'All');
+        $supplierFilter = $request->get('supplier', 'All');
         $searchQuery  = $request->get('search');
+
+        $suppliers = PurchasingOutstanding::whereNotNull('supplier_name')->where('supplier_name', '!=', '')
+            ->distinct()->pluck('supplier_name')
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->filter()->unique()->sort()->values();
 
         $query = PurchasingOutstanding::with('category');
 
         if ($statusFilter && $statusFilter !== 'All') {
             $query->where('status', $statusFilter);
+        }
+
+        if ($supplierFilter && $supplierFilter !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($supplierFilter);
+            $query->whereIn('supplier_name', $variations);
         }
 
         if ($searchQuery) {
@@ -298,6 +309,8 @@ class PurchasingOutstandingController extends Controller
             'perPageParam'     => $perPageParam,
             'categories'       => $allCategories,
             'buyers'           => \App\Models\User::orderBy('name')->get(),
+            'suppliers'        => $suppliers,
+            'supplierFilter'   => $supplierFilter,
             'statusFilter'     => $statusFilter,
             'searchQuery'      => $searchQuery,
             'totalItems'       => $totalItems,

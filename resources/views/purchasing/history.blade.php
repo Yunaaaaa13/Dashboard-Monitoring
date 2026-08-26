@@ -64,8 +64,8 @@
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(8px);
         }
 
         .kpi-title {
@@ -105,7 +105,7 @@
         .nav-tabs-custom .nav-link.active {
             background: var(--accent-gold);
             color: #000 !important;
-            box-shadow: 0 -4px 15px rgba(226, 179, 74, 0.25);
+            
         }
 
         .table-custom {
@@ -171,7 +171,7 @@
             background: #111827;
             color: #fff;
             border-color: var(--accent-gold);
-            box-shadow: 0 0 0 0.25rem rgba(226, 179, 74, 0.2);
+            box-shadow: 0 0 0 0.15rem rgba(226, 179, 74, 0.12);
             outline: none;
         }
     </style>
@@ -187,7 +187,7 @@
                     <i class="bi bi-music-note-beamed text-warning fs-4" style="line-height:1; vertical-align:middle;"></i>
                     <span class="brand-logo-text" style="font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; background: linear-gradient(135deg, #ffffff 0%, #e2b34a 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">PT KAWAI INDONESIA</span>
                 </div>
-                <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color:#9ca3af !important;">Dashboard Riwayat &amp; Audit Log — Pengadaan Bahan Baku Piano</div>
+                <div class="text-muted" style="font-size:0.72rem; margin-left:2px; color:#9ca3af !important;">Dashboard Riwayat Purchasing</div>
             </a>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -235,40 +235,41 @@
         <!-- HERO BANNER HEADER -->
         <div class="exchange-hero mb-4">
             <div class="row align-items-center">
-                <div class="col-12 col-lg-7">
+                <div class="col-12 col-lg-6">
                     <div class="d-flex align-items-center gap-3 mb-2">
-                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:52px;height:52px;background:rgba(226,179,74,0.18);border:1px solid rgba(226,179,74,0.45);color:#e2b34a;">
+                        <div class="rounded-3 d-flex align-items-center justify-content-center flex-shrink-0" style="width:52px;height:52px;background:rgba(226,179,74,0.18);border: none;color:#e2b34a;">
                             <i class="bi bi-clock-history fs-3"></i>
                         </div>
                         <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
-                                <span class="hero-rate-label">TRANSACTIONS &amp; AUDIT LOG</span>
-                                <span class="badge rounded-pill bg-warning text-dark fw-bold" style="font-size:0.68rem; padding: 2px 8px;">HISTORI</span>
-                            </div>
                             <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.65rem;">Riwayat Transaksi Hasil Input &amp; Outstanding Order</h2>
                         </div>
                     </div>
-                    <p class="text-muted mb-0 mt-2" style="font-size:0.88rem;">
-                        Pusat pemantauan histori transaksi pengadaan material PT Kawai Indonesia yang dapat <strong class="text-warning">Di-update (Edit)</strong> atau <strong class="text-danger">Dihapus</strong>.
-                    </p>
                 </div>
-                <div class="col-12 col-lg-5 mt-3 mt-lg-0">
-                    <form action="{{ route('purchasing.history') }}" method="GET" class="d-flex gap-2 justify-content-lg-end flex-wrap">
+                <div class="col-12 col-lg-6 mt-3 mt-lg-0">
+                    <form action="{{ route('purchasing.history') }}" method="GET" class="d-flex gap-2 justify-content-lg-end flex-wrap align-items-center">
                         <input type="hidden" name="tab" id="current_tab_input" value="{{ $activeTab }}">
-                        <select name="delivery_category" class="form-select bg-dark border-secondary text-white rounded-pill px-3" style="max-width: 170px; font-size:0.85rem;" onchange="this.form.submit()">
-                            <option value="">-- Semua Pengantaran --</option>
+                        <select name="delivery_category" class="form-select bg-dark border-secondary text-white rounded-pill px-3" style="max-width: 155px; font-size:0.82rem;" onchange="this.form.submit()">
+                            <option value="">-- Pengantaran --</option>
                             @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
                                 <option value="{{ $dc->code }}" {{ ($selectedDeliveryCategory ?? '') === $dc->code ? 'selected' : '' }}>
                                     {{ $dc->code }} - {{ $dc->name }}
                                 </option>
                             @endforeach
                         </select>
-                        <div class="input-group" style="max-width: 280px;">
+                        <select name="supplier" class="form-select bg-dark border-secondary text-white rounded-pill px-3" style="max-width: 165px; font-size:0.82rem;" onchange="this.form.submit()">
+                            <option value="">-- Semua Vendor --</option>
+                            @foreach($suppliers ?? [] as $sup)
+                                <option value="{{ $sup }}" {{ (($selectedSupplier ?? '') === $sup) ? 'selected' : '' }}>
+                                    {{ strlen($sup) > 18 ? substr($sup, 0, 16) . '...' : $sup }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <div class="input-group" style="max-width: 220px;">
                             <span class="input-group-text border-secondary text-muted" style="background:rgba(10,14,23,0.92); border-color:rgba(255,255,255,0.18);"><i class="fa-solid fa-magnifying-glass"></i></span>
-                            <input type="text" name="search" class="form-control form-control-dark" placeholder="Cari Referensi PO / Part..." value="{{ $searchQuery }}">
+                            <input type="text" name="search" class="form-control form-control-dark" placeholder="Cari PO / Part..." value="{{ $searchQuery }}">
                         </div>
-                        <button type="submit" class="btn btn-warning fw-bold px-4 rounded-pill">Cari</button>
-                        @if($searchQuery || ($selectedDeliveryCategory ?? ''))
+                        <button type="submit" class="btn btn-warning fw-bold px-3 rounded-pill">Cari</button>
+                        @if($searchQuery || ($selectedDeliveryCategory ?? '') || ($selectedSupplier ?? ''))
                             <a href="{{ route('purchasing.history', ['tab' => $activeTab]) }}" class="btn btn-outline-secondary rounded-pill">Reset</a>
                         @endif
                     </form>
@@ -320,15 +321,7 @@
                 </div>
             </div>
 
-            <div class="col-12 col-sm-6 col-xl-3">
-                <div class="glass-card h-100">
-                    <div class="kpi-title">KONTROL MANAJEMEN RIWAYAT</div>
-                    <div class="kpi-value text-white fs-4">Full Edit &amp; Delete</div>
-                    <div class="mt-2 text-success small">
-                        <i class="fa-solid fa-shield-halved me-1"></i> Akses perubahan data aktif
-                    </div>
-                </div>
-            </div>
+            
         </div>
 
         <!-- TABS SWITCHER -->
@@ -365,8 +358,8 @@
                         <thead>
                             <tr>
                                 <th class="text-center" style="width: 50px;">NO</th>
-                                <th>ITEM CODE (PK)</th>
-                                <th>NO. PO / REF (SK)</th>
+                                <th>ITEM CODE</th>
+                                <th>NO. PO / REF</th>
                                 <th>PERIODE</th>
                                 <th>TANGGAL RECEIPT</th>
                                 <th>DESKRIPSI</th>
@@ -376,7 +369,7 @@
                                 <th class="text-end">SELISIH</th>
                                 <th class="text-center">STATUS</th>
                                 <th class="text-center" style="width: 140px;">AKSI</th>
-                                <th class="text-center text-nowrap" style="background: rgba(59,130,246,0.15); color: #60a5fa;">KATEGORI PENGANTARAN</th>
+                                <th class="text-center text-nowrap" >KATEGORI PENGANTARAN</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -479,7 +472,7 @@
                             <i class="fa-solid fa-file-excel me-1"></i> Export Excel
                         </a>
                         <a href="{{ route('purchasing.outstanding-po') }}" class="btn btn-sm btn-outline-warning rounded-pill px-3">
-                            + Lihat di Step 4 Outstanding
+                            Lihat Outstanding
                         </a>
                     </div>
                 </div>
@@ -496,10 +489,10 @@
                                 <th class="text-end">PRICE</th>
                                 <th class="text-center text-info">CURRENCY</th>
                                 <th class="text-end">AMOUNT</th>
-                                <th>PROGRESS INCOMING (STEP 3)</th>
+                                <th>PROGRESS INCOMING</th>
                                 <th>STATUS &amp; WORKFLOW PO</th>
-                                <th class="text-center" style="width: 240px;">AKSI (INCOMING / EDIT / HAPUS)</th>
-                                <th class="text-center text-nowrap" style="background: rgba(59,130,246,0.15); color: #60a5fa;">KATEGORI PENGANTARAN</th>
+                                <th class="text-center" style="width: 240px;">AKSI</th>
+                                <th class="text-center text-nowrap" >KATEGORI PENGANTARAN</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -581,7 +574,7 @@
                                             <!-- Tombol Alur Ke Incoming Data (Step 3) -->
                                             <a href="{{ route('purchasing.input') }}?search={{ urlencode($item->part_number ?: $item->po_number) }}" 
                                                class="btn btn-sm btn-success text-dark rounded-pill px-2.5 py-1 fw-bold" 
-                                               title="Input / Tambah Incoming Penerimaan PO Ini di Step 3">
+                                               title="Input Incoming">
                                                 <i class="fa-solid fa-truck-arrow-right me-1"></i> Incoming
                                             </a>
 
@@ -673,16 +666,12 @@
                         <div class="col-md-6">
                             <label class="form-label text-warning fw-bold small">Status Verifikasi Penerimaan <span class="text-danger">*</span></label>
                             <select id="edit_input_verification_status" name="verification_status" class="form-select form-select-dark" required>
-                                <option value="pending">⏳ Menunggu Approval (Staff Entry)</option>
-                                <option value="approved">✅ Disetujui Diterima (Verified by Leader/Supervisor)</option>
-                                <option value="conditional">⚠️ Diterima Bersyarat / Catatan Khusus</option>
-                                <option value="rejected">❌ Ditolak / Perlu Revisi Surat Jalan</option>
+                                <option value="pending">Menunggu Approval</option>
+                                <option value="approved">Disetujui</option>
+                                <option value="conditional">Bersyarat</option>
+                                <option value="rejected">Ditolak</option>
                             </select>
-                            @if((auth()->user()->role ?? 'staff') === 'staff')
-                                <div class="small text-warning mt-1" style="font-size:0.75rem;">
-                                    <i class="fa-solid fa-lock me-1"></i> Role Staff hanya dapat mengajukan status <strong>Menunggu Approval</strong>. Persetujuan status <strong>Disetujui Diterima</strong> memerlukan otorisasi Supervisor / Leader.
-                                </div>
-                            @endif
+                            
                         </div>
                         <div class="col-md-6">
                             <label class="form-label text-muted small">Catatan Status / Keterangan Tambahan</label>
@@ -721,15 +710,15 @@
                             <input type="date" id="edit_out_po_date" name="po_date" class="form-control form-control-dark">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-light small fw-bold">1. Item Code (Drawing) <span class="badge bg-primary bg-opacity-25 text-primary ms-1">PRIMARY KEY</span></label>
+                            <label class="form-label text-light small fw-bold">1. Item Code (Drawing) </label>
                             <input type="text" id="edit_out_drawing" name="drawing" class="form-control form-control-dark border-primary font-monospace text-white fw-bold">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label text-light small fw-bold">2. No. PO / Ref <span class="badge bg-success bg-opacity-25 text-success ms-1">SECONDARY KEY</span> <span class="text-danger">*</span></label>
+                            <label class="form-label text-light small fw-bold">2. No. PO / Ref  <span class="text-danger">*</span></label>
                             <input type="text" id="edit_out_part" name="part_number" class="form-control form-control-dark border-success font-monospace fw-bold text-warning" required>
                         </div>
                         <div class="col-12">
-                            <label class="form-label text-muted small">Description (Nama Part/Material) <span class="text-danger">*</span></label>
+                            <label class="form-label text-muted small">Description <span class="text-danger">*</span></label>
                             <input type="text" id="edit_out_desc" name="description" class="form-control form-control-dark" required>
                         </div>
                         <div class="col-md-6">
@@ -749,7 +738,7 @@
                             <input type="number" id="edit_out_price" name="price" class="form-control form-control-dark" min="0" required>
                         </div>
                         <div class="col-md-4">
-                            <label class="form-label text-warning fw-bold small">Complete Qty (Selesai) <span class="text-danger">*</span></label>
+                            <label class="form-label text-warning fw-bold small">Complete Qty <span class="text-danger">*</span></label>
                             <input type="number" id="edit_out_complete" name="complete" class="form-control form-control-dark fs-5 fw-bold text-warning" min="0" required>
                         </div>
                         <div class="col-12">

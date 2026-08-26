@@ -72,16 +72,14 @@
             font-weight: 800;
             font-size: 1.4rem;
             letter-spacing: 1px;
-            background: linear-gradient(135deg, #ffffff 0%, var(--accent-gold) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            color: #ffffff;
         }
 
         .system-badge {
             font-size: 0.75rem;
             background: rgba(226, 179, 74, 0.15);
             color: var(--accent-gold);
-            border: 1px solid rgba(226, 179, 74, 0.4);
+            
             padding: 0.35rem 0.75rem;
             border-radius: 999px;
             font-weight: 600;
@@ -95,7 +93,7 @@
             background-color: var(--accent-emerald);
             border-radius: 50%;
             margin-right: 6px;
-            box-shadow: 0 0 10px var(--accent-emerald);
+            
         }
 
         .glass-card {
@@ -103,16 +101,12 @@
             border: 1px solid var(--card-border);
             border-radius: 16px;
             padding: 1.5rem;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(12px);
+            
+            backdrop-filter: blur(4px);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        .glass-card:hover {
-            transform: translateY(-4px);
-            border-color: rgba(226, 179, 74, 0.35);
-            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.45), 0 0 15px rgba(226, 179, 74, 0.12);
-        }
+        
 
         .kpi-title {
             color: var(--text-muted);
@@ -245,9 +239,9 @@
             <a href="{{ route('dashboard.overview') }}" class="text-decoration-none" style="color: inherit !important; text-decoration: none !important;">
                 <div class="d-flex align-items-center gap-2 mb-0.5">
                     <i class="bi bi-music-note-beamed text-warning fs-4" style="line-height: 1; vertical-align: middle;"></i>
-                    <span class="brand-logo-text" style="font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; background: linear-gradient(135deg, #ffffff 0%, #e2b34a 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">PT KAWAI INDONESIA</span>
+                    <span class="brand-logo-text" style="font-weight: 800; font-size: 1.25rem; letter-spacing: 0.04em; color: #ffffff; display: inline-block;">PT KAWAI INDONESIA</span>
                 </div>
-                <div class="text-muted" style="font-size: 0.73rem; letter-spacing: 0.02em; margin-left: 2px; color: #9ca3af !important;">Dashboard Monitoring Purchasing &amp; Pengadaan Bahan Baku Piano</div>
+                <div class="text-muted" style="font-size: 0.73rem; letter-spacing: 0.02em; margin-left: 2px; color: #9ca3af !important;">Dashboard Monitoring Purchasing</div>
             </a>
 
             <div class="d-flex align-items-center gap-2 flex-wrap">
@@ -274,7 +268,15 @@
                             </option>
                         @endforeach
                     </select>
-                    @if(!empty($selectedCategoryId) || !empty($selectedUserId) || ($selectedYear ?? date('Y')) != date('Y'))
+                    <select name="supplier" class="form-select-dark form-select-sm" onchange="this.form.submit()" style="max-width: 190px;">
+                        <option value="">-- Semua Vendor --</option>
+                        @foreach(($suppliers ?? []) as $sup)
+                            <option value="{{ $sup }}" {{ (($selectedSupplier ?? null) == $sup) ? 'selected' : '' }}>
+                                {{ strlen($sup) > 22 ? substr($sup, 0, 20) . '...' : $sup }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @if(!empty($selectedCategoryId) || !empty($selectedUserId) || !empty($selectedSupplier) || ($selectedYear ?? date('Y')) != date('Y'))
                         <a href="{{ route('dashboard.overview') }}" class="btn btn-sm btn-outline-secondary">Reset</a>
                     @endif
                 </form>
@@ -307,11 +309,7 @@
                     </a>
                 @endauth
 
-                <!-- Status Badge -->
-                <div class="system-badge d-flex align-items-center gap-2 px-3 py-1.5 rounded-pill">
-                    <span class="live-indicator me-1"></span>
-                    <span style="letter-spacing: 0.03em; font-weight: 600;">ERP Connected</span>
-                </div>
+
 
                 <!-- Jam Realtime -->
                 <div class="px-3 py-1.5 rounded-pill d-flex align-items-center gap-2" style="background: rgba(255,255,255,0.05); border: 1px solid var(--card-border); font-size:0.84rem;">
@@ -344,7 +342,6 @@
                         <div>
                             <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                                 <span class="hero-rate-label" style="font-size:0.75rem;">PURCHASING OVERVIEW &amp; PERFORMANCE</span>
-                                <span class="badge rounded-pill bg-warning text-dark fw-bold" style="font-size:0.65rem; padding: 2px 8px;">DASHBOARD UTAMA</span>
                                 @if(!empty($selectedUserId))
                                     @php $activeBuyer = ($buyerUsers ?? collect())->where('id', $selectedUserId)->first(); @endphp
                                     <span class="badge rounded-pill bg-info text-dark fw-bold" style="font-size:0.65rem; padding: 2px 8px;">
@@ -352,20 +349,20 @@
                                     </span>
                                 @else
                                     <span class="badge rounded-pill bg-success bg-opacity-25 text-success border border-success fw-bold" style="font-size:0.65rem; padding: 2px 8px;">
-                                        <i class="bi bi-globe me-1"></i> Konsolidasi Global Multi-User (Semua Buyer)
+                                        <i class="bi bi-globe me-1"></i> Global
                                     </span>
                                 @endif
                             </div>
-                            <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.55rem; letter-spacing: -0.01em;">Ringkasan Kinerja Purchasing &amp; Pengadaan Material</h2>
+                            <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.55rem; letter-spacing: -0.01em;">Ringkasan Kinerja Purchasing</h2>
                             <p class="text-muted mb-0 mt-1" style="font-size:0.84rem;">
-                                Periode Tahun: <strong class="text-warning">{{ $selectedYear }}</strong> (Rekap Bulanan Jan - Des) &bull; Update Terakhir: <span class="text-light">{{ $lastUpdated }}</span>
+                                Tahun <strong class="text-warning">{{ $selectedYear }}</strong> &bull; Update: <span class="text-light">{{ $lastUpdated }}</span>
                             </p>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-lg-4 text-lg-end">
                     <button onclick="window.location.reload()" class="btn btn-warning fw-bold px-4 py-2 d-inline-flex align-items-center gap-2 rounded-pill shadow-sm" style="font-size:0.86rem;">
-                        <i class="fa-solid fa-rotate-right"></i> Refresh Real-Time
+                        <i class="fa-solid fa-rotate-right"></i> Refresh
                     </button>
                 </div>
             </div>
@@ -465,7 +462,7 @@
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="kpi-card kpi-card-purple">
                     <div class="kpi-header">
-                        <span class="kpi-title">KESEHATAN PENGADAAN</span>
+                        <span class="kpi-title">STATUS KATEGORI</span>
                         <div class="kpi-icon-box icon-purple">
                             <i class="fa-solid fa-clipboard-check"></i>
                         </div>
@@ -477,11 +474,11 @@
                         <div class="d-flex align-items-center justify-content-between w-100 flex-nowrap gap-1">
                             @if($fulfillmentPercentage >= 85)
                                 <span class="kpi-sub-badge badge-health-success text-truncate" title="Status Pengadaan: Aman & Terpenuhi">
-                                    <i class="fa-solid fa-circle-check text-success"></i> Aman &amp; Terpenuhi
+                                    <i class="fa-solid fa-circle-check text-success"></i> Terpenuhi
                                 </span>
                             @elseif($fulfillmentPercentage >= 50)
-                                <span class="kpi-sub-badge badge-health-warning text-truncate" title="Status Pengadaan: Dalam Proses">
-                                    <i class="fa-solid fa-clock text-warning"></i> Dalam Proses
+                                <span class="kpi-sub-badge badge-health-warning text-truncate" title="Status Pengadaan: Proses">
+                                    <i class="fa-solid fa-clock text-warning"></i> Proses
                                 </span>
                             @else
                                 <span class="kpi-sub-badge badge-health-danger text-truncate" title="Status Pengadaan: Perlu Perhatian">
@@ -506,7 +503,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
                             <h5 class="fw-bold mb-1">Incoming vs Target vs Pending Material (Per Bulan)</h5>
-                            <span class="text-muted" style="font-size: 0.82rem;">Rekapitulasi Jan &ndash; Des {{ $selectedYear }} (Dihitung per PO Unik)</span>
+                            <span class="text-muted" style="font-size: 0.82rem;">Rekapitulasi Jan &ndash; Des {{ $selectedYear }}</span>
                         </div>
                         <div class="d-flex gap-2 align-items-center flex-wrap">
                             <span class="d-flex align-items-center gap-1" style="font-size:0.78rem; color:#38bdf8;"><span style="display:inline-block;width:18px;height:3px;background:#38bdf8;border-radius:2px;"></span> Target</span>
@@ -525,8 +522,7 @@
                 <div class="glass-card h-100 d-flex flex-column justify-content-between">
                     <div class="d-flex justify-content-between align-items-center mb-2 flex-wrap gap-2">
                         <div>
-                            <h5 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-warning me-1"></i> Proporsi &amp; Frekuensi Kategori</h5>
-                            <span class="text-muted" style="font-size: 0.82rem;">Kategori paling sering dibeli/digunakan tahun {{ $selectedYear }}</span>
+                            <h5 class="fw-bold mb-1"><i class="fa-solid fa-chart-pie text-warning me-1"></i> Proporsi Kategori</h5>
                         </div>
                     </div>
                     <div style="height: 310px;" class="d-flex justify-content-center align-items-center my-auto">
@@ -540,8 +536,7 @@
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
-                            <h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-layer-group text-warning me-2"></i>Pencapaian &amp; Status Pemenuhan per Kategori Material</h5>
-                            <span class="text-muted" style="font-size: 0.82rem;">Rincian target, aktual incoming penerimaan, dan sisa pending order per kategori material</span>
+                            <h5 class="fw-bold mb-0 text-white"><i class="fa-solid fa-layer-group text-warning me-2"></i>Status Per Kategori</h5>
                         </div>
                         <a href="{{ route('purchasing.categories') }}" class="btn btn-sm btn-outline-warning rounded-pill px-3" style="font-size:0.78rem;">
                             <i class="fa-solid fa-sliders me-1"></i> Kelola Master Kategori
@@ -618,10 +613,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-info text-dark fw-bold px-2 py-1"><i class="fa-solid fa-users-viewfinder me-1"></i> MULTI-USER AGGREGATION</span>
-                                <h5 class="fw-bold mb-0 brand-font text-white">Konsolidasi Kontribusi Input per PIC Buyer / User</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-white">Kontribusi Per PIC Buyer</h5>
                             </div>
-                            <p class="text-muted mb-0 small mt-1">Menggabungkan data input seluruh PIC Buyer untuk rekapitulasi capaian target, incoming aktual, dan sisa pending secara global.</p>
                         </div>
                         <span class="badge bg-dark border border-secondary text-warning font-monospace">
                             {{ count($buyerContributions ?? []) }} User Terdaftar
@@ -708,10 +701,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-warning text-dark fw-bold px-2 py-1"><i class="fa-solid fa-boxes-stacked me-1"></i> EXECUTIVE STOK RECAP</span>
-                                <h5 class="fw-bold mb-0 brand-font text-white">Rekapitulasi Stok Bulanan &amp; Kategori Material Terpakai (Hasil Seluruh User)</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-white">Rekapitulasi Stok Bulanan</h5>
                             </div>
-                            <p class="text-muted mb-0 small mt-1">Akumulasi penerimaan incoming (Step 3), pemakaian produksi (Step 5), dan estimasi stok akhir per bulan pada tahun {{ $selectedYear }}</p>
                         </div>
                         <span class="badge bg-dark border border-secondary text-info font-monospace">
                             Jan &ndash; Des {{ $selectedYear }}
@@ -724,8 +715,8 @@
                                 <tr>
                                     <th class="text-center" style="width: 45px;">#</th>
                                     <th>PERIODE BULAN</th>
-                                    <th class="text-end">PENERIMAAN MATERIAL (STEP 3)</th>
-                                    <th class="text-end">PEMAKAIAN PRODUKSI (STEP 5)</th>
+                                    <th class="text-end">PENERIMAAN</th>
+                                    <th class="text-end">PEMAKAIAN</th>
                                     <th class="text-end">ESTIMASI STOK AKHIR</th>
                                     <th>KATEGORI MATERIAL AKTIF TERPAKAI</th>
                                 </tr>
@@ -770,8 +761,7 @@
                 <div class="glass-card">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
-                            <h5 class="fw-bold mb-1"><i class="fa-solid fa-users-gear text-warning me-2"></i>Matriks PIC Pengadaan & Statemen Tim Purchasing</h5>
-                            <p class="text-muted mb-0" style="font-size: 0.85rem;">Daftar personel tim Procurement beserta status login aktif &amp; perannya dalam sistem (kelola pengguna &amp; hak akses pada menu Management Users).</p>
+                            <h5 class="fw-bold mb-1"><i class="fa-solid fa-users-gear text-warning me-2"></i>Tim Purchasing</h5>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <a href="{{ route('users.index') }}" class="btn btn-sm btn-outline-warning rounded-pill px-3 py-1 fw-bold">
@@ -841,7 +831,7 @@
                                                 </span>
                                             @else
                                                 <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary px-3 py-1" style="background: rgba(148, 163, 184, 0.12) !important; color: #94a3b8 !important;">
-                                                    <i class="fa-solid fa-power-off me-1"></i> OFF (Belum Login)
+                                                    <i class="fa-solid fa-power-off me-1"></i> Offline
                                                 </span>
                                             @endif
                                         </td>
@@ -861,10 +851,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-success text-white fw-bold px-2 py-1"><i class="fa-solid fa-file-earmark-spreadsheet me-1"></i> DASHBOARD MASTER PO</span>
-                                <h5 class="fw-bold mb-0 brand-font text-success">Monitoring Data Master PO (Purchase Order & Jadwal Kedatangan Material)</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-success">Master PO</h5>
                             </div>
-                            <p class="text-muted mb-0 small mt-1">Rekapitulasi data Master PO terpadu yang terhubung dengan input penerimaan & analisis stok material</p>
                         </div>
                         <div class="d-flex align-items-center gap-3 flex-wrap">
                             <span class="badge bg-dark border border-secondary text-light px-3 py-2 font-monospace">
@@ -932,10 +920,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-danger text-white fw-bold px-2.5 py-1" style="font-size:0.75rem;"><i class="fa-solid fa-fire me-1"></i> MONITORED KRUSIAL</span>
-                                <h5 class="fw-bold mb-0 brand-font text-warning">Monitoring Outstanding PO &amp; Total Amount ($)</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-warning">Outstanding PO</h5>
                             </div>
-                            <p class="text-muted mb-0 small mt-1">Monitoring target kuantitas Qty PO, rincian supplier, dan perhitungan nilai nominal Amount ($)</p>
                         </div>
                         <div class="d-flex align-items-center gap-2">
                             <div class="d-none d-md-flex align-items-center gap-2 px-3 py-1.5 rounded-pill bg-dark border border-warning border-opacity-30 text-warning font-monospace fs-7">
@@ -1001,10 +987,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-info text-dark fw-bold px-2 py-1"><i class="fa-solid fa-link me-1"></i> SINERGI LANGSUNG</span>
-                                <h5 class="fw-bold mb-0 brand-font text-info">Incoming Penerimaan Material Bulanan Terakhir</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-info">Incoming Material</h5>
                             </div>
-                            <p class="text-muted mb-0 small mt-1">Sinkronisasi data input bulanan logistik &amp; gudang pabrik piano Kawai</p>
                         </div>
                         <div class="d-flex gap-2">
                             <a href="{{ route('purchasing.input') }}" class="btn btn-info btn-sm rounded-pill px-4 fw-bold shadow-sm text-dark d-flex align-items-center gap-2">
@@ -1097,7 +1081,7 @@
                                             <div class="p-3 m-2 rounded-3 border border-secondary border-opacity-25" style="background: rgba(15, 23, 42, 0.95);">
                                                 <div class="d-flex align-items-center justify-content-between mb-2 pb-2 border-bottom border-secondary border-opacity-25">
                                                     <div class="fw-bold text-warning small">
-                                                        <i class="fa-solid fa-receipt me-1"></i> Rincian Transaksi Penerimaan {{ \Carbon\Carbon::parse($periodMonth)->translatedFormat('F Y') }} (Total: {{ $transCount }} Tanggal Influx)
+                                                        <i class="fa-solid fa-receipt me-1"></i> Rincian Transaksi Penerimaan {{ \Carbon\Carbon::parse($periodMonth)->translatedFormat('F Y') }}
                                                     </div>
                                                     <span class="badge bg-success bg-opacity-25 text-success border border-success px-2 py-1 font-monospace" style="font-size:0.75rem;">
                                                         Total Aktual: {{ number_format($actualReceived) }} / {{ number_format($targetOrder) }} unit
@@ -1183,11 +1167,9 @@
         <!-- FOOTER -->
         <footer class="mt-5 pt-4 border-top border-secondary border-opacity-25 text-center text-muted" style="font-size: 0.82rem;">
             <p class="mb-1">
-                &copy; {{ date('Y') }} PT KAWAI INDONESIA &bull; Dashboard Monitoring Purchasing &amp; Pengadaan Bahan Baku Piano
+                &copy; {{ date('Y') }} PT KAWAI INDONESIA &bull; Dashboard Monitoring Purchasing
             </p>
-            <p class="mb-0">
-                Sistem Terintegrasi Divisi Procurement KIIC Karawang &bull; Multi-Role RBAC (Supervisor, Leader, Staff)
-            </p>
+
         </footer>
 
     </div>

@@ -21,9 +21,17 @@ class PurchasingController extends Controller
         $selectedYear = $request->get('year', date('Y'));
         $selectedCategoryId = $request->get('category_id');
         $selectedUserId = $request->get('user_id');
+        $selectedSupplier = $request->get('supplier');
 
         $buyerUsers = \App\Models\User::orderBy('id', 'asc')->get();
         $categories = PurchasingCategory::with('buyer')->get();
+
+        // Ambil daftar unik seluruh vendor / supplier untuk filter dropdown
+        $suppliers = PurchasingLog::whereNotNull('supplier_name')->where('supplier_name', '!=', '')->pluck('supplier_name')
+            ->merge(\App\Models\PurchasingOutstanding::whereNotNull('supplier_name')->where('supplier_name', '!=', '')->pluck('supplier_name'))
+            ->merge(\App\Models\MasterPo::whereNotNull('supplier')->where('supplier', '!=', '')->pluck('supplier'))
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->unique()->filter()->sort()->values();
 
         // Query log purchasing pada tahun yang dipilih
         $logsQuery = PurchasingLog::with(['category', 'user'])
@@ -34,6 +42,10 @@ class PurchasingController extends Controller
         }
         if ($selectedUserId) {
             $logsQuery->where('user_id', $selectedUserId);
+        }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $logsQuery->whereIn('supplier_name', $variations);
         }
 
         $logs = $logsQuery->orderBy('period_month', 'asc')->get();
@@ -86,6 +98,10 @@ class PurchasingController extends Controller
         $targetOutstandingQuery = \App\Models\PurchasingOutstanding::query();
         if ($selectedCategoryId) {
             $targetOutstandingQuery->where('category_id', $selectedCategoryId);
+        }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $targetOutstandingQuery->whereIn('supplier_name', $variations);
         }
         $totalAmountTarget = (float) $targetOutstandingQuery->get()->sum(function($x) {
             return $x->computed_amount;
@@ -548,6 +564,8 @@ class PurchasingController extends Controller
             'masterPoTotalCount'    => $masterPoTotalCount,
             'masterPoTotalQty'      => $masterPoTotalQty,
             'latestMasterPos'       => $latestMasterPos,
+            'suppliers'             => $suppliers,
+            'selectedSupplier'      => $selectedSupplier,
             'lastUpdated'           => Carbon::now('Asia/Jakarta')->format('d M Y, H:i:s') . ' WIB',
         ]);
     }
@@ -559,10 +577,20 @@ class PurchasingController extends Controller
     {
         $categories = PurchasingCategory::where('status', 'Active')->get();
         $selectedDeliveryCategory = $request->get('delivery_category');
+        $selectedSupplier = $request->get('supplier');
+
+        $suppliers = PurchasingLog::whereNotNull('supplier_name')->where('supplier_name', '!=', '')->pluck('supplier_name')
+            ->merge(\App\Models\MasterPo::whereNotNull('supplier')->where('supplier', '!=', '')->pluck('supplier'))
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->unique()->filter()->sort()->values();
 
         $recentLogsQuery = PurchasingLog::with(['category', 'user']);
         if ($selectedDeliveryCategory) {
             $recentLogsQuery->where('delivery_category_code', $selectedDeliveryCategory);
+        }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $recentLogsQuery->whereIn('supplier_name', $variations);
         }
 
         $recentLogs = $recentLogsQuery
@@ -788,6 +816,8 @@ class PurchasingController extends Controller
             'rekapTable'             => $rekapTable,
             'selectedDeliveryCategory' => $selectedDeliveryCategory,
             'deliveryCategories'     => \App\Models\DeliveryCategory::all(),
+            'suppliers'              => $suppliers,
+            'selectedSupplier'       => $selectedSupplier,
         ]);
     }
 
@@ -1272,13 +1302,24 @@ class PurchasingController extends Controller
         $search = $request->get('search');
         $periode = $request->get('periode', 'All');
         $selectedDeliveryCategory = $request->get('delivery_category');
+        $selectedSupplier = $request->get('supplier');
         $targetUserId = $request->get('user_id');
         $user = Auth::user();
+
+        $suppliers = \App\Models\MasterPo::whereNotNull('supplier')->where('supplier', '!=', '')
+            ->distinct()->pluck('supplier')
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->unique()->filter()->sort()->values();
 
         $masterPoQuery = \App\Models\MasterPo::orderBy('tanggal', 'desc')->orderBy('id', 'desc');
 
         if ($selectedDeliveryCategory) {
             $masterPoQuery->where('delivery_category_code', $selectedDeliveryCategory);
+        }
+
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $masterPoQuery->whereIn('supplier', $variations);
         }
 
         if ($targetUserId) {
@@ -1381,6 +1422,8 @@ class PurchasingController extends Controller
             'search'                 => $search,
             'selectedDeliveryCategory' => $selectedDeliveryCategory,
             'deliveryCategories'     => \App\Models\DeliveryCategory::all(),
+            'suppliers'              => $suppliers,
+            'selectedSupplier'       => $selectedSupplier,
         ]);
     }
 

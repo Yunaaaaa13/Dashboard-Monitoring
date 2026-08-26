@@ -17,13 +17,24 @@ class HistoryController extends Controller
         $activeTab   = $request->get('tab', 'input');
         $searchQuery = $request->get('search');
         $selectedDeliveryCategory = $request->get('delivery_category');
+        $selectedSupplier = $request->get('supplier');
 
         $categories  = PurchasingCategory::all();
+
+        $suppliers = PurchasingOutstanding::whereNotNull('supplier_name')->where('supplier_name', '!=', '')->pluck('supplier_name')
+            ->merge(PurchasingLog::whereNotNull('supplier_name')->where('supplier_name', '!=', '')->pluck('supplier_name'))
+            ->merge(\App\Models\MasterPo::whereNotNull('supplier')->where('supplier', '!=', '')->pluck('supplier'))
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->unique()->filter()->sort()->values();
 
         // 1. Query Hasil Input Realisasi (Purchasing Logs)
         $inputLogsQuery = PurchasingLog::with(['category', 'user']);
         if ($selectedDeliveryCategory) {
             $inputLogsQuery->where('delivery_category_code', $selectedDeliveryCategory);
+        }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $inputLogsQuery->whereIn('supplier_name', $variations);
         }
         if ($searchQuery) {
             $inputLogsQuery->where(function ($q) use ($searchQuery) {
@@ -42,6 +53,10 @@ class HistoryController extends Controller
         $outstandingQuery = PurchasingOutstanding::query();
         if ($selectedDeliveryCategory) {
             $outstandingQuery->where('delivery_category_code', $selectedDeliveryCategory);
+        }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $outstandingQuery->whereIn('supplier_name', $variations);
         }
         if ($searchQuery) {
             $outstandingQuery->where(function ($q) use ($searchQuery) {
@@ -130,6 +145,8 @@ class HistoryController extends Controller
             'totalCompleteUnits'    => $totalCompleteUnits,
             'selectedDeliveryCategory' => $selectedDeliveryCategory,
             'deliveryCategories'     => \App\Models\DeliveryCategory::all(),
+            'suppliers'              => $suppliers,
+            'selectedSupplier'       => $selectedSupplier,
         ]);
     }
 

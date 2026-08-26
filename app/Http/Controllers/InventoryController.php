@@ -21,23 +21,24 @@ class InventoryController extends Controller
     public function index(Request $request)
     {
         $search         = $request->get('search');
-        $itemCode       = $request->get('item_code');
+        $itemCode       = $request->get('item_code', 'ALL');
         $plantFilter    = $request->get('plant', 'ALL');
         $supplierFilter = $request->get('supplier', 'ALL');
+        $periodFilter   = $request->get('period', $request->get('periode', 'ALL'));
         $statusFilter   = $request->get('status_filter', 'ALL');
 
         // ── 1. PRE-FETCH DATA INTEGRASI (PO & INCOMING LOGS) ──
-        $poSummaries = MasterPo::select('item_code', 'currency', DB::raw('SUM(qty) as total_po_qty'), DB::raw('AVG(price) as avg_po_price'))
+        $poSummaries = MasterPo::select('item_code', DB::raw('SUM(qty) as total_po_qty'), DB::raw('AVG(price) as avg_po_price'), DB::raw('MAX(currency) as currency'))
             ->whereNotNull('item_code')
             ->where('item_code', '!=', '')
-            ->groupBy('item_code', 'currency')
+            ->groupBy('item_code')
             ->get()
             ->keyBy(fn($item) => strtoupper(trim((string)$item->item_code)));
 
-        $receiptSummaries = PurchasingLog::select('item_code', 'currency', DB::raw('SUM(actual_received) as total_receipt_qty'), DB::raw('AVG(price) as avg_actual_price'))
+        $receiptSummaries = PurchasingLog::select('item_code', DB::raw('SUM(actual_received) as total_receipt_qty'), DB::raw('AVG(price) as avg_actual_price'), DB::raw('MAX(currency) as currency'))
             ->whereNotNull('item_code')
             ->where('item_code', '!=', '')
-            ->groupBy('item_code', 'currency')
+            ->groupBy('item_code')
             ->get()
             ->keyBy(fn($item) => strtoupper(trim((string)$item->item_code)));
 
@@ -50,7 +51,9 @@ class InventoryController extends Controller
         $integratedMatrix = collect();
 
         // Master outstandings untuk referensi harga & fallback deskripsi
-        $allOutstandings = PurchasingOutstanding::all()->keyBy(fn($x) => strtoupper(trim((string)($x->part_number ?: $x->drawing))));
+        $allOutstandingsByPart = PurchasingOutstanding::all()->keyBy(fn($x) => strtoupper(trim((string)$x->part_number)));
+        $allOutstandingsByDrawing = PurchasingOutstanding::whereNotNull('drawing')->where('drawing', '!=', '')->get()->keyBy(fn($x) => strtoupper(trim((string)$x->drawing)));
+        $allOutstandings = $allOutstandingsByPart->merge($allOutstandingsByDrawing);
         $allForecasting = Forecasting::all()->groupBy(fn($x) => strtoupper(trim((string)$x->part_number)));
 
         $latestSnapshotDateRaw = $inventoryRecords->max('tanggal_inventory');
@@ -61,25 +64,45 @@ class InventoryController extends Controller
             $code = strtoupper(trim((string)$inv->part_number));
             if (!$code) continue;
 
-            $os = $allOutstandings->get($code);
+            $os = $allOutstandingsByPart->get($code) ?? $allOutstandingsByDrawing->get($code);
             $desc = $inv->description ?: ($os?->description ?: 'Material Item');
             $supplier = $inv->supplier_name ?: ($os?->supplier_name ?: '-');
             $supplierCode = $inv->supplier_code ?: ($os?->supplier_code ?? '-');
             $factory = $inv->factory_code ?: ($os?->factory_code ?: 'KIP1');
             $actualStock = (int) $inv->current_stock;
             $lastStockDate = $inv->tanggal_inventory ? Carbon::parse($inv->tanggal_inventory)->format('d/m/Y') : '-';
+            $periodCarbon = $inv->tanggal_inventory ? Carbon::parse($inv->tanggal_inventory) : null;
+            $periodKey = $periodCarbon ? $periodCarbon->format('Y-m') : '';
+            $periodLabel = $periodCarbon ? $periodCarbon->translatedFormat('F Y') : '-';
 
-            // 1. Inventory Demand untuk item ini (Target Kebutuhan dari Forecast)
+            // 1. Inventory Demand untuk item ini (Target Kebutuhan dari Forecast Monitoring Ratio & Production Plan)
             $inventoryDemand = 0;
             $fcRecords = $allForecasting->get($code);
+            $recordPeriod = $periodCarbon ? $periodCarbon->format('Y-m') : $snapshotCanonicalPeriod;
+
+            // Prioritas 1: Cek tabel detail Forecasting untuk periode yang sesuai dengan record input ini
             if ($fcRecords && $fcRecords->isNotEmpty()) {
-                // Cari forecast periode yang sesuai dengan snapshot jika ada
-                $fcMatchingPeriod = $fcRecords->firstWhere('period_month', $snapshotCanonicalPeriod) ?: $fcRecords->firstWhere('periode', $snapshotCanonicalPeriod);
-                $fcTarget = $fcMatchingPeriod ?: $fcRecords->first();
-                $inventoryDemand = (int) ($fcTarget->forecast_qty ?: ($fcTarget->po_qty ?: $fcTarget->production_qty));
+                $fcMatchingPeriod = $fcRecords->firstWhere('period_month', $recordPeriod) 
+                    ?: ($fcRecords->firstWhere('periode', $recordPeriod)
+                    ?: $fcRecords->firstWhere('period_month', $snapshotCanonicalPeriod));
+                
+                if ($fcMatchingPeriod) {
+                    $inventoryDemand = (int) ($fcMatchingPeriod->production_qty ?: ($fcMatchingPeriod->forecast_qty ?: $fcMatchingPeriod->po_qty));
+                }
             }
+
+            // Prioritas 2: Jika belum ada di forecasting detail, ambil dari PurchasingOutstanding
             if ($inventoryDemand === 0 && $os) {
-                $inventoryDemand = (int) ($os->m1_po ?: ($os->order_qty ?: ($os->m0_po ?: ($os->m1_prod ?: 0))));
+                // Ambil target kebutuhan langsung dari Forecast Monitoring Ratio (Step 1): PROD -> PO -> Order Qty
+                $inventoryDemand = (int) ($os->m1_prod ?: ($os->m1_po ?: ($os->m0_prod ?: ($os->m2_prod ?: ($os->order_qty ?: 0)))));
+            }
+
+            // Prioritas 3: Fallback ke record forecasting manapun yang memiliki demand > 0
+            if ($inventoryDemand === 0 && $fcRecords && $fcRecords->isNotEmpty()) {
+                $fcWithQty = $fcRecords->first(fn($f) => ($f->production_qty > 0 || $f->forecast_qty > 0 || $f->po_qty > 0));
+                if ($fcWithQty) {
+                    $inventoryDemand = (int) ($fcWithQty->production_qty ?: ($fcWithQty->forecast_qty ?: $fcWithQty->po_qty));
+                }
             }
 
             $isMatched = ($os !== null || ($fcRecords && $fcRecords->isNotEmpty()));
@@ -173,6 +196,8 @@ class InventoryController extends Controller
                 'actual_stock'           => $actualStock,
                 'tanggal_inventory'      => $inv->tanggal_inventory,
                 'last_stock_date'        => $lastStockDate,
+                'period_key'             => $periodKey,
+                'period_label'           => $periodLabel,
                 'inventory_demand'       => $inventoryDemand,
                 'forecast_demand'        => $inventoryDemand,
                 'po_qty'                 => $poQty,
@@ -223,7 +248,14 @@ class InventoryController extends Controller
         }
 
         if ($supplierFilter && $supplierFilter !== 'ALL') {
-            $filteredMatrix = $filteredMatrix->filter(fn($x) => strtoupper($x->supplier_code) === strtoupper($supplierFilter) || strtoupper($x->supplier_name) === strtoupper($supplierFilter));
+            $normSup = \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($supplierFilter);
+            $filteredMatrix = $filteredMatrix->filter(fn($x) => strtoupper($x->supplier_code) === strtoupper($supplierFilter) || \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($x->supplier_name) === $normSup);
+        }
+
+        if ($periodFilter && $periodFilter !== 'ALL') {
+            $filteredMatrix = $filteredMatrix->filter(function($item) use ($periodFilter) {
+                return $item->period_key === $periodFilter || str_starts_with((string)$item->tanggal_inventory, $periodFilter);
+            });
         }
 
         if ($statusFilter && $statusFilter !== 'ALL') {
@@ -274,18 +306,235 @@ class InventoryController extends Controller
             'overall_status'         => ($matchPercentage >= 95 && $filteredMatrix->where('actual_stock', '<', 0)->count() === 0) ? 'GOOD' : 'REVIEW_REQUIRED',
         ];
 
-        // ── 5. CHART DATASETS: TOP 10 EXECUTIVE COMPARISON (Inventory Demand vs Inv vs PO vs Potential Supply) ──
-        $topComparisonItems = $filteredMatrix
+        // ── 5. CHART DATASETS: FULL SET FOR EXECUTIVE COMPARISON (Dynamic Limit: Top 10, 25, 50, All & Period Summary) ──
+        $allChartItems = $filteredMatrix
             ->filter(fn($x) => ($x->inventory_demand > 0 || $x->actual_stock > 0 || $x->outstanding_po_qty > 0))
             ->sortByDesc(fn($x) => max($x->inventory_demand, $x->potential_supply, $x->actual_stock))
-            ->take(10)
+            ->map(function($x) use ($filteredMatrix) {
+                $hasDuplicates = $filteredMatrix->where('part_number', $x->part_number)->count() > 1;
+                $label = $x->part_number;
+                if ($hasDuplicates && !empty($x->period_label) && $x->period_label !== '-') {
+                    $label .= ' (' . $x->period_label . ')';
+                }
+                return [
+                    'part_number'      => $x->part_number,
+                    'chart_label'      => $label,
+                    'description'      => $x->description,
+                    'supplier_name'    => $x->supplier_name,
+                    'factory_code'     => $x->factory_code,
+                    'period_label'     => $x->period_label,
+                    'last_stock_date'  => $x->last_stock_date,
+                    'inventory_demand' => (int) $x->inventory_demand,
+                    'actual_stock'     => (int) $x->actual_stock,
+                    'outstanding_po'   => (int) $x->outstanding_po_qty,
+                    'potential_supply' => (int) $x->potential_supply,
+                    'net_supply_gap'   => (int) $x->net_supply_gap,
+                    'status'           => $x->status,
+                ];
+            })
             ->values();
 
-        $chartLabels          = $topComparisonItems->pluck('part_number')->toArray();
+        // Ringkasan per Periode Bulan untuk Diagram Area Tren (Per Period Area Analysis)
+        $periodSummaryData = $filteredMatrix
+            ->filter(fn($x) => !empty($x->period_label) && $x->period_label !== '-')
+            ->groupBy('period_label')
+            ->map(function($rows, $label) {
+                return [
+                    'period_label'     => $label,
+                    'period_key'       => $rows->first()->period_key ?? '',
+                    'inventory_demand' => (int) $rows->sum('inventory_demand'),
+                    'actual_stock'     => (int) $rows->sum('actual_stock'),
+                    'outstanding_po'   => (int) $rows->sum('outstanding_po_qty'),
+                    'potential_supply' => (int) $rows->sum('potential_supply'),
+                    'net_supply_gap'   => (int) $rows->sum('net_supply_gap'),
+                    'items_count'      => $rows->count(),
+                ];
+            })
+            ->values();
+
+        // ── 5B. STRUKTUR POHON HIERARKIS: VENDOR -> ITEM CODE -> 3D SUPPLY (AREA & BULLET CHART) ──
+        // Single Validated Calculation Dataset pipeline:
+        // Key: Vendor + Plant + Item Code + Period
+        $vendorOverviewList = $filteredMatrix
+            ->groupBy(fn($x) => $x->supplier_name ?: 'Tanpa Supplier')
+            ->map(function($items, $supplierName) {
+                $itemsGrouped = $items->groupBy('part_number')->map(function($rows, $partNo) {
+                    $first = $rows->first();
+                    $totActual = (int) $rows->sum('actual_stock');
+                    $totDemand = (int) $rows->sum('inventory_demand');
+                    $totPo     = (int) $rows->sum('outstanding_po_qty');
+                    $totPot    = $totActual + $totPo;
+                    $totGap    = $totDemand - $totActual; // Standard Inventory Gap: In Demand - Actual Inventory
+                    $netSupplyGap = $totPot - $totDemand;
+                    $additionalReq = max(0, $totDemand - $totPot);
+                    $covPct    = $totDemand > 0 ? round(($totPot / $totDemand) * 100, 1) : 100.0;
+                    
+                    // Centralized Status Logic:
+                    if ($totDemand > 0) {
+                        if ($totActual >= $totDemand) {
+                            $stdStatus = 'Healthy';
+                            $statusBadge = 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-50';
+                            $issueReason = 'Stok fisik mencukupi target rencana kebutuhan produksi (Surplus +' . number_format(abs($totGap)) . ' PCS).';
+                        } elseif ($totActual < $totDemand && $totPo > 0) {
+                            $stdStatus = ($totPot >= $totDemand) ? 'Attention' : 'Critical';
+                            $statusBadge = ($stdStatus === 'Attention') 
+                                ? 'badge bg-primary bg-opacity-25 text-info border border-info border-opacity-50'
+                                : 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50';
+                            $issueReason = ($stdStatus === 'Attention')
+                                ? 'Stok fisik kurang (' . number_format($totActual) . ' PCS), namun aman tercover PO aktif (' . number_format($totPo) . ' PCS).'
+                                : 'Defisit Pasokan: Stok fisik (' . number_format($totActual) . ' PCS) + PO (' . number_format($totPo) . ' PCS) belum cukup. Kurang ' . number_format($additionalReq) . ' PCS (Coverage ' . $covPct . '%).';
+                        } elseif ($totPo > 0) {
+                            $stdStatus = 'Attention';
+                            $statusBadge = 'badge bg-primary bg-opacity-25 text-info border border-info border-opacity-50';
+                            $issueReason = 'Stok fisik 0, namun ada PO berjalan ' . number_format($totPo) . ' PCS.';
+                        } else {
+                            $stdStatus = 'Critical';
+                            $statusBadge = 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50';
+                            $issueReason = 'Defisit Kritis: Butuh ' . number_format($totDemand) . ' PCS, stok fisik ' . number_format($totActual) . ' PCS dan belum ada PO aktif (Kurang ' . number_format($additionalReq) . ' PCS).';
+                        }
+                    } else {
+                        $stdStatus = ($totActual > 0) ? 'Healthy' : 'Check Data';
+                        $statusBadge = ($totActual > 0) 
+                            ? 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-50'
+                            : 'badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50';
+                        $issueReason = ($totActual > 0)
+                            ? 'Stok fisik tersedia di gudang (' . number_format($totActual) . ' PCS) tanpa rencana kebutuhan forecast aktif.'
+                            : 'Stok fisik 0 dan rencana kebutuhan 0 (No Demand).';
+                    }
+
+                    // Format sorted periods timeline
+                    $sortedPeriods = $rows->sortBy('period_key')->map(fn($r) => [
+                        'period_label'     => $r->period_label,
+                        'period_key'       => $r->period_key,
+                        'last_stock_date'  => $r->last_stock_date,
+                        'in_demand'        => (int) $r->inventory_demand,
+                        'actual_inventory' => (int) $r->actual_stock,
+                        'outstanding'      => (int) $r->outstanding_po_qty,
+                        'inventory_gap'    => (int) ($r->inventory_demand - $r->actual_stock),
+                        'net_supply_gap'   => (int) $r->net_supply_gap,
+                        'additional_req'   => (int) $r->additional_requirement,
+                        'coverage_pct'     => (float) $r->coverage_pct,
+                        'status'           => $stdStatus,
+                    ])->values()->all();
+
+                    return [
+                        'part_number'      => $partNo,
+                        'description'      => $first->description,
+                        'factory_code'     => $first->factory_code,
+                        'supplier_name'    => $first->supplier_name,
+                        'supplier_code'    => $first->supplier_code,
+                        'unit_price_usd'   => (float) $first->unit_price_usd,
+                        'in_demand'        => $totDemand,
+                        'actual_inventory' => $totActual,
+                        'outstanding'      => $totPo,
+                        'potential_supply' => $totPot,
+                        'inventory_gap'    => $totGap,
+                        'net_supply_gap'   => $netSupplyGap,
+                        'additional_req'   => $additionalReq,
+                        'coverage_pct'     => $covPct,
+                        'status'           => $stdStatus,
+                        'status_badge'     => $statusBadge,
+                        'issue_reason'     => $issueReason,
+                        'action_note'      => $first->action_note,
+                        'val_usd'          => (float) $rows->sum('inventory_val_usd'),
+                        'demand_val_usd'   => (float) $rows->sum('demand_val_usd'),
+                        'periods'          => $sortedPeriods,
+                    ];
+                })->values();
+
+                $vActual = (int) $items->sum('actual_stock');
+                $vDemand = (int) $items->sum('inventory_demand');
+                $vPo     = (int) $items->sum('outstanding_po_qty');
+                $vGap    = $vDemand - $vActual;
+                $vPot    = $vActual + $vPo;
+                
+                $criticalCount = $itemsGrouped->where('status', 'Critical')->count();
+                $attentionCount = $itemsGrouped->where('status', 'Attention')->count();
+                $healthyCount = $itemsGrouped->where('status', 'Healthy')->count();
+                $checkDataCount = $itemsGrouped->where('status', 'Check Data')->count();
+                $totalAddReq = (int) $itemsGrouped->sum('additional_req');
+                $healthScore = $itemsGrouped->count() > 0 
+                    ? round((($healthyCount + ($attentionCount * 0.5)) / $itemsGrouped->count()) * 100, 1) 
+                    : 100.0;
+
+                if ($vDemand > 0) {
+                    if ($criticalCount > 0 || $vPot < $vDemand) {
+                        $vStatus = 'Critical';
+                        $statusReason = 'Terdapat ' . $criticalCount . ' item code berstatus defisit kritis (Total kekurangan pasokan: ' . number_format($totalAddReq) . ' PCS). Perlu PO pengadaan tambahan.';
+                    } elseif ($attentionCount > 0) {
+                        $vStatus = 'Attention';
+                        $statusReason = 'Semua kebutuhan terpenuhi namun ' . $attentionCount . ' item code bergantung pada PO berjalan. Pantau ketepatan kirim.';
+                    } else {
+                        $vStatus = 'Healthy';
+                        $statusReason = 'Stok fisik seluruh item code mencukupi rencana kebutuhan produksi secara mandiri (Surplus).';
+                    }
+                } else {
+                    $vStatus = ($vActual > 0) ? 'Healthy' : 'Check Data';
+                    $statusReason = ($vActual > 0) ? 'Stok fisik tersedia tanpa rencana kebutuhan forecast aktif.' : 'Tidak ada kebutuhan dan stok 0.';
+                }
+
+                return [
+                    'supplier_name'           => $supplierName,
+                    'supplier_code'           => $items->first()->supplier_code ?? '-',
+                    'total_item_codes'        => $itemsGrouped->count(),
+                    'critical_items_count'    => $criticalCount,
+                    'attention_items_count'   => $attentionCount,
+                    'healthy_items_count'     => $healthyCount,
+                    'check_data_items_count'  => $checkDataCount,
+                    'health_score_pct'        => $healthScore,
+                    'total_additional_req'    => $totalAddReq,
+                    'total_in_demand'         => $vDemand,
+                    'total_actual_inventory'  => $vActual,
+                    'total_outstanding'       => $vPo,
+                    'total_potential_supply'  => $vPot,
+                    'total_inventory_gap'     => $vGap,
+                    'total_val_usd'           => (float) $items->sum('inventory_val_usd'),
+                    'status'                  => $vStatus,
+                    'status_reason'           => $statusReason,
+                    'items'                   => $itemsGrouped->all(),
+                ];
+            })
+            ->sortBy('supplier_name')
+            ->values();
+
+        $vendorTreeData = $vendorOverviewList; // Alias for backward compatibility
+
+        // ── 5C. DATASET UNTUK DIAGRAM AREA VENDOR (CHART.JS) ──
+        $vendorChartData = [
+            'labels'             => $vendorOverviewList->pluck('supplier_name')->map(function($name) {
+                // Shorten name if too long for clean chart presentation
+                return strlen($name) > 24 ? substr($name, 0, 22) . '...' : $name;
+            })->toArray(),
+            'full_names'         => $vendorOverviewList->pluck('supplier_name')->toArray(),
+            'supplier_codes'     => $vendorOverviewList->pluck('supplier_code')->toArray(),
+            'in_demand'          => $vendorOverviewList->pluck('total_in_demand')->toArray(),
+            'actual_inventory'   => $vendorOverviewList->pluck('total_actual_inventory')->toArray(),
+            'outstanding_po'     => $vendorOverviewList->pluck('total_outstanding')->toArray(),
+            'potential_supply'   => $vendorOverviewList->pluck('total_potential_supply')->toArray(),
+            'statuses'           => $vendorOverviewList->pluck('status')->toArray(),
+            'critical_counts'    => $vendorOverviewList->pluck('critical_items_count')->toArray(),
+            'healthy_counts'     => $vendorOverviewList->pluck('healthy_items_count')->toArray(),
+            'attention_counts'   => $vendorOverviewList->pluck('attention_items_count')->toArray(),
+            'health_scores'      => $vendorOverviewList->pluck('health_score_pct')->toArray(),
+        ];
+        
+        // Pre-Render Completeness & Reconciliation Verification:
+        $dbVendorCount = $inventoryRecords->pluck('supplier_name')->unique()->filter()->count();
+        $calcVendorCount = $vendorOverviewList->count();
+        $reconciliationValidation = [
+            'db_vendors'      => $dbVendorCount,
+            'calc_vendors'    => $calcVendorCount,
+            'is_consistent'   => ($calcVendorCount >= $dbVendorCount || $supplierFilter !== 'ALL'),
+            'total_items'     => $filteredMatrix->count(),
+            'distinct_items'  => $filteredMatrix->pluck('part_number')->unique()->count(),
+        ];
+
+        $topComparisonItems = $allChartItems->values();
+        $chartLabels          = $topComparisonItems->pluck('chart_label')->toArray();
         $chartInventoryDemand = $topComparisonItems->pluck('inventory_demand')->toArray();
         $chartForecastStock   = $chartInventoryDemand; // alias for compatibility
         $chartActualInventory = $topComparisonItems->pluck('actual_stock')->toArray();
-        $chartOutstandingPo   = $topComparisonItems->pluck('outstanding_po_qty')->toArray();
+        $chartOutstandingPo   = $topComparisonItems->pluck('outstanding_po')->toArray();
         $chartPotentialSupply = $topComparisonItems->pluck('potential_supply')->toArray();
 
         $chartStatusDistribution = [
@@ -296,9 +545,34 @@ class InventoryController extends Controller
         ];
 
         // ── 6. LIST DROPDOWN OPTIONS UNTUK FILTER & MODAL INPUT ──
-        $availableItemCodes = $allOutstandings->keys()->merge($inventoryRecords->pluck('part_number')->map(fn($v)=>strtoupper(trim($v))))->unique()->sort()->values();
+        $availablePeriods = $inventoryRecords
+            ->filter(fn($x) => !empty($x->tanggal_inventory))
+            ->map(function($x) {
+                $carbon = Carbon::parse($x->tanggal_inventory);
+                return (object)[
+                    'key'   => $carbon->format('Y-m'),
+                    'label' => $carbon->translatedFormat('F Y'),
+                    'raw_date' => $x->tanggal_inventory,
+                ];
+            })
+            ->unique('key')
+            ->sortByDesc('key')
+            ->values();
+
         $availablePlants    = collect(['KIP1', 'KIP2', 'KIP3', 'KIP4', 'Plant 3'])->merge($inventoryRecords->pluck('factory_code'))->unique()->filter()->sort()->values();
-        $availableSuppliers = $allOutstandings->pluck('supplier_name')->merge($inventoryRecords->pluck('supplier_name'))->unique()->filter()->sort()->values();
+        $availableSuppliers = $allOutstandings->pluck('supplier_name')->merge($inventoryRecords->pluck('supplier_name'))
+            ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
+            ->unique()->filter()->sort()->values();
+
+        // Reactive Item Codes: Prioritaskan item code milik supplier yang sedang dipilih
+        $normSupFilter = ($supplierFilter !== 'ALL') ? \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($supplierFilter) : '';
+        $supplierItems = ($supplierFilter !== 'ALL') 
+            ? $integratedMatrix->filter(fn($x) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($x->supplier_name) === $normSupFilter || strtoupper($x->supplier_code) === strtoupper($supplierFilter))->pluck('part_number')->unique()->sort()->values()
+            : collect();
+
+        $availableItemCodes = $supplierItems->isNotEmpty() 
+            ? $supplierItems 
+            : $allOutstandings->keys()->merge($inventoryRecords->pluck('part_number')->map(fn($v)=>strtoupper(trim($v))))->unique()->sort()->values();
 
         $itemsWithDetails = collect();
         foreach ($allOutstandings as $code => $os) {
@@ -343,6 +617,7 @@ class InventoryController extends Controller
             'itemCode',
             'plantFilter',
             'supplierFilter',
+            'periodFilter',
             'statusFilter',
             'perPageParam',
             'filteredMatrix',
@@ -372,6 +647,11 @@ class InventoryController extends Controller
             'matchPercentage',
             'dataQualityScorecard',
             'topComparisonItems',
+            'allChartItems',
+            'periodSummaryData',
+            'vendorTreeData',
+            'vendorOverviewList',
+            'reconciliationValidation',
             'chartLabels',
             'chartInventoryDemand',
             'chartForecastStock',
@@ -379,11 +659,13 @@ class InventoryController extends Controller
             'chartOutstandingPo',
             'chartPotentialSupply',
             'chartStatusDistribution',
+            'availablePeriods',
             'availableItemCodes',
             'availablePlants',
             'availableSuppliers',
             'itemsWithDetails',
-            'budgetExchangeRate'
+            'budgetExchangeRate',
+            'vendorChartData'
         ));
     }
 
