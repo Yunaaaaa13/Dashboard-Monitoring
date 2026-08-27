@@ -2034,8 +2034,6 @@ function showImportProgress() {
 }
 </script>
 
-
-@push('scripts')
 <script>
     function calculateLivePlant3Ratios(mode) {
         let prefix = mode === 'add' ? 'add_' : 'edit_plant3_';
@@ -2502,8 +2500,16 @@ function showImportProgress() {
             }
         }
     };
+
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof window.updatePlant3BulkBtn === 'function') {
+            window.updatePlant3BulkBtn();
+        }
+        if (typeof window.updateForecastBulkBtn === 'function') {
+            window.updateForecastBulkBtn();
+        }
+    });
 </script>
-@endpush
 @include('partials.registered-item-codes-datalist')
 @include('partials.modal-select-item-code')
 @include('partials.confirm-modal')

@@ -35,9 +35,4 @@ Thumbs.db
 !/storage/framework/views/.gitignore
 /storage/logs/*
 !/storage/logs/.gitignore
-
-scratch/
-update(
 .agents/
-TestScriptPurchase/
-Dashboard-Monitoring/
