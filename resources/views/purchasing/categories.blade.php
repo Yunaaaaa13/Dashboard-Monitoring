@@ -188,9 +188,13 @@
                             <i class="bi bi-tags-fill fs-3"></i>
                         </div>
                         <div>
-                            <div class="d-flex align-items-center gap-2 mb-1">
+                            <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.65rem;">Master Kategori Material &amp; Target Purchasing (USD)</h2>
+                            <div class="text-muted small mt-1">
+                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 me-1">
+                                    <i class="fa-solid fa-dollar-sign me-1"></i>Basis Mata Uang: USD
+                                </span>
+                                Monitoring target anggaran, realisasi penerimaan aktual, dan rasio pencapaian per kategori material.
                             </div>
-                            <h2 class="fw-bold text-white mb-0 brand-font" style="font-size:1.65rem;">Master Kategori Material &amp; Kode SKU</h2>
                         </div>
                     </div>
 
@@ -198,7 +202,7 @@
                 <div class="col-12 col-md-5 mt-3 mt-md-0">
                     <div class="d-flex gap-2 justify-content-md-end align-items-center flex-wrap">
                         <span class="px-3.5 py-2 rounded-pill fw-bold" style="font-size:0.85rem; background: rgba(226,179,74,0.15); border: none; color:#fbbf24;">
-                            <i class="fa-solid fa-boxes-stacked me-1.5 text-warning"></i> Total Kategori: <strong>{{ $categories->count() }}</strong>
+                            <i class="fa-solid fa-boxes-stacked me-1.5 text-warning"></i> Total Kategori: <strong>{{ $totalCategoriesCount ?? $categories->count() }}</strong>
                         </span>
                         @if(Auth::check() && Auth::user()->isAdmin())
                         <button type="button" class="btn btn-warning rounded-pill px-4 py-2 fw-bold shadow-sm d-flex align-items-center gap-2" onclick="document.querySelector('input[name=category_code]')?.focus(); document.querySelector('input[name=category_code]')?.scrollIntoView({behavior: 'smooth', block: 'center'});" style="font-size:0.88rem;">
@@ -211,10 +215,13 @@
         </div>
 
         @php
-            $totalTargetUnits = $categories->sum('monthly_target_units');
-            $totalActualUnits = $categories->sum('logs_sum_actual_received');
-            $overallPct = $totalTargetUnits > 0 ? round(($totalActualUnits / $totalTargetUnits) * 100, 1) : 0;
-            $activeCount = $categories->where('status', 'Active')->count();
+            $kpiTargetUsd = $totalTargetUsd ?? $categories->sum('target_usd');
+            $kpiActualUsd = $totalActualUsd ?? $categories->sum('actual_usd');
+            $kpiActualUnits = $totalActualUnits ?? $categories->sum('actual_units');
+            $kpiOverallPct = $overallPct ?? ($kpiTargetUsd > 0 ? round(($kpiActualUsd / $kpiTargetUsd) * 100, 1) : 0);
+            $kpiActiveCount = $activeCount ?? $categories->where('status', 'Active')->count();
+            $kpiTotalCount = $totalCategoriesCount ?? $categories->count();
+            $kpiColor = $kpiOverallPct >= 100 ? '#10b981' : ($kpiOverallPct >= 75 ? '#f59e0b' : '#38bdf8');
         @endphp
 
         <!-- SUMMARY KPI CARDS FOR CATEGORIES -->
@@ -222,8 +229,9 @@
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="glass-card p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">TARGET BULANAN</div>
-                        <div class="h3 fw-bold text-info mb-0 font-monospace">{{ number_format($totalTargetUnits) }} <small class="fs-6 text-muted">unit</small></div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">TARGET BULANAN (USD)</div>
+                        <div class="h3 fw-bold text-info mb-0 font-monospace">${{ number_format($kpiTargetUsd, 2) }}</div>
+                        <div class="text-muted small mt-1" style="font-size:0.72rem;">Total target bulanan seluruh kategori</div>
                     </div>
                     <div class="p-3 rounded-circle" style="background: rgba(6, 182, 212, 0.15); color: #06b6d4;">
                         <i class="fa-solid fa-bullseye fs-4"></i>
@@ -234,11 +242,12 @@
             <div class="col-12 col-sm-6 col-xl-3">
                 <div class="glass-card p-3 d-flex align-items-center justify-content-between">
                     <div>
-                        <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">UNIT TERCAPAI (ACTUAL)</div>
-                        <div class="h3 fw-bold text-warning mb-0 font-monospace">{{ number_format($totalActualUnits) }} <small class="fs-6 text-muted">unit</small></div>
+                        <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">ACTUAL TERCAPAI (USD)</div>
+                        <div class="h3 fw-bold text-warning mb-0 font-monospace">${{ number_format($kpiActualUsd, 2) }}</div>
+                        <div class="text-muted small mt-1" style="font-size:0.72rem;">Total penerimaan: <strong class="text-white">{{ number_format($kpiActualUnits) }}</strong> unit</div>
                     </div>
                     <div class="p-3 rounded-circle" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">
-                        <i class="fa-solid fa-box-open fs-4"></i>
+                        <i class="fa-solid fa-hand-holding-dollar fs-4"></i>
                     </div>
                 </div>
             </div>
@@ -247,7 +256,8 @@
                 <div class="glass-card p-3 d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">PERSENTASE PEMENUHAN</div>
-                        <div class="h3 fw-bold text-emerald mb-0 font-monospace text-success">{{ $overallPct }}%</div>
+                        <div class="h3 fw-bold mb-0 font-monospace" style="color: {{ $kpiColor }};">{{ $kpiOverallPct }}%</div>
+                        <div class="text-muted small mt-1" style="font-size:0.72rem;">Rasio realisasi terhadap target nominal</div>
                     </div>
                     <div class="p-3 rounded-circle" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">
                         <i class="fa-solid fa-chart-line fs-4"></i>
@@ -259,7 +269,8 @@
                 <div class="glass-card p-3 d-flex align-items-center justify-content-between">
                     <div>
                         <div class="text-muted small fw-bold text-uppercase" style="font-size:0.75rem; letter-spacing:0.5px;">KATEGORI AKTIF</div>
-                        <div class="h3 fw-bold text-white mb-0 font-monospace">{{ $activeCount }} <small class="fs-6 text-muted">kategori</small></div>
+                        <div class="h3 fw-bold text-white mb-0 font-monospace">{{ $kpiActiveCount }} <small class="fs-6 text-muted">/ {{ $kpiTotalCount }}</small></div>
+                        <div class="text-muted small mt-1" style="font-size:0.72rem;">Status operasional purchasing aktif</div>
                     </div>
                     <div class="p-3 rounded-circle" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">
                         <i class="fa-solid fa-layer-group fs-4"></i>
@@ -272,19 +283,21 @@
             <!-- Form Tambah Kategori Material -->
             <div class="col-12 col-lg-4">
                 <div class="glass-card">
-                    <h4 class="fw-bold mb-1">Tambah Kategori Material</h4>
-
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <i class="fa-solid fa-plus-circle text-warning fs-5"></i>
+                        <h4 class="fw-bold mb-0">Tambah Kategori Material</h4>
+                    </div>
 
                     <form action="{{ route('purchasing.categories.store') }}" method="POST">
                         @csrf
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Kode Kategori</label>
-                            <input type="text" name="category_code" class="form-control-dark w-100" placeholder="Kode kategori" required>
+                            <input type="text" name="category_code" class="form-control-dark w-100" placeholder="Contoh: PUR-06" required>
                         </div>
 
                         <div class="mb-3">
                             <label class="form-label fw-semibold">Nama Kategori Material</label>
-                            <input type="text" name="category_name" class="form-control-dark w-100" placeholder="Nama kategori" required>
+                            <input type="text" name="category_name" class="form-control-dark w-100" placeholder="Contoh: Wood & Timber Parts" required>
                         </div>
 
                         <div class="mb-3">
@@ -297,12 +310,20 @@
                                     </option>
                                 @endforeach
                             </select>
-
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Target Pengadaan Bulanan (unit)</label>
-                            <input type="number" name="monthly_target_units" class="form-control-dark w-100" value="3000" required>
+                            <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                <span>Target Pengadaan Bulanan (USD)</span>
+                                <span class="badge bg-warning bg-opacity-25 text-warning font-monospace" style="font-size:0.7rem;">$ USD</span>
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-dark border-secondary border-opacity-50 text-warning fw-bold px-3">$</span>
+                                <input type="number" step="any" name="monthly_target_units" class="form-control form-control-dark" placeholder="Contoh: 20000" value="20000" min="0.01" required>
+                            </div>
+                            <div class="form-text text-muted" style="font-size:0.75rem;">
+                                <i class="fa-solid fa-circle-info me-1 text-info"></i>Masukkan nominal target pengadaan bulanan dalam satuan USD ($).
+                            </div>
                         </div>
 
                         <div class="mb-4">
@@ -314,7 +335,7 @@
                             </select>
                         </div>
 
-                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2">
+                        <button type="submit" class="btn btn-warning w-100 fw-bold py-2.5 shadow-sm">
                             <i class="fa-solid fa-plus me-2"></i> Tambah Kategori Baru
                         </button>
                     </form>
@@ -327,6 +348,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
                         <div>
                             <h4 class="fw-bold mb-1">Daftar Kategori</h4>
+                            <p class="text-muted small mb-0">Master kategori material, target bulanan USD, realisasi actual penerimaan, dan persentase pencapaian.</p>
                         </div>
                         <button type="button" id="btnBulkDeleteCategory" class="btn btn-danger btn-sm rounded-pill px-3 d-none" onclick="confirmBulkDeleteCategory()">
                             <i class="fa-solid fa-trash me-1"></i> Hapus Terpilih (<span id="bulkDeleteCountCategory">0</span>)
@@ -343,59 +365,70 @@
                                     <th>Kode</th>
                                     <th>Nama Kategori Material</th>
                                     <th>PIC Procurement</th>
-                                    <th>Target Bulanan</th>
-                                    <th>Unit Tercapai (Actual)</th>
+                                    <th>Target Bulanan (USD)</th>
+                                    <th>Actual Tercapai (USD)</th>
                                     <th>Pencapaian (%)</th>
                                     <th>Status</th>
                                     <th class="text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($categories as $cat)
+                                @forelse($categories as $cat)
                                     @php
-                                        $actual = $cat->logs_sum_actual_received ?? 0;
-                                        $target = $cat->monthly_target_units ?: 1;
-                                        $pct = round(($actual / $target) * 100, 1);
-                                        $badgeColor = $pct >= 100 ? 'bg-success' : ($pct > 0 ? 'bg-warning text-dark' : 'bg-secondary');
+                                        $targetUsd = $cat->target_usd ?? (float)($cat->monthly_target_units ?: 1);
+                                        $actualUsd = $cat->actual_usd ?? 0.0;
+                                        $actualUnits = $cat->actual_units ?? ($cat->logs_sum_actual_received ?? 0);
+                                        $pct = $cat->achievement_pct ?? ($targetUsd > 0 ? round(($actualUsd / $targetUsd) * 100, 1) : 0);
+                                        $badgeColor = $pct >= 100 ? 'bg-success text-white' : ($pct >= 75 ? 'bg-warning text-dark' : ($pct > 0 ? 'bg-info text-dark' : 'bg-secondary text-white'));
+                                        $barColor = $pct >= 100 ? 'bg-success' : ($pct >= 75 ? 'bg-warning' : ($pct > 0 ? 'bg-info' : 'bg-secondary'));
                                     @endphp
                                     <tr>
                                         <td class="text-center">
                                             <input type="checkbox" class="row-checkbox-category form-check-input" value="{{ $cat->id }}">
                                         </td>
                                         <td>
-                                            <span class="badge bg-dark border text-light font-monospace">
+                                            <span class="badge bg-dark border border-secondary text-warning font-monospace px-2 py-1">
                                                 {{ $cat->category_code }}
                                             </span>
                                         </td>
                                         <td class="fw-bold text-white">{{ $cat->category_name }}</td>
-                                        <td class="text-muted">
+                                        <td>
                                             @if($cat->buyer)
                                                 <div class="fw-semibold text-white">{{ $cat->buyer->name }}</div>
-                                                <small>{{ $cat->buyer->email }}</small>
+                                                <small class="text-muted" style="font-size:0.75rem;">{{ $cat->buyer->email }}</small>
                                             @else
-                                                {{ $cat->pic_buyer }}
+                                                <span class="text-muted">{{ $cat->pic_buyer ?: 'Belum Ditugaskan' }}</span>
                                             @endif
                                         </td>
-                                        <td class="font-monospace text-info">{{ number_format($cat->monthly_target_units) }} unit</td>
-                                        <td class="font-monospace text-warning fw-bold">{{ number_format($actual) }} unit</td>
-                                        <td style="min-width: 140px;">
+                                        <td class="font-monospace text-info fw-semibold">
+                                            ${{ number_format($targetUsd, 2) }}
+                                        </td>
+                                        <td>
+                                            <div class="font-monospace text-warning fw-bold">${{ number_format($actualUsd, 2) }}</div>
+                                            <small class="text-muted" style="font-size:0.72rem;"><i class="bi bi-box-seam me-1"></i>{{ number_format($actualUnits) }} unit</small>
+                                        </td>
+                                        <td style="min-width: 155px;">
                                             <div class="d-flex align-items-center justify-content-between mb-1">
                                                 <span class="badge {{ $badgeColor }} font-monospace" style="font-size: 0.75rem;">
                                                     {{ $pct }}%
                                                 </span>
-                                                <small class="text-muted" style="font-size:0.7rem;">{{ number_format($actual) }}/{{ number_format($cat->monthly_target_units) }}</small>
+                                                <small class="text-muted font-monospace" style="font-size:0.7rem;">${{ number_format($actualUsd, 0) }}/${{ number_format($targetUsd, 0) }}</small>
                                             </div>
                                             <div class="progress" style="height: 6px; background: rgba(255,255,255,0.08); border-radius: 4px;">
-                                                <div class="progress-bar {{ $pct >= 100 ? 'bg-success' : ($pct > 0 ? 'bg-warning' : 'bg-secondary') }}"
+                                                <div class="progress-bar {{ $barColor }}"
                                                      role="progressbar"
                                                      style="width: {{ min(100, $pct) }}%;"
                                                      aria-valuenow="{{ $pct }}" aria-valuemin="0" aria-valuemax="100"></div>
                                             </div>
                                         </td>
                                         <td>
-                                            <span class="badge {{ $cat->status == 'Active' ? 'bg-success' : 'bg-warning text-dark' }}">
-                                                {{ $cat->status }}
-                                            </span>
+                                            @if($cat->status === 'Active')
+                                                <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-50 px-2 py-1">Active</span>
+                                            @elseif($cat->status === 'Review')
+                                                <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1">Review</span>
+                                            @else
+                                                <span class="badge bg-secondary bg-opacity-25 text-secondary border border-secondary border-opacity-50 px-2 py-1">{{ $cat->status }}</span>
+                                            @endif
                                         </td>
                                         <td class="text-center">
                                             <div class="d-flex justify-content-center align-items-center gap-2">
@@ -412,7 +445,14 @@
                                             </div>
                                         </td>
                                     </tr>
-                                @endforeach
+                                @empty
+                                    <tr>
+                                        <td colspan="9" class="text-center py-4 text-muted">
+                                            <i class="bi bi-inbox fs-3 d-block mb-2 text-secondary"></i>
+                                            Belum ada kategori material yang terdaftar.
+                                        </td>
+                                    </tr>
+                                @endforelse
                             </tbody>
                         </table>
                     </div>
@@ -454,8 +494,17 @@
                                 </select>
                             </div>
                             <div class="mb-3">
-                                <label class="form-label fw-semibold">Target Pengadaan Bulanan (unit)</label>
-                                <input type="number" name="monthly_target_units" class="form-control-dark w-100" value="{{ $cat->monthly_target_units }}" required>
+                                <label class="form-label fw-semibold d-flex justify-content-between align-items-center">
+                                    <span>Target Pengadaan Bulanan (USD)</span>
+                                    <span class="badge bg-warning bg-opacity-25 text-warning font-monospace" style="font-size:0.7rem;">$ USD</span>
+                                </label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-dark border-secondary border-opacity-50 text-warning fw-bold px-3">$</span>
+                                    <input type="number" step="any" name="monthly_target_units" class="form-control form-control-dark" value="{{ $cat->monthly_target_units }}" min="0.01" required>
+                                </div>
+                                <div class="form-text text-muted" style="font-size:0.75rem;">
+                                    <i class="fa-solid fa-circle-info me-1 text-info"></i>Nominal target pengadaan bulanan dalam USD ($).
+                                </div>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-semibold">Status Kategori</label>
