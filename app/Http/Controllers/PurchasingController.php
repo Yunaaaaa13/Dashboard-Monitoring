@@ -181,8 +181,56 @@ class PurchasingController extends Controller
             '12' => ['DES', 'Des', 'des', 'DEC', 'Dec', 'dec'],
         ];
 
+        // Build unified item price & currency dictionary
+        $itemPriceMap = [];
+        foreach (\App\Models\PurchasingOutstanding::where('price', '>', 0)->select(['part_number', 'drawing', 'price', 'currency'])->get() as $po) {
+            $curr = \App\Services\Normalization\CurrencyNormalizer::detectCurrency($po->currency, (float)$po->price);
+            if ($po->part_number) {
+                $itemPriceMap[strtoupper(trim($po->part_number))] = ['price' => (float)$po->price, 'currency' => $curr];
+            }
+            if ($po->drawing) {
+                $itemPriceMap[strtoupper(trim($po->drawing))] = ['price' => (float)$po->price, 'currency' => $curr];
+            }
+        }
+        foreach (\App\Models\MasterPo::where('price', '>', 0)->select(['item_code', 'price', 'currency'])->get() as $mp) {
+            $curr = \App\Services\Normalization\CurrencyNormalizer::detectCurrency($mp->currency, (float)$mp->price);
+            $k = strtoupper(trim($mp->item_code));
+            if (!isset($itemPriceMap[$k])) {
+                $itemPriceMap[$k] = ['price' => (float)$mp->price, 'currency' => $curr];
+            }
+        }
+        foreach (\App\Models\Forecasting::where('price', '>', 0)->select(['part_number', 'price', 'currency'])->get() as $fc) {
+            $curr = \App\Services\Normalization\CurrencyNormalizer::detectCurrency($fc->currency, (float)$fc->price);
+            $k = strtoupper(trim($fc->part_number));
+            if (!isset($itemPriceMap[$k])) {
+                $itemPriceMap[$k] = ['price' => (float)$fc->price, 'currency' => $curr];
+            }
+        }
+
+        $calculateItemUsd = function($qty, $rawPrice, $rawCurrency, $itemCode, $year, $month) use (&$itemPriceMap) {
+            $q = (float) $qty;
+            if ($q <= 0) return 0.0;
+            
+            $p = (float) $rawPrice;
+            $c = $rawCurrency;
+            
+            if ($p <= 0 && !empty($itemCode)) {
+                $k = strtoupper(trim($itemCode));
+                if (isset($itemPriceMap[$k])) {
+                    $p = (float)$itemPriceMap[$k]['price'];
+                    $c = $itemPriceMap[$k]['currency'];
+                }
+            }
+            
+            if ($p <= 0) return 0.0;
+            
+            $detectedCurr = \App\Services\Normalization\CurrencyNormalizer::detectCurrency($c, $p);
+            return (float)\App\Services\Normalization\CurrencyNormalizer::convertToUsd($q * $p, $detectedCurr, (int)$year, (int)$month);
+        };
+
         // Ambil stok awal dari Forecasting (stock_pre) bulan Januari tahun yang dipilih
         $initialStock = 0;
+        $initialStockUsd = 0.0;
         $janAbbrs = array_merge($monthNumToAbbr['01'], [$selectedYear . '-01']);
         $firstPeriodFc = \App\Models\Forecasting::where(function($q) use ($janAbbrs) {
             $q->whereIn('periode', $janAbbrs)->orWhereIn('period_month', $janAbbrs);
@@ -191,8 +239,15 @@ class PurchasingController extends Controller
             $initialStock = (int) $firstPeriodFc->sum(function($f) {
                 return (int) ($f->stock_pre ?? $f->getAttributes()['stock_qty'] ?? 0);
             });
+            foreach ($firstPeriodFc as $f) {
+                $stkQty = (int) ($f->stock_pre ?? $f->getAttributes()['stock_qty'] ?? 0);
+                if ($stkQty > 0) {
+                    $initialStockUsd += $calculateItemUsd($stkQty, $f->price, $f->currency, $f->part_number, $selectedYear, 1);
+                }
+            }
         }
         $runningStock = $initialStock;
+        $runningStockUsd = $initialStockUsd;
 
         // Pre-fetch ActualProduction sums by period month (single query)
         $actProdByMonth = \App\Models\ActualProduction::where('tanggal_produksi', 'like', $selectedYear . '-%')
@@ -258,7 +313,40 @@ class PurchasingController extends Controller
                 }
             }
 
+            // Hitung Valuasi Finansial USD Bulanan
+            $receivedAmountUsd = 0.0;
+            foreach ($monthLogs as $l) {
+                $recQtyItem = (float) $l->actual_received;
+                if ($recQtyItem > 0) {
+                    $receivedAmountUsd += $calculateItemUsd($recQtyItem, $l->price, $l->currency, $l->item_code, $selectedYear, (int)$num);
+                }
+            }
+
+            $productionAmountUsd = 0.0;
+            $mActProds = \App\Models\ActualProduction::where('tanggal_produksi', 'like', $periodStr . '-%')->get();
+            if ($mActProds->count() > 0) {
+                foreach ($mActProds as $ap) {
+                    $apQty = (float) $ap->qty;
+                    if ($apQty > 0) {
+                        $productionAmountUsd += $calculateItemUsd($apQty, null, $ap->currency, $ap->item_code, $selectedYear, (int)$num);
+                    }
+                }
+            } else {
+                $abbrList = $monthNumToAbbr[$num] ?? [];
+                $allMatchKeys = array_merge($abbrList, [$periodStr]);
+                $fcMonthRecords = \App\Models\Forecasting::where(function($q) use ($allMatchKeys) {
+                    $q->whereIn('periode', $allMatchKeys)->orWhereIn('period_month', $allMatchKeys);
+                })->get();
+                foreach ($fcMonthRecords as $fc) {
+                    $fcProd = (float) ($fc->production_qty ?: $fc->production ?: 0);
+                    if ($fcProd > 0) {
+                        $productionAmountUsd += $calculateItemUsd($fcProd, $fc->price, $fc->currency, $fc->part_number, $selectedYear, (int)$num);
+                    }
+                }
+            }
+
             $runningStock = max(0, $runningStock + $receivedQty - $prodQty);
+            $runningStockUsd = max(0.0, $runningStockUsd + $receivedAmountUsd - $productionAmountUsd);
 
             // Kumpulkan nama kategori dari log bulan ini (menggunakan pre-fetched map)
             $activeCatNames = $monthLogs->map(function($l) use ($poDeliveryCatMap) {
@@ -275,20 +363,27 @@ class PurchasingController extends Controller
             })->filter()->unique()->values()->toArray();
 
             $monthlyStockBreakdown[] = [
-                'num'             => $num,
-                'label'           => $label,
-                'period_month'    => $periodStr,
-                'received_qty'    => $receivedQty,
-                'target_qty'      => $targetQty,
-                'production_qty'  => $prodQty,
-                'stock_end'       => $runningStock,
-                'categories_used' => $activeCatNames,
+                'num'                   => $num,
+                'label'                 => $label,
+                'period_month'          => $periodStr,
+                'received_qty'          => $receivedQty,
+                'target_qty'            => $targetQty,
+                'production_qty'        => $prodQty,
+                'stock_end'             => $runningStock,
+                'received_amount_usd'   => $receivedAmountUsd,
+                'production_amount_usd' => $productionAmountUsd,
+                'stock_end_usd'         => $runningStockUsd,
+                'categories_used'       => $activeCatNames,
             ];
 
             $monthlyReceived[] = $receivedQty;
             $monthlyTarget[]   = $targetQty;
             $monthlyPending[]  = $pendingQty;
         }
+
+        $totalStockReceivedUsd   = array_sum(array_column($monthlyStockBreakdown, 'received_amount_usd'));
+        $totalStockProductionUsd = array_sum(array_column($monthlyStockBreakdown, 'production_amount_usd'));
+        $latestStockEndUsd       = count($monthlyStockBreakdown) > 0 ? end($monthlyStockBreakdown)['stock_end_usd'] : 0.0;
 
         // Chart 2: Kontribusi & Frekuensi Pembelian per Kategori Material
         $categoryNames        = [];
@@ -539,6 +634,9 @@ class PurchasingController extends Controller
             'monthlyTarget'         => $monthlyTarget,
             'monthlyPending'        => $monthlyPending,
             'monthlyStockBreakdown' => $monthlyStockBreakdown,
+            'totalStockReceivedUsd' => $totalStockReceivedUsd,
+            'totalStockProductionUsd' => $totalStockProductionUsd,
+            'latestStockEndUsd'     => $latestStockEndUsd,
             'categoryNames'         => $categoryNames,
             'categoryReceiveds'     => $categoryReceiveds,
             'categoryReceived'      => $categoryReceiveds,

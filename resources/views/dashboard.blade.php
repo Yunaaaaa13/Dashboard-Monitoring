@@ -694,19 +694,31 @@
             </div>
         </div>
 
-        <!-- SECTION NEW: REKAPITULASI STOK BULANAN & PENGGUNAAN KATEGORI (HASIL KOMPARASI SELURUH USER) -->
+        <!-- SECTION NEW: REKAPITULASI STOK BULANAN & PENGGUNAAN KATEGORI (VALUASI FINANSIAL USD) -->
         <div class="row g-3 g-xl-4 mb-4">
             <div class="col-12">
                 <div class="glass-card border-start border-4 border-warning">
                     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
                         <div>
                             <div class="d-flex align-items-center gap-2">
-                                <h5 class="fw-bold mb-0 brand-font text-white">Rekapitulasi Stok Bulanan</h5>
+                                <h5 class="fw-bold mb-0 brand-font text-white"><i class="bi bi-cash-stack text-warning me-2"></i>Rekapitulasi Stok &amp; Valuasi Finansial Bulanan (USD)</h5>
                             </div>
+                            <div class="text-muted small mt-1">Monitoring arus penerimaan (incoming), pemakaian produksi, dan akumulasi saldo stok berbasis valuasi mata uang USD.</div>
                         </div>
-                        <span class="badge bg-dark border border-secondary text-info font-monospace">
-                            Jan &ndash; Des {{ $selectedYear }}
-                        </span>
+                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                            <span class="badge bg-dark border border-success border-opacity-50 text-emerald font-monospace py-1.5 px-2.5">
+                                <i class="bi bi-arrow-down-left-circle me-1"></i> Incoming: +${{ number_format($totalStockReceivedUsd ?? 0, 2) }}
+                            </span>
+                            <span class="badge bg-dark border border-info border-opacity-50 text-info font-monospace py-1.5 px-2.5">
+                                <i class="bi bi-arrow-up-right-circle me-1"></i> Pemakaian: -${{ number_format($totalStockProductionUsd ?? 0, 2) }}
+                            </span>
+                            <span class="badge bg-dark border border-warning border-opacity-50 text-warning font-monospace py-1.5 px-2.5">
+                                <i class="bi bi-safe2-fill me-1"></i> Stok Akhir: ${{ number_format($latestStockEndUsd ?? 0, 2) }}
+                            </span>
+                            <span class="badge bg-dark border border-secondary text-light font-monospace py-1.5 px-2.5">
+                                Jan &ndash; Des {{ $selectedYear }}
+                            </span>
+                        </div>
                     </div>
 
                     <div class="table-responsive">
@@ -715,22 +727,43 @@
                                 <tr>
                                     <th class="text-center" style="width: 45px;">#</th>
                                     <th>PERIODE BULAN</th>
-                                    <th class="text-end">PENERIMAAN</th>
-                                    <th class="text-end">PEMAKAIAN</th>
-                                    <th class="text-end">ESTIMASI STOK AKHIR</th>
+                                    <th class="text-end">PENERIMAAN (INCOMING USD)</th>
+                                    <th class="text-end">PEMAKAIAN (PRODUKSI USD)</th>
+                                    <th class="text-end">ESTIMASI STOK AKHIR (USD)</th>
                                     <th>KATEGORI MATERIAL AKTIF TERPAKAI</th>
                                 </tr>
                             </thead>
                             <tbody>
+                                @php
+                                    $sumRecQty = 0;
+                                    $sumProdQty = 0;
+                                    $sumRecUsd = 0;
+                                    $sumProdUsd = 0;
+                                @endphp
                                 @forelse($monthlyStockBreakdown as $mRow)
+                                    @php
+                                        $sumRecQty += (float)($mRow['received_qty'] ?? 0);
+                                        $sumProdQty += (float)($mRow['production_qty'] ?? 0);
+                                        $sumRecUsd += (float)($mRow['received_amount_usd'] ?? 0);
+                                        $sumProdUsd += (float)($mRow['production_amount_usd'] ?? 0);
+                                    @endphp
                                     <tr>
                                         <td class="text-center text-muted font-monospace fw-bold">{{ $mRow['num'] }}</td>
                                         <td class="fw-bold text-white font-monospace">
                                              <i class="fa-regular fa-calendar text-warning me-1"></i> {{ $mRow['label'] }} {{ $selectedYear }}
                                         </td>
-                                        <td class="text-end font-monospace text-emerald fw-bold">+{{ number_format($mRow['received_qty']) }} unit</td>
-                                        <td class="text-end font-monospace text-primary fw-bold">-{{ number_format($mRow['production_qty']) }} unit</td>
-                                        <td class="text-end font-monospace text-warning fw-bold fs-6">{{ number_format($mRow['stock_end']) }} unit</td>
+                                        <td class="text-end">
+                                            <div class="font-monospace text-emerald fw-bold" style="font-size: 0.95rem;">+${{ number_format($mRow['received_amount_usd'] ?? 0, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">+{{ number_format($mRow['received_qty']) }} unit</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="font-monospace text-info fw-bold" style="font-size: 0.95rem;">-${{ number_format($mRow['production_amount_usd'] ?? 0, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">-{{ number_format($mRow['production_qty']) }} unit</div>
+                                        </td>
+                                        <td class="text-end">
+                                            <div class="font-monospace text-warning fw-bold fs-6">${{ number_format($mRow['stock_end_usd'] ?? 0, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">{{ number_format($mRow['stock_end']) }} unit</div>
+                                        </td>
                                         <td>
                                             <div class="d-flex flex-wrap gap-1">
                                                 @forelse($mRow['categories_used'] as $cName)
@@ -749,6 +782,30 @@
                                     </tr>
                                 @endforelse
                             </tbody>
+                            @if(count($monthlyStockBreakdown) > 0)
+                                <tfoot class="border-top border-2 border-secondary border-opacity-50 bg-dark bg-opacity-25">
+                                    <tr class="fw-bold">
+                                        <td colspan="2" class="text-end text-warning font-monospace py-3">TOTAL TAHUNAN {{ $selectedYear }}:</td>
+                                        <td class="text-end py-3">
+                                            <div class="font-monospace text-emerald fw-bold fs-6">+${{ number_format($sumRecUsd, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">+{{ number_format($sumRecQty) }} unit</div>
+                                        </td>
+                                        <td class="text-end py-3">
+                                            <div class="font-monospace text-info fw-bold fs-6">-${{ number_format($sumProdUsd, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">-{{ number_format($sumProdQty) }} unit</div>
+                                        </td>
+                                        <td class="text-end py-3">
+                                            <div class="font-monospace text-warning fw-bold fs-6">${{ number_format(end($monthlyStockBreakdown)['stock_end_usd'] ?? 0, 2) }}</div>
+                                            <div class="text-muted small font-monospace" style="font-size: 0.75rem;">{{ number_format(end($monthlyStockBreakdown)['stock_end'] ?? 0) }} unit</div>
+                                        </td>
+                                        <td class="py-3">
+                                            <span class="badge bg-warning bg-opacity-20 text-warning border border-warning border-opacity-40 px-2.5 py-1 font-monospace">
+                                                <i class="bi bi-check2-circle me-1"></i> Rekap Finansial Terverifikasi
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </tfoot>
+                            @endif
                         </table>
                     </div>
                 </div>

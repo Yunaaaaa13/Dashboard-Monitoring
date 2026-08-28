@@ -345,7 +345,16 @@ class DashboardController extends Controller
         // ── 7. Monthly Stock Breakdown & Categories Used ──
         $prodLogs = ActualProduction::all();
         $runningStock = 0;
+        $runningStockUsd = 0.0;
         $monthlyStockBreakdown = [];
+
+        // Build price dictionary for DashboardController
+        $itemPriceMap = [];
+        foreach (\App\Models\PurchasingOutstanding::where('price', '>', 0)->select(['part_number', 'drawing', 'price', 'currency'])->get() as $po) {
+            $curr = \App\Services\Normalization\CurrencyNormalizer::detectCurrency($po->currency, (float)$po->price);
+            if ($po->part_number) $itemPriceMap[strtoupper(trim($po->part_number))] = ['price' => (float)$po->price, 'currency' => $curr];
+            if ($po->drawing) $itemPriceMap[strtoupper(trim($po->drawing))] = ['price' => (float)$po->price, 'currency' => $curr];
+        }
 
         for ($m = 1; $m <= 12; $m++) {
             $mLogs = $yearLogs->filter(function ($item) use ($m) {
@@ -359,7 +368,7 @@ class DashboardController extends Controller
             });
 
             $mProds = $prodLogs->filter(function ($item) use ($m, $selectedYear) {
-                $p = (string) ($item->production_date ?: $item->period);
+                $p = (string) ($item->tanggal_produksi ?: $item->production_date ?: $item->period);
                 if (empty($p)) return false;
                 try {
                     $c = Carbon::parse($p);
@@ -370,8 +379,37 @@ class DashboardController extends Controller
             });
 
             $recQty = (int) $mLogs->sum('actual_received');
-            $prodQty = (int) $mProds->sum('actual_qty');
-            $runningStock += ($recQty - $prodQty);
+            $prodQty = (int) $mProds->sum('qty');
+            $runningStock = max(0, $runningStock + $recQty - $prodQty);
+
+            // Compute USD Amounts
+            $recUsd = 0.0;
+            foreach ($mLogs as $l) {
+                $q = (float) $l->actual_received;
+                $p = (float) $l->price;
+                $c = $l->currency ?: 'USD';
+                if ($p <= 0 && $l->item_code) {
+                    $k = strtoupper(trim($l->item_code));
+                    $p = $itemPriceMap[$k]['price'] ?? 0;
+                    $c = $itemPriceMap[$k]['currency'] ?? $c;
+                }
+                if ($q > 0 && $p > 0) {
+                    $recUsd += \App\Services\Normalization\CurrencyNormalizer::convertToUsd($q * $p, $c, (int)$selectedYear, $m);
+                }
+            }
+
+            $prodUsd = 0.0;
+            foreach ($mProds as $ap) {
+                $q = (float) $ap->qty;
+                $k = strtoupper(trim($ap->item_code ?? ''));
+                $p = $itemPriceMap[$k]['price'] ?? 0;
+                $c = $ap->currency ?: ($itemPriceMap[$k]['currency'] ?? 'USD');
+                if ($q > 0 && $p > 0) {
+                    $prodUsd += \App\Services\Normalization\CurrencyNormalizer::convertToUsd($q * $p, $c, (int)$selectedYear, $m);
+                }
+            }
+
+            $runningStockUsd = max(0.0, $runningStockUsd + $recUsd - $prodUsd);
 
             $catsUsed = $mLogs->pluck('category.category_name')->filter()->unique()->values()->toArray();
             if (empty($catsUsed) && $recQty > 0) {
@@ -379,14 +417,21 @@ class DashboardController extends Controller
             }
 
             $monthlyStockBreakdown[] = [
-                'num'             => sprintf('%02d', $m),
-                'label'           => $monthlyLabels[$m - 1],
-                'received_qty'    => $recQty,
-                'production_qty'  => $prodQty,
-                'stock_end'       => $runningStock,
-                'categories_used' => $catsUsed,
+                'num'                   => sprintf('%02d', $m),
+                'label'                 => $monthlyLabels[$m - 1],
+                'received_qty'          => $recQty,
+                'production_qty'        => $prodQty,
+                'stock_end'             => $runningStock,
+                'received_amount_usd'   => $recUsd,
+                'production_amount_usd' => $prodUsd,
+                'stock_end_usd'         => $runningStockUsd,
+                'categories_used'       => $catsUsed,
             ];
         }
+
+        $totalStockReceivedUsd   = array_sum(array_column($monthlyStockBreakdown, 'received_amount_usd'));
+        $totalStockProductionUsd = array_sum(array_column($monthlyStockBreakdown, 'production_amount_usd'));
+        $latestStockEndUsd       = count($monthlyStockBreakdown) > 0 ? end($monthlyStockBreakdown)['stock_end_usd'] : 0.0;
 
         // ── 8. Master PO Data ──
         $masterPosQuery     = MasterPo::query();
@@ -483,6 +528,9 @@ class DashboardController extends Controller
             'monthlyTarget'           => $monthlyTarget,
             'monthlyPending'          => $monthlyPending,
             'monthlyStockBreakdown'   => $monthlyStockBreakdown,
+            'totalStockReceivedUsd'   => $totalStockReceivedUsd,
+            'totalStockProductionUsd' => $totalStockProductionUsd,
+            'latestStockEndUsd'       => $latestStockEndUsd,
             'poTotalCount'            => $poTotalCount,
             'poTotalAmount'           => $poTotalAmount,
             'poOrderUnits'            => $poOrderUnits,
