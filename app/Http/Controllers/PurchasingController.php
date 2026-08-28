@@ -1698,69 +1698,228 @@ class PurchasingController extends Controller
     /**
      * Halaman Manajemen Kategori Material
      */
-    public function categories()
+    /**
+     * Master Kategori Material Purchasing (USD Basis)
+     */
+    public function categories(Request $request)
     {
+        $selectedPeriod = $request->get('period', 'all');
+
         // Preload exchange rates to prevent N+1 query overhead
         $ratesMap = \App\Models\TaxBudgetForecastRate::all()->groupBy(function ($item) {
             return $item->exch_year . '-' . $item->exch_month . '-' . $item->currency_code;
         });
 
+        // Ambil daftar unik periode bulan dari log transaksi untuk filter dropdown
+        $availablePeriods = PurchasingLog::whereNotNull('period_month')
+            ->where('period_month', '!=', '')
+            ->distinct()
+            ->orderBy('period_month', 'desc')
+            ->pluck('period_month')
+            ->values();
+
+        $filterClosure = function ($q) use ($selectedPeriod) {
+            if ($selectedPeriod && $selectedPeriod !== 'all') {
+                if (strlen($selectedPeriod) === 4) {
+                    $q->where('period_month', 'like', $selectedPeriod . '-%');
+                } else {
+                    $q->where('period_month', $selectedPeriod);
+                }
+            }
+        };
+
         $categories = PurchasingCategory::with([
             'buyer',
             'logs' => function ($q) {
-                $q->select('id', 'purchasing_category_id', 'actual_received', 'price', 'amount', 'currency', 'period_month');
+                $q->select('id', 'purchasing_category_id', 'target_order', 'actual_received', 'price', 'amount', 'currency', 'period_month', 'item_code', 'item_name', 'supplier_name', 'po_reference');
             }
         ])
-        ->withSum('logs', 'actual_received')
-        ->withSum('logs', 'target_order')
-        ->withCount('logs')
+        ->withSum(['logs' => $filterClosure], 'actual_received')
+        ->withSum(['logs' => $filterClosure], 'target_order')
+        ->withCount(['logs' => $filterClosure])
         ->orderBy('id', 'desc')
         ->get();
 
         foreach ($categories as $cat) {
+            $catPlanUsd = 0.0;
             $catActualUsd = 0.0;
+            $catPlanUnits = 0;
+            $catFilteredUnits = 0;
+            $catFilteredRows = 0;
+            
+            // Komputasi breakdown per bulan dan top item
+            $monthlyDist = [];
+            $itemDist = [];
+
             foreach ($cat->logs as $log) {
-                $ym = explode('-', (string)($log->period_month ?? '2026-01'));
+                $pMonth = (string)($log->period_month ?? '2026-01');
+                $ym = explode('-', $pMonth);
                 $y = (int)($ym[0] ?? 2026);
                 $m = (int)($ym[1] ?? 1);
-                $amt = (float)($log->amount ?: ((float)$log->actual_received * (float)$log->price));
+                $price = (float)$log->price;
+                $targetOrder = (int)$log->target_order;
+                $actualRec = (int)$log->actual_received;
+                $amt = (float)($log->amount ?: ($actualRec * $price));
                 $curr = strtoupper(trim((string)($log->currency ?: 'USD')));
 
+                $planAmt = (float)$targetOrder * $price;
+
+                $logPlanUsd = 0.0;
+                $logActualUsd = 0.0;
+
                 if ($curr === 'USD') {
-                    $catActualUsd += $amt;
+                    $logPlanUsd = $planAmt;
+                    $logActualUsd = $amt;
                 } elseif ($curr === 'IDR') {
                     $key = $y . '-' . $m . '-2';
                     $rate = isset($ratesMap[$key]) ? (float)$ratesMap[$key]->first()->budget_rate : 16600.0;
-                    $catActualUsd += ($rate > 0 ? $amt / $rate : 0.0);
+                    $logPlanUsd = ($rate > 0 ? $planAmt / $rate : 0.0);
+                    $logActualUsd = ($rate > 0 ? $amt / $rate : 0.0);
                 } else {
-                    $catActualUsd += \App\Services\Normalization\CurrencyNormalizer::convertToUsd($amt, $curr, $y, $m);
+                    $logPlanUsd = \App\Services\Normalization\CurrencyNormalizer::convertToUsd($planAmt, $curr, $y, $m);
+                    $logActualUsd = \App\Services\Normalization\CurrencyNormalizer::convertToUsd($amt, $curr, $y, $m);
+                }
+
+                // Data breakdown all-time per bulan
+                if (!isset($monthlyDist[$pMonth])) {
+                    $monthlyDist[$pMonth] = [
+                        'period' => $pMonth,
+                        'rows' => 0,
+                        'plan_units' => 0,
+                        'units' => 0,
+                        'plan_usd' => 0.0,
+                        'usd' => 0.0,
+                    ];
+                }
+                $monthlyDist[$pMonth]['rows']++;
+                $monthlyDist[$pMonth]['plan_units'] += $targetOrder;
+                $monthlyDist[$pMonth]['units'] += $actualRec;
+                $monthlyDist[$pMonth]['plan_usd'] += $logPlanUsd;
+                $monthlyDist[$pMonth]['usd'] += $logActualUsd;
+
+                // Data item kontributor
+                $itCode = $log->item_code ?: 'ITEM-' . $log->id;
+                if (!isset($itemDist[$itCode])) {
+                    $itemDist[$itCode] = [
+                        'item_code' => $itCode,
+                        'item_name' => $log->item_name ?: $itCode,
+                        'supplier'  => $log->supplier_name ?: '-',
+                        'rows'      => 0,
+                        'plan_units'=> 0,
+                        'units'     => 0,
+                        'plan_usd'  => 0.0,
+                        'usd'       => 0.0,
+                    ];
+                }
+                $itemDist[$itCode]['rows']++;
+                $itemDist[$itCode]['plan_units'] += $targetOrder;
+                $itemDist[$itCode]['units'] += $actualRec;
+                $itemDist[$itCode]['plan_usd'] += $logPlanUsd;
+                $itemDist[$itCode]['usd'] += $logActualUsd;
+
+                // Cek filter periode aktif untuk metrik kartu & tabel
+                $matchesFilter = true;
+                if ($selectedPeriod && $selectedPeriod !== 'all') {
+                    if (strlen($selectedPeriod) === 4) {
+                        $matchesFilter = str_starts_with($pMonth, $selectedPeriod . '-');
+                    } else {
+                        $matchesFilter = ($pMonth === $selectedPeriod);
+                    }
+                }
+
+                if ($matchesFilter) {
+                    $catPlanUsd += $logPlanUsd;
+                    $catActualUsd += $logActualUsd;
+                    $catPlanUnits += $targetOrder;
+                    $catFilteredUnits += $actualRec;
+                    $catFilteredRows++;
                 }
             }
 
+            // Urutkan breakdown per periode bulan
+            krsort($monthlyDist);
+            // Urutkan top item berdasarkan unit penerimaan terbesar
+            uasort($itemDist, fn($a, $b) => $b['units'] <=> $a['units']);
+
+            $cat->monthly_breakdown = array_values($monthlyDist);
+            $cat->top_items = array_slice(array_values($itemDist), 0, 10);
+            $cat->all_items_count = count($itemDist);
+
+            // Target diutamakan dari Plan PO ($catPlanUsd / $catPlanUnits), fallback ke budget manual jika tidak ada transaksi
+            $cat->target_usd = $catPlanUsd > 0 ? $catPlanUsd : (float)($cat->monthly_target_units ?: 0);
+            $cat->target_units = $catPlanUnits > 0 ? $catPlanUnits : (int)($cat->target_qty ?: ($cat->logs_sum_target_order ?? 0));
             $cat->actual_usd = $catActualUsd;
-            $cat->actual_units = (int)($cat->logs_sum_actual_received ?? 0);
-            $cat->target_usd = (float)($cat->monthly_target_units ?: 0);
-            $cat->achievement_pct = $cat->target_usd > 0 ? round(($cat->actual_usd / $cat->target_usd) * 100, 1) : ($cat->actual_usd > 0 ? 100.0 : 0.0);
+            $cat->actual_units = $catFilteredUnits;
+            $cat->actual_rows = $catFilteredRows;
+            $cat->pending_usd = max(0, $cat->target_usd - $cat->actual_usd);
+            $cat->pending_units = max(0, $cat->target_units - $cat->actual_units);
+
+            // Capaian Amount (USD) & Capaian Kuantitas (Unit)
+            $cat->achievement_usd_pct = $cat->target_usd > 0 ? round(($cat->actual_usd / $cat->target_usd) * 100, 1) : ($cat->actual_usd > 0 ? 100.0 : 0.0);
+            $cat->achievement_qty_pct = $cat->target_units > 0 ? round(($cat->actual_units / $cat->target_units) * 100, 1) : ($cat->actual_units > 0 ? 100.0 : 0.0);
+            $cat->achievement_pct = $cat->achievement_usd_pct;
+            $avgPct = round(($cat->achievement_usd_pct + $cat->achievement_qty_pct) / 2, 1);
+            $cat->average_achievement_pct = $avgPct;
+
+            // Penentuan status dinamis dari kedua parameter (Unit & Amount)
+            if ($cat->achievement_usd_pct >= 100 && $cat->achievement_qty_pct >= 100) {
+                $cat->status_label = 'Fulfilled';
+            } elseif ($cat->achievement_usd_pct >= 100 || $cat->achievement_qty_pct >= 100) {
+                $cat->status_label = 'Partial Fulfilled';
+            } elseif ($avgPct >= 85) {
+                $cat->status_label = 'On Track';
+            } elseif ($avgPct > 0) {
+                $cat->status_label = 'In Progress';
+            } else {
+                $cat->status_label = 'Pending';
+            }
         }
 
         $buyers = User::orderBy('name')->get();
 
         $totalTargetUsd = (float)$categories->sum('target_usd');
         $totalActualUsd = (float)$categories->sum('actual_usd');
+        $totalTargetUnits = (int)$categories->sum('target_units');
         $totalActualUnits = (int)$categories->sum('actual_units');
+        $totalPendingUnits = max(0, $totalTargetUnits - $totalActualUnits);
+        $totalPendingUsd = max(0, $totalTargetUsd - $totalActualUsd);
+        $totalActualRows = (int)$categories->sum('actual_rows');
         $overallPct = $totalTargetUsd > 0 ? round(($totalActualUsd / $totalTargetUsd) * 100, 1) : 0.0;
+        $overallQtyPct = $totalTargetUnits > 0 ? round(($totalActualUnits / $totalTargetUnits) * 100, 1) : 0.0;
+        $overallAvgPct = round(($overallPct + $overallQtyPct) / 2, 1);
         $activeCount = $categories->where('status', 'Active')->count();
         $totalCategoriesCount = $categories->count();
+
+        if ($overallPct >= 100 && $overallQtyPct >= 100) {
+            $overallStatus = 'Order Fulfilled';
+        } elseif ($overallPct >= 100 || $overallQtyPct >= 100) {
+            $overallStatus = 'Partial Fulfilled';
+        } elseif ($overallAvgPct >= 85) {
+            $overallStatus = 'On Track';
+        } elseif ($overallAvgPct > 0) {
+            $overallStatus = 'In Progress';
+        } else {
+            $overallStatus = 'Pending Order';
+        }
 
         return view('purchasing.categories', compact(
             'categories',
             'buyers',
             'totalTargetUsd',
             'totalActualUsd',
+            'totalTargetUnits',
             'totalActualUnits',
+            'totalPendingUnits',
+            'totalPendingUsd',
+            'totalActualRows',
             'overallPct',
+            'overallQtyPct',
+            'overallAvgPct',
+            'overallStatus',
             'activeCount',
-            'totalCategoriesCount'
+            'totalCategoriesCount',
+            'availablePeriods',
+            'selectedPeriod'
         ));
     }
 
@@ -1774,6 +1933,7 @@ class PurchasingController extends Controller
             'category_code' => 'required|string|unique:purchasing_categories,category_code',
             'category_name' => 'required|string',
             'buyer_user_id' => 'required|exists:users,id',
+            'target_qty' => 'nullable|numeric|min:0',
             'monthly_target_units' => 'required|numeric|min:0.01',
             'status' => 'required|in:Active,Review,Hold',
         ], [
@@ -1782,7 +1942,7 @@ class PurchasingController extends Controller
             'category_name.required' => 'Nama kategori wajib diisi.',
             'buyer_user_id.required' => 'Silakan pilih PIC Procurement / Buyer.',
             'monthly_target_units.required' => 'Target pengadaan bulanan (USD) wajib diisi.',
-            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa nilai angka nominal yang valid.',
+            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa angka nominal yang valid.',
             'monthly_target_units.min' => 'Target pengadaan bulanan minimal $0.01.'
         ]);
 
@@ -1806,6 +1966,7 @@ class PurchasingController extends Controller
             'category_code' => 'required|string|unique:purchasing_categories,category_code,' . $category->id,
             'category_name' => 'required|string',
             'buyer_user_id' => 'required|exists:users,id',
+            'target_qty' => 'nullable|numeric|min:0',
             'monthly_target_units' => 'required|numeric|min:0.01',
             'status' => 'required|in:Active,Review,Hold',
         ], [
@@ -1814,7 +1975,7 @@ class PurchasingController extends Controller
             'category_name.required' => 'Nama kategori wajib diisi.',
             'buyer_user_id.required' => 'Silakan pilih PIC Procurement / Buyer.',
             'monthly_target_units.required' => 'Target pengadaan bulanan (USD) wajib diisi.',
-            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa nilai angka nominal yang valid.',
+            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa angka nominal yang valid.',
             'monthly_target_units.min' => 'Target pengadaan bulanan minimal $0.01.'
         ]);
 
@@ -1825,6 +1986,223 @@ class PurchasingController extends Controller
 
         return redirect()->route('purchasing.categories')
             ->with('success', 'Kategori material (' . $category->category_code . ') berhasil diperbarui.');
+    }
+
+    /**
+     * Unduh Template Excel untuk Master Kategori Material
+     */
+    public function downloadCategoriesTemplate()
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Template Kategori Material');
+
+        // Header Styling
+        $headers = [
+            'No',
+            'Kode Kategori',
+            'Nama Kategori Material',
+            'PIC Procurement (Nama / Email)',
+            'Target Kuantitas (Unit)',
+            'Target Bulanan (USD)',
+            'Status'
+        ];
+
+        $sheet->fromArray([$headers], null, 'A1');
+        
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['argb' => 'FFFFFFFF'], 'size' => 11],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['argb' => 'FF1E293B'] // Dark slate
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FFCBD5E1'],
+                ],
+            ]
+        ];
+        $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(28);
+
+        // Contoh Data
+        $sampleData = [
+            [1, 'PUR-01', 'Metal & Screws', 'Luthfi Rafif', 25000, 50000.00, 'Active'],
+            [2, 'PUR-02', 'Bench & Besi Metal', 'Luthfi Rafif', 126017, 20000.00, 'Active'],
+            [3, 'PUR-03', 'Wood & Soundboard Timber', 'Luthfi Rafif', 18000, 35000.00, 'Active'],
+            [4, 'PUR-04', 'Felt, Cloth & Leather Parts', 'Luthfi Rafif', 10000, 15000.00, 'Active'],
+            [5, 'PUR-05', 'Chemical, Paint & Adhesives', 'Luthfi Rafif', 8000, 25000.00, 'Review'],
+        ];
+
+        $sheet->fromArray($sampleData, null, 'A2');
+
+        $dataStyle = [
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    'color' => ['argb' => 'FFE2E8F0'],
+                ],
+            ],
+            'alignment' => [
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ]
+        ];
+        $sheet->getStyle('A2:G6')->applyFromArray($dataStyle);
+        $sheet->getStyle('A2:A6')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('B2:B6')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+        $sheet->getStyle('E2:E6')->getNumberFormat()->setFormatCode('#,##0');
+        $sheet->getStyle('F2:F6')->getNumberFormat()->setFormatCode('#,##0.00');
+        $sheet->getStyle('G2:G6')->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER);
+
+        foreach (range('A', 'G') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'Template_Master_Kategori_Purchasing_' . date('Ymd_His') . '.xlsx';
+
+        return response()->streamDownload(function () use ($writer) {
+            $writer->save('php://output');
+        }, $fileName, [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+        ]);
+    }
+
+    /**
+     * Import Master Kategori Material dari File Excel
+     */
+    public function importCategories(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:20480',
+        ], [
+            'file.required' => 'Silakan pilih file Excel (.xlsx / .xls / .csv) untuk diimport.',
+            'file.mimes' => 'Format file harus berupa Excel (.xlsx, .xls) atau CSV.',
+            'file.max' => 'Ukuran file maksimal 20 MB.',
+        ]);
+
+        $file = $request->file('file');
+        $realPath = $file->getRealPath();
+
+        try {
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($realPath);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, false);
+
+            if (empty($rows) || count($rows) < 2) {
+                return redirect()->route('purchasing.categories')
+                    ->with('error', 'File Excel kosong atau tidak memiliki baris data.');
+            }
+
+            // Ambil mapping users buyer
+            $users = User::all();
+            $defaultUser = Auth::user() ?: $users->first();
+
+            $insertedCount = 0;
+            $updatedCount = 0;
+            $skippedCount = 0;
+
+            // Lewati header di row index 0
+            for ($i = 1; $i < count($rows); $i++) {
+                $row = $rows[$i];
+
+                $colOffset = 0;
+                if (isset($row[0]) && is_numeric($row[0]) && isset($row[1]) && !empty(trim((string)$row[1]))) {
+                    $colOffset = 1; // Ada kolom No
+                }
+
+                $code = strtoupper(trim((string)($row[$colOffset] ?? '')));
+                $name = trim((string)($row[$colOffset + 1] ?? ''));
+                $picRaw = trim((string)($row[$colOffset + 2] ?? ''));
+                
+                // Cek apakah ada kolom target_qty
+                $hasQtyCol = count($row) >= ($colOffset + 5);
+                if ($hasQtyCol && is_numeric(str_replace(',', '', (string)($row[$colOffset + 3] ?? '')))) {
+                    $targetQtyRaw = trim((string)($row[$colOffset + 3] ?? ''));
+                    $targetUsdRaw = trim((string)($row[$colOffset + 4] ?? '20000'));
+                    $statusRaw = ucfirst(strtolower(trim((string)($row[$colOffset + 5] ?? 'Active'))));
+                } else {
+                    $targetQtyRaw = null;
+                    $targetUsdRaw = trim((string)($row[$colOffset + 3] ?? '20000'));
+                    $statusRaw = ucfirst(strtolower(trim((string)($row[$colOffset + 4] ?? 'Active'))));
+                }
+
+                if (empty($code) || empty($name)) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                // Normalisasi Target Qty
+                $targetQty = is_numeric($targetQtyRaw) ? (int)$targetQtyRaw : null;
+
+                // Normalisasi Target USD
+                $targetClean = preg_replace('/[^0-9.]/', '', str_replace(',', '.', $targetUsdRaw));
+                $targetUsd = is_numeric($targetClean) ? (float)$targetClean : 20000.00;
+                if ($targetUsd <= 0) $targetUsd = 20000.00;
+
+                // Normalisasi Status
+                if (!in_array($statusRaw, ['Active', 'Review', 'Hold'], true)) {
+                    $statusRaw = 'Active';
+                }
+
+                // Cari PIC Buyer
+                $buyerUser = null;
+                if (!empty($picRaw)) {
+                    $buyerUser = $users->first(function ($u) use ($picRaw) {
+                        return strcasecmp($u->name, $picRaw) === 0 
+                            || strcasecmp($u->email, $picRaw) === 0 
+                            || stripos($u->name, $picRaw) !== false;
+                    });
+                }
+                if (!$buyerUser) {
+                    $buyerUser = $defaultUser;
+                }
+
+                $picName = $buyerUser ? $buyerUser->name : ($picRaw ?: 'Buyer Procurement');
+                $buyerId = $buyerUser ? $buyerUser->id : ($defaultUser ? $defaultUser->id : null);
+
+                $category = PurchasingCategory::where('category_code', $code)->first();
+                if ($category) {
+                    $category->update([
+                        'category_name' => $name,
+                        'pic_buyer' => $picName,
+                        'buyer_user_id' => $buyerId,
+                        'target_qty' => $targetQty ?? $category->target_qty,
+                        'monthly_target_units' => $targetUsd,
+                        'status' => $statusRaw,
+                    ]);
+                    $updatedCount++;
+                } else {
+                    PurchasingCategory::create([
+                        'category_code' => $code,
+                        'category_name' => $name,
+                        'pic_buyer' => $picName,
+                        'buyer_user_id' => $buyerId,
+                        'target_qty' => $targetQty,
+                        'monthly_target_units' => $targetUsd,
+                        'status' => $statusRaw,
+                    ]);
+                    $insertedCount++;
+                }
+            }
+
+            $totalProcessed = $insertedCount + $updatedCount;
+            $msg = "✓ Berhasil mengimpor <strong>{$totalProcessed} kategori material</strong> ({$insertedCount} kategori baru, {$updatedCount} diperbarui).";
+            if ($skippedCount > 0) {
+                $msg .= " ({$skippedCount} baris kosong/tidak valid dilewati).";
+            }
+
+            return redirect()->route('purchasing.categories')->with('success', $msg);
+        } catch (\Throwable $e) {
+            return redirect()->route('purchasing.categories')
+                ->with('error', 'Gagal memproses import file Excel kategori: ' . $e->getMessage());
+        }
     }
 
     /**
