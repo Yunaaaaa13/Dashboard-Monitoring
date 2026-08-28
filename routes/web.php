@@ -137,14 +137,14 @@ Route::post('/production/clear-dummy', [ProductionController::class, 'clearLogs'
 Route::get('/purchasing/master/forecast', [ForecastController::class, 'masterIndex'])->middleware('auth')->name('purchasing.master.forecast');
 Route::post('/purchasing/master/forecast', [ForecastController::class, 'store'])->middleware('auth')->name('purchasing.master.forecast.store');
 Route::put('/purchasing/master/forecast/{id}', [ForecastController::class, 'update'])->middleware('auth')->name('purchasing.master.forecast.update');
-Route::delete('/purchasing/master/forecast/{id}', [ForecastController::class, 'destroy'])->middleware(['auth', 'role:supervisor,leader'])->name('purchasing.master.forecast.destroy');
+Route::delete('/purchasing/master/forecast/{id}', [ForecastController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master.forecast.destroy');
 Route::post('/purchasing/master/forecast/destroy-bulk', [ForecastController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.master.forecast.destroy-bulk');
 
 // Master Actual
 Route::get('/purchasing/master/actual', [ActualController::class, 'masterIndex'])->middleware('auth')->name('purchasing.master.actual');
 Route::post('/purchasing/master/actual', [ActualController::class, 'store'])->middleware('auth')->name('purchasing.master.actual.store');
 Route::put('/purchasing/master/actual/{id}', [ActualController::class, 'update'])->middleware('auth')->name('purchasing.master.actual.update');
-Route::delete('/purchasing/master/actual/{id}', [ActualController::class, 'destroyById'])->middleware(['auth', 'role:supervisor,leader'])->name('purchasing.master.actual.destroy');
+Route::delete('/purchasing/master/actual/{id}', [ActualController::class, 'destroyById'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master.actual.destroy');
 Route::post('/purchasing/master/actual/destroy-bulk', [ActualController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.master.actual.destroy-bulk');
 
 // Step 5: Aktual Produksi
@@ -171,7 +171,7 @@ Route::post('/purchasing/actual-inventory/destroy-all', [\App\Http\Controllers\I
 Route::get('/purchasing/master/outstanding', [OutstandingController::class, 'masterIndex'])->middleware('auth')->name('purchasing.master.outstanding');
 Route::post('/purchasing/master/outstanding', [OutstandingController::class, 'store'])->middleware('auth')->name('purchasing.master.outstanding.store');
 Route::put('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'update'])->middleware('auth')->name('purchasing.master.outstanding.update');
-Route::delete('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'destroy'])->middleware(['auth', 'role:supervisor,leader'])->name('purchasing.master.outstanding.destroy');
+Route::delete('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master.outstanding.destroy');
 Route::post('/purchasing/master/outstanding/destroy-bulk', [OutstandingController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.master.outstanding.destroy-bulk');
 
 // ─── Modul Analisis & Komparasi ──────────────────────────────────────────────

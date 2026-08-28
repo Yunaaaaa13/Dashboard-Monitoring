@@ -94,6 +94,11 @@ class PurchasingOutstanding extends Model
         'delivery_category_code',
     ];
 
+    public function getItemCodeAttribute(): string
+    {
+        return (string) ($this->part_number ?: ($this->drawing ?: ''));
+    }
+
     public function getDeliveryCategoryBadgeAttribute(): string
     {
         $code = strtoupper(trim($this->delivery_category_code ?? 'LOC'));
