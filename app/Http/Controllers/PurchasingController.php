@@ -1700,15 +1700,68 @@ class PurchasingController extends Controller
      */
     public function categories()
     {
-        $categories = PurchasingCategory::with(['buyer'])
-            ->withSum('logs', 'actual_received')
-            ->withSum('logs', 'target_order')
-            ->withCount('logs')
-            ->orderBy('id', 'desc')
-            ->get();
+        // Preload exchange rates to prevent N+1 query overhead
+        $ratesMap = \App\Models\TaxBudgetForecastRate::all()->groupBy(function ($item) {
+            return $item->exch_year . '-' . $item->exch_month . '-' . $item->currency_code;
+        });
+
+        $categories = PurchasingCategory::with([
+            'buyer',
+            'logs' => function ($q) {
+                $q->select('id', 'purchasing_category_id', 'actual_received', 'price', 'amount', 'currency', 'period_month');
+            }
+        ])
+        ->withSum('logs', 'actual_received')
+        ->withSum('logs', 'target_order')
+        ->withCount('logs')
+        ->orderBy('id', 'desc')
+        ->get();
+
+        foreach ($categories as $cat) {
+            $catActualUsd = 0.0;
+            foreach ($cat->logs as $log) {
+                $ym = explode('-', (string)($log->period_month ?? '2026-01'));
+                $y = (int)($ym[0] ?? 2026);
+                $m = (int)($ym[1] ?? 1);
+                $amt = (float)($log->amount ?: ((float)$log->actual_received * (float)$log->price));
+                $curr = strtoupper(trim((string)($log->currency ?: 'USD')));
+
+                if ($curr === 'USD') {
+                    $catActualUsd += $amt;
+                } elseif ($curr === 'IDR') {
+                    $key = $y . '-' . $m . '-2';
+                    $rate = isset($ratesMap[$key]) ? (float)$ratesMap[$key]->first()->budget_rate : 16600.0;
+                    $catActualUsd += ($rate > 0 ? $amt / $rate : 0.0);
+                } else {
+                    $catActualUsd += \App\Services\Normalization\CurrencyNormalizer::convertToUsd($amt, $curr, $y, $m);
+                }
+            }
+
+            $cat->actual_usd = $catActualUsd;
+            $cat->actual_units = (int)($cat->logs_sum_actual_received ?? 0);
+            $cat->target_usd = (float)($cat->monthly_target_units ?: 0);
+            $cat->achievement_pct = $cat->target_usd > 0 ? round(($cat->actual_usd / $cat->target_usd) * 100, 1) : ($cat->actual_usd > 0 ? 100.0 : 0.0);
+        }
+
         $buyers = User::orderBy('name')->get();
 
-        return view('purchasing.categories', compact('categories', 'buyers'));
+        $totalTargetUsd = (float)$categories->sum('target_usd');
+        $totalActualUsd = (float)$categories->sum('actual_usd');
+        $totalActualUnits = (int)$categories->sum('actual_units');
+        $overallPct = $totalTargetUsd > 0 ? round(($totalActualUsd / $totalTargetUsd) * 100, 1) : 0.0;
+        $activeCount = $categories->where('status', 'Active')->count();
+        $totalCategoriesCount = $categories->count();
+
+        return view('purchasing.categories', compact(
+            'categories',
+            'buyers',
+            'totalTargetUsd',
+            'totalActualUsd',
+            'totalActualUnits',
+            'overallPct',
+            'activeCount',
+            'totalCategoriesCount'
+        ));
     }
 
 
@@ -1721,14 +1774,16 @@ class PurchasingController extends Controller
             'category_code' => 'required|string|unique:purchasing_categories,category_code',
             'category_name' => 'required|string',
             'buyer_user_id' => 'required|exists:users,id',
-            'monthly_target_units' => 'required|integer|min:1',
+            'monthly_target_units' => 'required|numeric|min:0.01',
             'status' => 'required|in:Active,Review,Hold',
         ], [
             'category_code.unique' => 'Kode kategori tersebut sudah ada. Silakan gunakan kode lain (misal: PUR-05).',
             'category_code.required' => 'Kode kategori wajib diisi.',
             'category_name.required' => 'Nama kategori wajib diisi.',
             'buyer_user_id.required' => 'Silakan pilih PIC Procurement / Buyer.',
-            'monthly_target_units.required' => 'Target pengadaan bulanan wajib diisi.'
+            'monthly_target_units.required' => 'Target pengadaan bulanan (USD) wajib diisi.',
+            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa nilai angka nominal yang valid.',
+            'monthly_target_units.min' => 'Target pengadaan bulanan minimal $0.01.'
         ]);
 
         $buyer = User::findOrFail($validated['buyer_user_id']);
@@ -1751,14 +1806,16 @@ class PurchasingController extends Controller
             'category_code' => 'required|string|unique:purchasing_categories,category_code,' . $category->id,
             'category_name' => 'required|string',
             'buyer_user_id' => 'required|exists:users,id',
-            'monthly_target_units' => 'required|integer|min:1',
+            'monthly_target_units' => 'required|numeric|min:0.01',
             'status' => 'required|in:Active,Review,Hold',
         ], [
             'category_code.unique' => 'Kode kategori tersebut sudah ada. Silakan gunakan kode lain.',
             'category_code.required' => 'Kode kategori wajib diisi.',
             'category_name.required' => 'Nama kategori wajib diisi.',
             'buyer_user_id.required' => 'Silakan pilih PIC Procurement / Buyer.',
-            'monthly_target_units.required' => 'Target pengadaan bulanan wajib diisi.'
+            'monthly_target_units.required' => 'Target pengadaan bulanan (USD) wajib diisi.',
+            'monthly_target_units.numeric' => 'Target pengadaan bulanan harus berupa nilai angka nominal yang valid.',
+            'monthly_target_units.min' => 'Target pengadaan bulanan minimal $0.01.'
         ]);
 
         $buyer = User::findOrFail($validated['buyer_user_id']);
