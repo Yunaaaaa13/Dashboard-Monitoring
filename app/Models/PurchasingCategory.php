@@ -15,7 +15,15 @@ class PurchasingCategory extends Model
         'pic_buyer',
         'buyer_user_id',
         'monthly_target_units',
+        'target_qty',
+        'unit_price',
         'status',
+    ];
+
+    protected $casts = [
+        'monthly_target_units' => 'decimal:2',
+        'target_qty' => 'integer',
+        'unit_price' => 'decimal:4',
     ];
 
     public function logs()

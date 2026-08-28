@@ -116,6 +116,8 @@ Route::post('/purchasing/master-po/destroy-all', [PurchasingController::class, '
 // Manajemen Master Kategori Material PT Kawai Indonesia
 Route::get('/purchasing/categories', [PurchasingController::class, 'categories'])->middleware('auth')->name('purchasing.categories');
 Route::post('/purchasing/categories', [PurchasingController::class, 'storeCategory'])->middleware('auth')->name('purchasing.categories.store');
+Route::post('/purchasing/categories/import', [PurchasingController::class, 'importCategories'])->middleware('auth')->name('purchasing.categories.import');
+Route::get('/purchasing/categories/template', [PurchasingController::class, 'downloadCategoriesTemplate'])->middleware('auth')->name('purchasing.categories.template');
 Route::put('/purchasing/categories/{id}', [PurchasingController::class, 'updateCategory'])->middleware('auth')->name('purchasing.categories.update');
 Route::delete('/purchasing/categories/{id}', [PurchasingController::class, 'destroyCategory'])->middleware('auth')->name('purchasing.categories.destroy');
 Route::post('/purchasing/categories/destroy-bulk', [PurchasingController::class, 'destroyCategoryBulk'])->middleware('auth')->name('purchasing.categories.destroy-bulk');
