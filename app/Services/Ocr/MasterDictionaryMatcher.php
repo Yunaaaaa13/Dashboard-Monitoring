@@ -208,7 +208,7 @@ class MasterDictionaryMatcher
     }
 
     /**
-     * Cari kecocokan untuk Kategori Material (PUR-01 .. PUR-04 atau nama kategori)
+     * Cari kecocokan untuk Kategori Material (PUR-01 .. PUR-04 atau nama kategori, alias, dan keyword industri)
      *
      * @param string $input
      * @param float $minSimilarity
@@ -246,7 +246,52 @@ class MasterDictionaryMatcher
             }
         }
 
-        // 2. Substring / code presence match (e.g. "Kategori PUR-04 Material")
+        // 2. Standard Industry Keyword & Category Alias Map
+        $categoryAliases = [
+            'PUR-01' => [
+                'RM KAYU', 'RM-KAYU', 'RM_KAYU', 'RAW MATERIAL KAYU', 'RAW KAYU', 'MATERIAL KAYU',
+                'KAYU', 'WOOD', 'WOODEN', 'TIMBER', 'SPRUCE', 'SOUNDBOARD', 'AKUSTIK', 'ACOUSTIC',
+                'LUMBER', 'PAPAN', 'BALOK', 'VENEER', 'PLYWOOD', 'KAYU AKUSTIK', 'PUR-01', 'PUR01', 'PUR-1', 'PUR1',
+            ],
+            'PUR-02' => [
+                'RM LOGAM', 'RM-LOGAM', 'RM_LOGAM', 'RAW MATERIAL LOGAM', 'RAW LOGAM', 'MATERIAL LOGAM',
+                'LOGAM', 'METAL', 'METALLIC', 'BESI', 'BAJA', 'STEEL', 'IRON', 'ACTION', 'HAMMER',
+                'FELT', 'ALUMINIUM', 'ALUMINUM', 'KUNINGAN', 'BRASS', 'TEMBAGA', 'COPPER', 'HARDWARE',
+                'ACTION MECHANISM', 'PUR-02', 'PUR02', 'PUR-2', 'PUR2',
+            ],
+            'PUR-03' => [
+                'CONSUMABLE TOOL', 'CONSUMABLE TOOLS', 'CONSUMABLE', 'CONSUMABLES', 'TOOL', 'TOOLS',
+                'PERALATAN', 'ALAT', 'COR FRAME', 'CAST IRON', 'SENAR BAJA', 'SENAR', 'STRING', 'STRINGS',
+                'WIRE', 'MAT DIES', 'DIES', 'SPAREPART', 'SPARE PART', 'SPAREPARTS', 'PUR-03', 'PUR03', 'PUR-3', 'PUR3',
+            ],
+            'PUR-04' => [
+                'KOMPONEN PACKING', 'PACKING', 'PACKAGING', 'KEMASAN', 'DUS', 'KARTON', 'BOX', 'PLASTIK',
+                'PLASTIC', 'FINISHING', 'RESIN', 'CHEMICAL', 'CHEMICALS', 'POLIESTER', 'POLYESTER',
+                'CAT', 'PAINT', 'THINNER', 'GLUE', 'LEM', 'TAPE', 'LAKBAN', 'PALLET', 'PALET', 'STYROFOAM',
+                'PUR-04', 'PUR04', 'PUR-4', 'PUR4',
+            ],
+        ];
+
+        foreach ($categoryAliases as $targetCode => $aliases) {
+            foreach ($aliases as $alias) {
+                if ($upperQuery === $alias || str_contains($upperQuery, $alias) || str_contains($alias, $upperQuery)) {
+                    foreach ($this->categories as $cat) {
+                        if (strtoupper(trim($cat['category_code'] ?? '')) === $targetCode) {
+                            return [
+                                'is_exact' => true,
+                                'category_id' => (int) $cat['id'],
+                                'category_code' => $targetCode,
+                                'category_name' => $cat['category_name'] ?? '',
+                                'similarity' => 0.98,
+                                'suggested' => $targetCode . ' - ' . ($cat['category_name'] ?? ''),
+                            ];
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Substring / code presence match (e.g. "Kategori PUR-04 Material")
         foreach ($this->categories as $cat) {
             $code = strtoupper(trim($cat['category_code'] ?? ''));
             if (!empty($code) && str_contains($upperQuery, $code)) {
@@ -261,7 +306,7 @@ class MasterDictionaryMatcher
             }
         }
 
-        // 3. Name exact or substring match (e.g. "Kayu Akustik", "Finishing", "Resin")
+        // 4. Name exact or substring match (e.g. "Kayu Akustik", "Finishing", "Resin")
         foreach ($this->categories as $cat) {
             $name = strtoupper(trim($cat['category_name'] ?? ''));
             if (!empty($name) && ($name === $upperQuery || str_contains($upperQuery, $name) || str_contains($name, $upperQuery))) {
@@ -276,7 +321,37 @@ class MasterDictionaryMatcher
             }
         }
 
-        // 4. Fuzzy Levenshtein match on Category Name
+        // 5. Smart Token / Significant Keyword Overlap
+        $genericStopWords = ['MATERIAL', 'BERBAHAN', 'DASAR', 'KOMPONEN', 'RAW', 'RM', 'DAN', 'AND', '&', 'THE', 'FOR', 'JENIS', 'KATEGORI', 'CATEGORY', 'KODE', 'CODE', 'PUR', 'PT', 'CV', 'ITEM'];
+        $queryTokens = array_filter(
+            preg_split('/[\s\-_,\/\(\)]+/', $upperQuery),
+            fn($t) => strlen($t) >= 3 && !in_array($t, $genericStopWords, true)
+        );
+
+        if (!empty($queryTokens)) {
+            foreach ($this->categories as $cat) {
+                $name = strtoupper(trim($cat['category_name'] ?? ''));
+                $code = strtoupper(trim($cat['category_code'] ?? ''));
+                $catTokens = array_filter(
+                    preg_split('/[\s\-_,\/\(\)]+/', $name . ' ' . $code),
+                    fn($t) => strlen($t) >= 3 && !in_array($t, $genericStopWords, true)
+                );
+
+                $overlap = array_intersect($queryTokens, $catTokens);
+                if (!empty($overlap)) {
+                    return [
+                        'is_exact' => false,
+                        'category_id' => (int) $cat['id'],
+                        'category_code' => $cat['category_code'] ?? '',
+                        'category_name' => $cat['category_name'] ?? '',
+                        'similarity' => 0.88,
+                        'suggested' => ($cat['category_code'] ?? '') . ' - ' . ($cat['category_name'] ?? ''),
+                    ];
+                }
+            }
+        }
+
+        // 6. Fuzzy Levenshtein match on Category Name
         $bestMatch = null;
         $highestSim = 0.0;
 

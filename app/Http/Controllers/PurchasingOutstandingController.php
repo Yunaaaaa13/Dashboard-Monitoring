@@ -2313,7 +2313,7 @@ class PurchasingOutstandingController extends Controller
                         $currencyVal = $defaultCurrency;
                     }
 
-                    // Category Resolution dari Kolom Excel (e.g. PUR-04, PUR-01, PUR-02, PUR-03, dll)
+                    // Category Resolution dari Kolom Excel (e.g. PUR-04, PUR-01, RM KAYU, PACKING, dll)
                     $rawCategory = $categoryCol ? trim((string)($row[$categoryCol] ?? '')) : '';
                     $resolvedCategoryId = $defaultCatId;
 
@@ -2337,6 +2337,14 @@ class PurchasingOutstandingController extends Controller
                                     $matchedCategory = $cat;
                                     break;
                                 }
+                            }
+                        }
+
+                        if (!$matchedCategory) {
+                            $matcher = new \App\Services\Ocr\MasterDictionaryMatcher([], $allCategories->toArray());
+                            $matchRes = $matcher->matchCategory($rawCategory);
+                            if (!empty($matchRes['category_id'])) {
+                                $matchedCategory = $allCategories->firstWhere('id', $matchRes['category_id']);
                             }
                         }
 

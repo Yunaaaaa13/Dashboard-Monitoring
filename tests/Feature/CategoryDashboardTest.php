@@ -367,4 +367,148 @@ class CategoryDashboardTest extends TestCase
         $matchedByName = $matcher->matchCategory('Finishing Polyester');
         $this->assertEquals($cat4->id, $matchedByName['category_id']);
     }
+
+    public function test_rm_kayu_and_industry_aliases_matching()
+    {
+        $cat1 = PurchasingCategory::create([
+            'category_code' => 'PUR-01',
+            'category_name' => 'material berbahan dasar kayu',
+            'pic_buyer'     => 'Buyer Wood',
+            'status'        => 'Active',
+        ]);
+        $cat2 = PurchasingCategory::create([
+            'category_code' => 'PUR-02',
+            'category_name' => 'material berbahan dasar logam',
+            'pic_buyer'     => 'Buyer Metal',
+            'status'        => 'Active',
+        ]);
+        $cat3 = PurchasingCategory::create([
+            'category_code' => 'PUR-03',
+            'category_name' => 'consumable tool',
+            'pic_buyer'     => 'Buyer Tool',
+            'status'        => 'Active',
+        ]);
+        $cat4 = PurchasingCategory::create([
+            'category_code' => 'PUR-04',
+            'category_name' => 'komponen packing',
+            'pic_buyer'     => 'Buyer Packing',
+            'status'        => 'Active',
+        ]);
+
+        $matcher = app(\App\Services\Ocr\MasterDictionaryMatcher::class);
+
+        // Test RM Kayu and variations -> PUR-01
+        $matchKayu1 = $matcher->matchCategory('RM KAYU');
+        $this->assertEquals($cat1->id, $matchKayu1['category_id'], 'RM KAYU should match PUR-01');
+        $this->assertEquals('PUR-01', $matchKayu1['category_code']);
+
+        $matchKayu2 = $matcher->matchCategory('RM-KAYU');
+        $this->assertEquals($cat1->id, $matchKayu2['category_id'], 'RM-KAYU should match PUR-01');
+
+        $matchKayu3 = $matcher->matchCategory('RAW MATERIAL KAYU');
+        $this->assertEquals($cat1->id, $matchKayu3['category_id'], 'RAW MATERIAL KAYU should match PUR-01');
+
+        $matchKayu4 = $matcher->matchCategory('KAYU');
+        $this->assertEquals($cat1->id, $matchKayu4['category_id'], 'KAYU should match PUR-01');
+
+        $matchKayu5 = $matcher->matchCategory('WOOD');
+        $this->assertEquals($cat1->id, $matchKayu5['category_id'], 'WOOD should match PUR-01');
+
+        // Test RM Logam -> PUR-02
+        $matchLogam = $matcher->matchCategory('RM LOGAM');
+        $this->assertEquals($cat2->id, $matchLogam['category_id'], 'RM LOGAM should match PUR-02');
+
+        // Test Tool -> PUR-03
+        $matchTool = $matcher->matchCategory('TOOL');
+        $this->assertEquals($cat3->id, $matchTool['category_id'], 'TOOL should match PUR-03');
+
+        // Test Packing -> PUR-04
+        $matchPacking = $matcher->matchCategory('PACKING');
+        $this->assertEquals($cat4->id, $matchPacking['category_id'], 'PACKING should match PUR-04');
+    }
+
+    public function test_excel_import_with_rm_kayu_category_resolves_correctly()
+    {
+        $cat1 = PurchasingCategory::create([
+            'category_code' => 'PUR-01',
+            'category_name' => 'material berbahan dasar kayu',
+            'pic_buyer'     => 'Buyer Wood',
+            'status'        => 'Active',
+        ]);
+        $cat4 = PurchasingCategory::create([
+            'category_code' => 'PUR-04',
+            'category_name' => 'komponen packing',
+            'pic_buyer'     => 'Buyer Packing',
+            'status'        => 'Active',
+        ]);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        $sheet->setCellValue('A1', 'Supplier Code');
+        $sheet->setCellValue('B1', 'Supplier Name');
+        $sheet->setCellValue('C1', 'Plant');
+        $sheet->setCellValue('D1', 'Kategori');
+        $sheet->setCellValue('E1', 'Material Code');
+        $sheet->setCellValue('F1', 'Description');
+        $sheet->setCellValue('G1', 'Unit price');
+        $sheet->setCellValue('H1', 'kurs');
+        $sheet->setCellValue('I1', 'Plan Stock');
+        $sheet->setCellValue('J1', 'Plan Outstand');
+
+        // Row 2: Data with 'RM KAYU' (which previously defaulted incorrectly)
+        $sheet->setCellValue('A2', 'K101');
+        $sheet->setCellValue('B2', 'PT. KAYU NUSANTARA INDAH');
+        $sheet->setCellValue('C2', 'KIP 1');
+        $sheet->setCellValue('D2', 'RM KAYU');
+        $sheet->setCellValue('E2', 'WOOD-SPRUCE-01');
+        $sheet->setCellValue('F2', 'SPRUCE SOUNDBOARD LOG');
+        $sheet->setCellValue('G2', '1250000');
+        $sheet->setCellValue('H2', 'IDR');
+        $sheet->setCellValue('I2', '50');
+        $sheet->setCellValue('J2', '200');
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'rm_kayu_test_') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tmpFile);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tmpFile,
+            'forecast_rm_kayu_test.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($this->adminUser)->post(route('purchasing.outstanding.import'), [
+            'file' => $uploadedFile,
+        ]);
+
+        @unlink($tmpFile);
+
+        $response->assertRedirect();
+        
+        // Ensure the record in purchasing_outstandings has category_id == $cat1->id (PUR-01 / material berbahan dasar kayu)
+        $this->assertDatabaseHas('purchasing_outstandings', [
+            'part_number' => 'WOOD-SPRUCE-01',
+            'category_id' => $cat1->id,
+            'factory_code' => 'KIP 1',
+        ]);
+    }
+
+    public function test_dashboard_displays_standby_status_when_category_has_zero_activity()
+    {
+        $cat1 = PurchasingCategory::create([
+            'category_code' => 'PUR-01',
+            'category_name' => 'material berbahan dasar kayu',
+            'pic_buyer'     => 'Administrator System',
+            'status'        => 'Active',
+        ]);
+
+        $response = $this->actingAs($this->adminUser)->get(route('dashboard.overview'));
+        $response->assertStatus(200);
+        $response->assertSee('PUR-01');
+        $response->assertSee('Standby');
+        $response->assertSee('Tidak ada sisa pending');
+    }
 }

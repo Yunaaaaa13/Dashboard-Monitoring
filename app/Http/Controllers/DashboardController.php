@@ -254,8 +254,15 @@ class DashboardController extends Controller
             $catLogs   = $yearLogs->where('purchasing_category_id', $cat->id);
             $cTarget   = $catLogs->sum('target_order');
             $cReceived = $catLogs->sum('actual_received');
-            $cPending  = max(0, $cTarget - $cReceived);
-            $cAch      = $cTarget > 0 ? round(($cReceived / $cTarget) * 100, 1) : ($cReceived > 0 ? 100 : 0);
+            if ($cTarget == 0 && $cReceived == 0) {
+                $cStatus = 'Standby';
+            } elseif ($cAch >= 100) {
+                $cStatus = 'Fulfilled';
+            } elseif ($cAch >= 75) {
+                $cStatus = 'On Track';
+            } else {
+                $cStatus = 'Supply Alert';
+            }
 
             $categoryPerformances[] = [
                 'code'        => $cat->category_code,
@@ -267,7 +274,7 @@ class DashboardController extends Controller
                 'pending'     => $cPending,
                 'achievement' => $cAch,
                 'log_count'   => $catLogs->count(),
-                'status'      => $cAch >= 90 ? 'Achieved' : 'On Progress',
+                'status'      => $cStatus,
             ];
 
             $categoryNames[]     = $cat->category_code . ' (' . $cat->category_name . ')';

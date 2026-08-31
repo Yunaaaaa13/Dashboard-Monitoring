@@ -711,7 +711,7 @@ class PurchasingController extends Controller
                     'supplier_name'          => $po->supplier ? (string) $po->supplier : '',
                     'order_qty'              => (int) $po->qty,
                     'po_date'                => !empty($po->tanggal) ? date('Y-m-d', strtotime($po->tanggal)) : date('Y-m-d'),
-                    'purchasing_category_id' => null,
+                    'purchasing_category_id' => $po->category_id,
                 ];
             })->values()->toArray();
 
@@ -1196,6 +1196,18 @@ class PurchasingController extends Controller
                 $curr = 'IDR';
             }
 
+            $rawCat = !empty($r['category_id']) ? $r['category_id'] : (!empty($r['category']) ? $r['category'] : null);
+            $catId = null;
+            if ($rawCat) {
+                if (is_numeric($rawCat)) {
+                    $catId = (int)$rawCat;
+                } else {
+                    $matcher = new \App\Services\Ocr\MasterDictionaryMatcher([], \App\Models\PurchasingCategory::all()->toArray());
+                    $matchRes = $matcher->matchCategory((string)$rawCat);
+                    $catId = $matchRes['category_id'] ?? null;
+                }
+            }
+
             $toInsert[] = [
                 'tanggal' => $tanggal,
                 'supplier' => $supplier,
@@ -1205,6 +1217,7 @@ class PurchasingController extends Controller
                 'qty' => $qty,
                 'price' => $price,
                 'currency' => $curr,
+                'category_id' => $catId,
                 'delivery_category_code' => !empty($r['delivery_category_code']) ? strtoupper(trim($r['delivery_category_code'])) : 'LOC',
                 'created_by' => Auth::id(),
                 'created_at' => now(),
@@ -1233,6 +1246,9 @@ class PurchasingController extends Controller
                         $masterRows[$key]['price'] = $row['price'];
                         $masterRows[$key]['currency'] = $row['currency'];
                     }
+                    if (!empty($row['category_id'])) {
+                        $masterRows[$key]['category_id'] = $row['category_id'];
+                    }
                 }
             }
             \DB::transaction(function () use ($masterRows) {
@@ -1249,6 +1265,7 @@ class PurchasingController extends Controller
                         'qty'        => $row['qty'],
                         'price'      => $row['price'] ?? 0.0,
                         'currency'   => $row['currency'] ?? 'USD',
+                        'category_id' => $row['category_id'] ?? null,
                         'delivery_category_code' => $row['delivery_category_code'] ?? 'LOC',
                         'user_id'    => $row['created_by'],
                         'created_by' => $row['created_by'],
@@ -1403,6 +1420,7 @@ class PurchasingController extends Controller
     {
         $search = $request->get('search');
         $periode = $request->get('periode', 'All');
+        $selectedCategory = $request->get('category_id');
         $selectedDeliveryCategory = $request->get('delivery_category');
         $selectedSupplier = $request->get('supplier');
         $targetUserId = $request->get('user_id');
@@ -1413,7 +1431,11 @@ class PurchasingController extends Controller
             ->map(fn($s) => \App\Services\DataValidation\InputNormalizer::normalizeSupplierName($s))
             ->unique()->filter()->sort()->values();
 
-        $masterPoQuery = \App\Models\MasterPo::orderBy('tanggal', 'desc')->orderBy('id', 'desc');
+        $masterPoQuery = \App\Models\MasterPo::with('category')->orderBy('tanggal', 'desc')->orderBy('id', 'desc');
+
+        if ($selectedCategory && $selectedCategory !== 'All') {
+            $masterPoQuery->where('category_id', $selectedCategory);
+        }
 
         if ($selectedDeliveryCategory) {
             $masterPoQuery->where('delivery_category_code', $selectedDeliveryCategory);
@@ -2899,6 +2921,13 @@ class PurchasingController extends Controller
                     ->orWhere('category_code', $rawCat)
                     ->orWhere('category_name', 'LIKE', "%{$rawCat}%")
                     ->first();
+                if (!$matchedCat) {
+                    $matcher = new \App\Services\Ocr\MasterDictionaryMatcher([], \App\Models\PurchasingCategory::all()->toArray());
+                    $matchRes = $matcher->matchCategory($rawCat);
+                    if (!empty($matchRes['category_id'])) {
+                        $matchedCat = \App\Models\PurchasingCategory::find($matchRes['category_id']);
+                    }
+                }
                 if ($matchedCat) {
                     $categoryId = $matchedCat->id;
                 }

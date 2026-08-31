@@ -222,11 +222,12 @@
     if (!function_exists('localGetStatusBadgeClass')) {
         function localGetStatusBadgeClass($status) {
             return match($status) {
-                'Sesuai' => 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-50',
-                'Under Forecast' => 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50',
-                'Over Forecast' => 'badge bg-info bg-opacity-25 text-info border border-info border-opacity-50',
-                'Unplanned', 'Unplanned Actual' => 'badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50',
-                default => 'badge bg-secondary bg-opacity-25 text-muted border border-secondary border-opacity-50',
+                'Sesuai', 'Complete', 'Fulfilled', 'Balanced', 'Order Fulfilled', 'Optimal' => 'badge bg-success bg-opacity-25 text-success border border-success border-opacity-50',
+                'Surplus', 'Over Forecast', 'Overstock', 'Lebih' => 'badge bg-info bg-opacity-25 text-info border border-info border-opacity-50',
+                'Under Forecast', 'Deficit', 'Kurang', 'Supply Alert' => 'badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50',
+                'Unplanned', 'Unplanned Actual', 'On Track', 'In Progress', 'Partial', 'Partial Fulfilled' => 'badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50',
+                'No Demand', 'Belum Ada Data', 'Standby', 'Pending', 'Pending Order' => 'badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50',
+                default => 'badge bg-secondary bg-opacity-25 text-light border border-secondary border-opacity-50',
             };
         }
     }

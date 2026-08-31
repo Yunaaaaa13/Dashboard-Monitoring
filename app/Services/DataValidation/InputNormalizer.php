@@ -360,6 +360,7 @@ class InputNormalizer
     /**
      * Normalisasi Kode / Nama Kategori
      * Contoh: 'pur-04' -> 'PUR-04', 'PUR 04' -> 'PUR-04', 'PUR04' -> 'PUR-04', 'PUR-O4' (OCR) -> 'PUR-04'
+     * Juga memetakan keyword industri seperti 'RM KAYU' -> 'PUR-01', 'RM LOGAM' -> 'PUR-02', 'PACKING' -> 'PUR-04'
      */
     public static function normalizeCategoryCode(?string $value): string
     {
@@ -373,6 +374,27 @@ class InputNormalizer
         if (preg_match('/^PUR[\s\-_]?0?([1-9]\d*)/i', $val, $m)) {
             $num = str_pad($m[1], 2, '0', STR_PAD_LEFT);
             return "PUR-{$num}";
+        }
+
+        // Check standard category keywords and aliases
+        $directAliases = [
+            'RM KAYU' => 'PUR-01', 'RM-KAYU' => 'PUR-01', 'RAW MATERIAL KAYU' => 'RAW KAYU',
+            'KAYU' => 'PUR-01', 'WOOD' => 'PUR-01', 'KAYU AKUSTIK' => 'PUR-01', 'SPRUCE' => 'PUR-01',
+            'RM LOGAM' => 'PUR-02', 'RM-LOGAM' => 'PUR-02', 'RAW MATERIAL LOGAM' => 'PUR-02',
+            'LOGAM' => 'PUR-02', 'METAL' => 'PUR-02', 'BESI' => 'PUR-02', 'BAJA' => 'PUR-02', 'STEEL' => 'PUR-02',
+            'CONSUMABLE TOOL' => 'PUR-03', 'CONSUMABLE' => 'PUR-03', 'TOOL' => 'PUR-03', 'TOOLS' => 'PUR-03',
+            'KOMPONEN PACKING' => 'PUR-04', 'PACKING' => 'PUR-04', 'PACKAGING' => 'PUR-04', 'KEMASAN' => 'PUR-04',
+            'DUS' => 'PUR-04', 'KARTON' => 'PUR-04', 'PLASTIK' => 'PUR-04', 'RESIN' => 'PUR-04', 'FINISHING' => 'PUR-04',
+        ];
+
+        if (isset($directAliases[$val])) {
+            return $directAliases[$val];
+        }
+
+        foreach ($directAliases as $aliasKey => $catCode) {
+            if (str_contains($val, $aliasKey)) {
+                return $catCode;
+            }
         }
 
         return $val;

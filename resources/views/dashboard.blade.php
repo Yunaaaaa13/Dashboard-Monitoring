@@ -546,10 +546,26 @@
                     <div class="row g-3">
                         @forelse($categoryPerformances as $cp)
                             @php
-                                $ach   = $cp['achievement'];
-                                $color = $ach >= 100 ? '#10b981' : ($ach >= 75 ? '#f59e0b' : '#f87171');
-                                $badge = $ach >= 100 ? 'bg-success bg-opacity-25 text-success border-success' : ($ach >= 75 ? 'bg-warning bg-opacity-25 text-warning border-warning' : 'bg-danger bg-opacity-25 text-danger border-danger');
-                                $label = $ach >= 100 ? 'Fulfilled' : ($ach >= 75 ? 'On Track' : 'Supply Alert');
+                                $ach   = $cp['achievement'] ?? 0;
+                                $tgt   = $cp['target'] ?? 0;
+                                $rec   = $cp['received'] ?? 0;
+                                if ($tgt == 0 && $rec == 0) {
+                                    $color = '#94a3b8';
+                                    $badge = 'bg-secondary bg-opacity-25 text-light border-secondary';
+                                    $label = 'Standby';
+                                } elseif ($ach >= 100) {
+                                    $color = '#10b981';
+                                    $badge = 'bg-success bg-opacity-25 text-success border-success';
+                                    $label = 'Fulfilled';
+                                } elseif ($ach >= 75) {
+                                    $color = '#f59e0b';
+                                    $badge = 'bg-warning bg-opacity-25 text-warning border-warning';
+                                    $label = 'On Track';
+                                } else {
+                                    $color = '#f87171';
+                                    $badge = 'bg-danger bg-opacity-25 text-danger border-danger';
+                                    $label = 'Supply Alert';
+                                }
                             @endphp
                             <div class="col-12 col-md-6 col-xl-4">
                                 <div class="p-3 rounded-3 h-100 d-flex flex-column justify-content-between" style="background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);">
