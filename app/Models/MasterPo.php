@@ -24,7 +24,13 @@ class MasterPo extends Model
         'created_by',
         'user_id',
         'delivery_category_code',
+        'category_id',
     ];
+
+    public function category()
+    {
+        return $this->belongsTo(PurchasingCategory::class, 'category_id');
+    }
 
     public function getCurrencySymbolAttribute(): string
     {

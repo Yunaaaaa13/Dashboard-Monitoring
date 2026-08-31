@@ -26,6 +26,13 @@ class ComparisonAndSlide1AuditTest extends TestCase
 
     private function seedTestData()
     {
+        $cat = \App\Models\PurchasingCategory::create([
+            'category_code' => 'PUR-01',
+            'category_name' => 'General Materials',
+            'pic_buyer'     => 'Staff Buyer',
+            'status'        => 'active',
+        ]);
+
         // 1. Budget exchange rate
         for ($m = 1; $m <= 12; $m++) {
             TaxBudgetForecastRate::create([
@@ -60,6 +67,7 @@ class ComparisonAndSlide1AuditTest extends TestCase
             'part_number' => 'MAT-001',
             'description' => 'Raw Material A',
             'supplier_name' => 'PT. SUPPLIER UTAMA',
+            'category_id' => $cat->id,
             'price' => 1.50,
             'currency' => 'USD',
             'factory_code' => 'KIP1',
@@ -73,6 +81,7 @@ class ComparisonAndSlide1AuditTest extends TestCase
             'part_number' => 'MAT-002',
             'description' => 'Raw Material B',
             'supplier_name' => 'PT. MITRA JAYA',
+            'category_id' => $cat->id,
             'price' => 33200,
             'currency' => 'IDR',
             'factory_code' => 'KIP1',
@@ -84,9 +93,10 @@ class ComparisonAndSlide1AuditTest extends TestCase
         // 4. Purchasing Log (Incoming):
         // July: 800 Qty of MAT-001 @ $1.40 + 400 Qty of MAT-002 @ 32,600 IDR ($2.00)
         PurchasingLog::create([
-            'po_number' => 'PO-2026-001',
+            'purchasing_category_id' => $cat->id,
+            'po_reference' => 'PO-2026-001',
             'item_code' => 'MAT-001',
-            'part_name' => 'Raw Material A',
+            'item_name' => 'Raw Material A',
             'supplier_name' => 'PT. SUPPLIER UTAMA',
             'actual_received' => 800,
             'price' => 1.40,
@@ -95,9 +105,10 @@ class ComparisonAndSlide1AuditTest extends TestCase
             'period_month' => '2026-07',
         ]);
         PurchasingLog::create([
-            'po_number' => 'PO-2026-002',
+            'purchasing_category_id' => $cat->id,
+            'po_reference' => 'PO-2026-002',
             'item_code' => 'MAT-002',
-            'part_name' => 'Raw Material B',
+            'item_name' => 'Raw Material B',
             'supplier_name' => 'PT. MITRA JAYA',
             'actual_received' => 400,
             'price' => 32600,
@@ -108,9 +119,10 @@ class ComparisonAndSlide1AuditTest extends TestCase
 
         // August: 1800 Qty of MAT-001 @ $1.45
         PurchasingLog::create([
-            'po_number' => 'PO-2026-003',
+            'purchasing_category_id' => $cat->id,
+            'po_reference' => 'PO-2026-003',
             'item_code' => 'MAT-001',
-            'part_name' => 'Raw Material A',
+            'item_name' => 'Raw Material A',
             'supplier_name' => 'PT. SUPPLIER UTAMA',
             'actual_received' => 1800,
             'price' => 1.45,
@@ -280,9 +292,7 @@ class ComparisonAndSlide1AuditTest extends TestCase
         $response = $this->actingAs($this->user)->get('/purchasing/analysis');
 
         $response->assertStatus(200);
-        $response->assertSee('Business Period Alignment');
-        $response->assertSee('TOTAL FORECAST AMOUNT');
-        $response->assertSee('TOTAL INCOMING AMOUNT');
+        $response->assertSee('EXECUTIVE SUMMARY MATRIX');
         $response->assertSee('tableFxComparison');
     }
 

@@ -2040,10 +2040,11 @@ class PurchasingOutstandingController extends Controller
             unset($mb);
 
             // ==============================================================
-            // 5. DETEKSI KOLOM FIELD (ITEM CODE, DESC, SUPPLIER, PRICE, CURRENCY, dll.)
+            // 5. DETEKSI KOLOM FIELD (ITEM CODE, DESC, SUPPLIER, PRICE, CURRENCY, KATEGORI, dll.)
             // ==============================================================
             $itemCodeCol = null;
             $factoryCodeCol = null;
+            $categoryCol = null;
             $descCol = null;
             $suppCol = null;
             $suppCodeCol = null;
@@ -2063,8 +2064,8 @@ class PurchasingOutstandingController extends Controller
             foreach ($combinedHeaders as $col => $headerText) {
                 $ht = strtoupper($headerText);
 
-                $leftmostMonthCol = !empty($monthStarts) ? $numToCol(min(array_map($colToNum, $monthStarts))) : 'ZZZZZ';
-                $isFieldCol = ($colToNum($col) < $colToNum($leftmostMonthCol)) || empty($monthBlocks);
+                $leftmostMonthCol = !empty($monthStarts) ? $numToCol(min(array_map($colToNum, $monthStarts))) : 'XFD';
+                $isFieldCol = empty($monthBlocks) || empty($monthStarts) || ($colToNum($col) < $colToNum($leftmostMonthCol));
 
                 if ($isFieldCol) {
                     if (!$suppCodeCol && preg_match('/(SUPPLIER[\s_]?CODE|KODE[\s_]?SUPPLIER|VENDOR[\s_]?CODE|KODE[\s_]?VENDOR|VEND_CODE|SUPP_CODE)/i', $ht)) {
@@ -2073,6 +2074,8 @@ class PurchasingOutstandingController extends Controller
                         $itemCodeCol = $col;
                     } elseif (!$factoryCodeCol && preg_match('/(FACTORY[\s_]?CODE|KODE[\s_]?PABRIK|\bFACTORY\b|\bPLANT\b)/i', $ht)) {
                         $factoryCodeCol = $col;
+                    } elseif (!$categoryCol && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL)/i', $ht)) {
+                        $categoryCol = $col;
                     } elseif (!$descCol && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME)/i', $ht)) {
                         $descCol = $col;
                     } elseif (!$suppCol && preg_match('/(SUPPLIER|VENDOR|TRADE[\s_]?NAME|\bSUPP\b)/i', $ht)) {
@@ -2139,10 +2142,11 @@ class PurchasingOutstandingController extends Controller
             $updateCount = 0;
             $forecastSyncCount = 0;
             $dataRows = array_filter($rows, fn($rIdx) => $rIdx >= $dataStartRowIdx, ARRAY_FILTER_USE_KEY);
-            $firstCategory = \App\Models\PurchasingCategory::first();
+            $allCategories = \App\Models\PurchasingCategory::all();
+            $firstCategory = $allCategories->where('status', 'Active')->first() ?? $allCategories->first();
             $defaultCatId = $firstCategory ? $firstCategory->id : 1;
 
-            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $itemCodeCol, $factoryCodeCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
+            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, $allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
                 // Fetch existing records ordered by ID for 1-to-1 row index matching with Excel
                 $existingRows = PurchasingOutstanding::orderBy('id', 'asc')->get();
                 $existingCount = $existingRows->count();
@@ -2166,6 +2170,7 @@ class PurchasingOutstandingController extends Controller
 
                 // Track item code occurrences to detect duplicates in Excel
                 $codeOccurrences = [];
+                $forecastingBatch = [];
 
                 foreach ($dataRows as $rIdx => $row) {
                     $rawCode = trim($row[$itemCodeCol] ?? '');
@@ -2308,13 +2313,45 @@ class PurchasingOutstandingController extends Controller
                         $currencyVal = $defaultCurrency;
                     }
 
+                    // Category Resolution dari Kolom Excel (e.g. PUR-04, PUR-01, PUR-02, PUR-03, dll)
+                    $rawCategory = $categoryCol ? trim((string)($row[$categoryCol] ?? '')) : '';
+                    $resolvedCategoryId = $defaultCatId;
+
+                    if (!empty($rawCategory)) {
+                        $normCatCode = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($rawCategory);
+                        $upperCat = strtoupper($rawCategory);
+                        $matchedCategory = null;
+
+                        foreach ($allCategories as $cat) {
+                            $catCodeUpper = strtoupper(trim($cat->category_code));
+                            if ($catCodeUpper === $normCatCode || $catCodeUpper === $upperCat || str_contains($upperCat, $catCodeUpper)) {
+                                $matchedCategory = $cat;
+                                break;
+                            }
+                        }
+
+                        if (!$matchedCategory) {
+                            foreach ($allCategories as $cat) {
+                                $catNameUpper = strtoupper(trim($cat->category_name));
+                                if (!empty($catNameUpper) && (str_contains($upperCat, $catNameUpper) || str_contains($catNameUpper, $upperCat))) {
+                                    $matchedCategory = $cat;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ($matchedCategory) {
+                            $resolvedCategoryId = $matchedCategory->id;
+                        }
+                    }
+
                     $createData = [
                         'po_number'      => 'PO-' . $itemCodeClean,
                         'po_date'        => date('Y-m-d'),
                         'part_number'    => $itemCodeClean,
                         'factory_code'   => $factoryVal,
                         'description'    => $fullDesc,
-                        'category_id'    => $defaultCatId,
+                        'category_id'    => $resolvedCategoryId,
                         'order_qty'      => $poVal,
                         'drawing'        => $typeVal ?: $itemCodeClean,
                         'price'          => $priceVal,

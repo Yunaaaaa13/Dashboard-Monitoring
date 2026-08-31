@@ -377,6 +377,7 @@
                                 <th class="py-3 text-end text-info">Plan Amount</th>
                                 <th class="py-3 text-center">Status Penerimaan</th>
                                 <th class="py-3 text-center text-warning">Kode Pabrik</th>
+                                <th class="py-3 text-center text-info">Kategori</th>
                                 <th class="py-3 text-center">Aksi</th>
                                 <th class="py-3 text-center text-nowrap" style="background: rgba(59,130,246,0.15); color: #60a5fa;">Kategori Pengantaran</th>
                             </tr>
@@ -441,6 +442,15 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1 font-monospace">{{ $mp->factory_code ?: 'KIP 1' }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if($mp->category)
+                                            <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-50 px-2 py-1" title="{{ $mp->category->category_name }}">
+                                                {{ $mp->category->category_code }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary px-2 py-1">-</span>
+                                        @endif
                                     </td>
                                     <td class="text-center">
                                         <div class="d-flex justify-content-center gap-1">
@@ -853,15 +863,28 @@ document.addEventListener('DOMContentLoaded', function() {
                             </select>
                         </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label text-info small fw-bold"><i class="bi bi-truck me-1"></i> Kategori Pengantaran</label>
-                        <select name="delivery_category_code" class="form-select bg-dark text-white border-secondary">
-                            @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
-                                <option value="{{ $dc->code }}" {{ ($mp->delivery_category_code ?? 'LOC') == $dc->code ? 'selected' : '' }}>
-                                    {{ $dc->code }} - {{ $dc->name }} ({{ $dc->currency }})
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="row g-2 mb-3">
+                        <div class="col-6">
+                            <label class="form-label text-info small fw-bold"><i class="bi bi-truck me-1"></i> Pengantaran</label>
+                            <select name="delivery_category_code" class="form-select bg-dark text-white border-secondary">
+                                @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
+                                    <option value="{{ $dc->code }}" {{ ($mp->delivery_category_code ?? 'LOC') == $dc->code ? 'selected' : '' }}>
+                                        {{ $dc->code }} - {{ $dc->name }} ({{ $dc->currency }})
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label text-warning small fw-bold"><i class="bi bi-tag me-1"></i> Kategori Material</label>
+                            <select name="category_id" class="form-select bg-dark text-white border-secondary">
+                                <option value="">-- Pilih Kategori --</option>
+                                @foreach($categories ?? \App\Models\PurchasingCategory::all() as $cat)
+                                    <option value="{{ $cat->id }}" {{ ($mp->category_id ?? '') == $cat->id ? 'selected' : '' }}>
+                                        {{ $cat->category_code }} - {{ $cat->category_name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-top border-secondary border-opacity-25 bg-dark">

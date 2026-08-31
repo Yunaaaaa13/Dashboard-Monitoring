@@ -55,17 +55,16 @@ class ComparisonAnalysisService
         $startYear = ($filter['year'] ?? 2026) === 'ALL' ? 2026 : (int) ($filter['year'] ?? 2026);
         $startMonthNum = 6; // Default June (2026-06)
 
-        if ($detectedPeriod && preg_match('/^(\d{4})-(\d{2})$/', $detectedPeriod, $dMatches)) {
+        if (!empty($rawStartMonth) && $rawStartMonth !== 'AUTO' && (isset($mMap[$rawStartMonth]) || is_numeric($rawStartMonth))) {
+            if (is_numeric($rawStartMonth)) {
+                $startMonthNum = (int)$rawStartMonth;
+            } else {
+                $rawNum = $mMap[$rawStartMonth];
+                $startMonthNum = ($rawNum % 12) + 1;
+            }
+        } elseif ($detectedPeriod && preg_match('/^(\d{4})-(\d{2})$/', $detectedPeriod, $dMatches)) {
             $startYear = (int) $dMatches[1];
             $startMonthNum = (int) $dMatches[2]; // e.g. 6 (June)
-        } elseif (!empty($rawStartMonth) && isset($mMap[$rawStartMonth])) {
-            $rawNum = $mMap[$rawStartMonth];
-            // If rawStartMonth is 'MAY' (base month M0), forecast Month 1 is JUN (6)
-            if ($rawNum === 5) {
-                $startMonthNum = 6;
-            } else {
-                $startMonthNum = $rawNum;
-            }
         } elseif (!empty($sessionStartMonth) && isset($mMap[strtoupper(trim((string)$sessionStartMonth))])) {
             $sessPreNum = $mMap[strtoupper(trim((string)$sessionStartMonth))];
             $startMonthNum = ($sessPreNum % 12) + 1;
@@ -130,7 +129,7 @@ class ComparisonAnalysisService
                 $logsQuery->whereRaw('UPPER(item_code) = ?', [$selectedItemCode]);
             }
             if ($selectedVendor !== 'ALL') {
-                $logsQuery->whereRaw('UPPER(supplier_name) = ?', [$selectedVendor]);
+                $logsQuery->whereRaw('UPPER(supplier_name) = ?', [strtoupper($selectedVendor)]);
             }
             if ($selectedPo !== 'ALL') {
                 $logsQuery->whereRaw('UPPER(po_reference) = ?', [$selectedPo]);

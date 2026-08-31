@@ -42,34 +42,34 @@ class AnalysisController extends Controller
         $defaultDuration = ($maxForecastPeriods > 0 && $maxForecastPeriods <= 36) ? $maxForecastPeriods : 8;
 
         // Slide 1 Filters
-        $s1_item_code = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_item_code') ? strtoupper(trim((string)$request->get('s1_item_code'))) : 'ALL');
-        $s1_vendor = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_vendor') ? trim((string)$request->get('s1_vendor')) : 'ALL');
-        $s1_pic = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_pic') ? trim((string)$request->get('s1_pic')) : 'ALL');
-        $s1_po = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_po') ? strtoupper(trim((string)$request->get('s1_po'))) : 'ALL');
-        $s1_delivery_category = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_delivery_category') ? strtoupper(trim((string)$request->get('s1_delivery_category'))) : 'ALL');
+        $s1_item_code = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_item_code') ? strtoupper(trim((string)$request->get('s1_item_code'))) : ($request->has('item_code') ? strtoupper(trim((string)$request->get('item_code'))) : 'ALL'));
+        $s1_vendor = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_vendor') ? trim((string)$request->get('s1_vendor')) : ($request->has('vendor') ? trim((string)$request->get('vendor')) : 'ALL'));
+        $s1_pic = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_pic') ? trim((string)$request->get('s1_pic')) : ($request->has('pic') ? trim((string)$request->get('pic')) : 'ALL'));
+        $s1_po = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_po') ? strtoupper(trim((string)$request->get('s1_po'))) : ($request->has('po') ? strtoupper(trim((string)$request->get('po'))) : 'ALL'));
+        $s1_delivery_category = ($resetSlide === 'slide1') ? 'ALL' : ($request->has('s1_delivery_category') ? strtoupper(trim((string)$request->get('s1_delivery_category'))) : ($request->has('delivery_category') ? strtoupper(trim((string)$request->get('delivery_category'))) : 'ALL'));
         if (!in_array($s1_delivery_category, ['ALL', 'LOC', 'IMP', 'CON'], true)) $s1_delivery_category = 'ALL';
-        $s1_year = ($resetSlide === 'slide1') ? '2026' : ($request->has('s1_year') ? $request->get('s1_year') : '2026');
-        $s1_duration = ($resetSlide === 'slide1') ? $defaultDuration : max(1, min(36, (int)($request->has('s1_duration') ? $request->get('s1_duration') : $defaultDuration)));
+        $s1_year = ($resetSlide === 'slide1') ? '2026' : ($request->has('s1_year') ? $request->get('s1_year') : ($request->has('year') ? $request->get('year') : '2026'));
+        $s1_duration = ($resetSlide === 'slide1') ? $defaultDuration : max(1, min(36, (int)($request->has('s1_duration') ? $request->get('s1_duration') : ($request->has('duration') ? $request->get('duration') : $defaultDuration))));
 
         // Slide 2 Filters
-        $s2_item_code = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_item_code') ? strtoupper(trim((string)$request->get('s2_item_code'))) : 'ALL');
-        $s2_vendor = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_vendor') ? trim((string)$request->get('s2_vendor')) : 'ALL');
-        $s2_pic = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_pic') ? trim((string)$request->get('s2_pic')) : 'ALL');
-        $s2_po = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_po') ? strtoupper(trim((string)$request->get('s2_po'))) : 'ALL');
-        $s2_delivery_category = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_delivery_category') ? strtoupper(trim((string)$request->get('s2_delivery_category'))) : 'ALL');
+        $s2_item_code = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_item_code') ? strtoupper(trim((string)$request->get('s2_item_code'))) : ($request->has('item_code') ? strtoupper(trim((string)$request->get('item_code'))) : 'ALL'));
+        $s2_vendor = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_vendor') ? trim((string)$request->get('s2_vendor')) : ($request->has('vendor') ? trim((string)$request->get('vendor')) : 'ALL'));
+        $s2_pic = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_pic') ? trim((string)$request->get('s2_pic')) : ($request->has('pic') ? trim((string)$request->get('pic')) : 'ALL'));
+        $s2_po = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_po') ? strtoupper(trim((string)$request->get('s2_po'))) : ($request->has('po') ? strtoupper(trim((string)$request->get('po'))) : 'ALL'));
+        $s2_delivery_category = ($resetSlide === 'slide2') ? 'ALL' : ($request->has('s2_delivery_category') ? strtoupper(trim((string)$request->get('s2_delivery_category'))) : ($request->has('delivery_category') ? strtoupper(trim((string)$request->get('delivery_category'))) : 'ALL'));
         if (!in_array($s2_delivery_category, ['ALL', 'LOC', 'IMP', 'CON'], true)) $s2_delivery_category = 'ALL';
-        $s2_year = ($resetSlide === 'slide2') ? '2026' : ($request->has('s2_year') ? $request->get('s2_year') : '2026');
-        $s2_duration = ($resetSlide === 'slide2') ? $defaultDuration : max(1, min(36, (int)($request->has('s2_duration') ? $request->get('s2_duration') : $defaultDuration)));
+        $s2_year = ($resetSlide === 'slide2') ? '2026' : ($request->has('s2_year') ? $request->get('s2_year') : ($request->has('year') ? $request->get('year') : '2026'));
+        $s2_duration = ($resetSlide === 'slide2') ? $defaultDuration : max(1, min(36, (int)($request->has('s2_duration') ? $request->get('s2_duration') : ($request->has('duration') ? $request->get('duration') : $defaultDuration))));
 
         // Slide 3 Filters (Strictly Independent - Defaults to ALL / Default Horizon)
-        $s3_item_code = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_item_code') ? strtoupper(trim((string)$request->get('s3_item_code'))) : 'ALL');
-        $s3_vendor = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_vendor') ? trim((string)$request->get('s3_vendor')) : 'ALL');
-        $s3_pic = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_pic') ? trim((string)$request->get('s3_pic')) : 'ALL');
-        $s3_po = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_po') ? strtoupper(trim((string)$request->get('s3_po'))) : 'ALL');
-        $s3_delivery_category = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_delivery_category') ? strtoupper(trim((string)$request->get('s3_delivery_category'))) : 'ALL');
+        $s3_item_code = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_item_code') ? strtoupper(trim((string)$request->get('s3_item_code'))) : ($request->has('item_code') ? strtoupper(trim((string)$request->get('item_code'))) : 'ALL'));
+        $s3_vendor = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_vendor') ? trim((string)$request->get('s3_vendor')) : ($request->has('vendor') ? trim((string)$request->get('vendor')) : 'ALL'));
+        $s3_pic = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_pic') ? trim((string)$request->get('s3_pic')) : ($request->has('pic') ? trim((string)$request->get('pic')) : 'ALL'));
+        $s3_po = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_po') ? strtoupper(trim((string)$request->get('s3_po'))) : ($request->has('po') ? strtoupper(trim((string)$request->get('po'))) : 'ALL'));
+        $s3_delivery_category = ($resetSlide === 'slide3') ? 'ALL' : ($request->has('s3_delivery_category') ? strtoupper(trim((string)$request->get('s3_delivery_category'))) : ($request->has('delivery_category') ? strtoupper(trim((string)$request->get('delivery_category'))) : 'ALL'));
         if (!in_array($s3_delivery_category, ['ALL', 'LOC', 'IMP', 'CON'], true)) $s3_delivery_category = 'ALL';
-        $s3_year = ($resetSlide === 'slide3') ? '2026' : ($request->has('s3_year') ? $request->get('s3_year') : '2026');
-        $s3_duration = ($resetSlide === 'slide3') ? $defaultDuration : max(1, min(36, (int)($request->has('s3_duration') ? $request->get('s3_duration') : $defaultDuration)));
+        $s3_year = ($resetSlide === 'slide3') ? '2026' : ($request->has('s3_year') ? $request->get('s3_year') : ($request->has('year') ? $request->get('year') : '2026'));
+        $s3_duration = ($resetSlide === 'slide3') ? $defaultDuration : max(1, min(36, (int)($request->has('s3_duration') ? $request->get('s3_duration') : ($request->has('duration') ? $request->get('duration') : $defaultDuration))));
 
         // Global / Primary Fallbacks
         $selectedItemCode = $s1_item_code;
@@ -83,7 +83,20 @@ class AnalysisController extends Controller
         $calcYearBase = ($selectedYear === 'ALL') ? 2026 : (int)$selectedYear;
 
         $detectedFirstPeriod = \App\Models\Forecasting::where('forecast_qty', '>', 0)->orderBy('periode', 'asc')->value('periode')
-            ?: \App\Models\Forecasting::orderBy('periode', 'asc')->value('periode');
+            ?: \App\Models\PurchasingLog::orderBy('period_month', 'asc')->value('period_month');
+
+        if (!$detectedFirstPeriod) {
+            $prodDate = \App\Models\ActualProduction::orderBy('tanggal_produksi', 'asc')->value('tanggal_produksi');
+            if ($prodDate instanceof \DateTimeInterface) {
+                $detectedFirstPeriod = $prodDate->format('Y-m');
+            } elseif (is_string($prodDate) && !empty($prodDate)) {
+                $detectedFirstPeriod = substr(trim($prodDate), 0, 7);
+            }
+        }
+
+        if (!$detectedFirstPeriod) {
+            $detectedFirstPeriod = \App\Models\Forecasting::orderBy('periode', 'asc')->value('periode');
+        }
 
         $allMonths = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
         $mMap = ['JAN' => 1, 'FEB' => 2, 'MAR' => 3, 'APR' => 4, 'MAY' => 5, 'JUN' => 6, 'JUL' => 7, 'AUG' => 8, 'SEP' => 9, 'OCT' => 10, 'NOV' => 11, 'DEC' => 12];
@@ -96,7 +109,7 @@ class AnalysisController extends Controller
             $defaultStartMonth = 'MAY';
         }
 
-        $rawStartMonth = $request->get('start_month', session('monitor_start_month', $defaultStartMonth));
+        $rawStartMonth = $request->get('start_month', $defaultStartMonth);
         if ($rawStartMonth === 'ALL' || empty($rawStartMonth)) $rawStartMonth = $defaultStartMonth;
         if ($rawStartMonth === 'JULY') $rawStartMonth = 'JUL';
         session(['monitor_start_month' => $rawStartMonth]);
@@ -399,11 +412,10 @@ class AnalysisController extends Controller
             
             // Determine Forecast & Actual Prices (Unit price in item's native currency)
             $itemPrice = (float) ($rawAttrs['price'] ?? 0.0);
-            if ($itemPrice <= 0 && isset($forecastingMap[$itemCode])) {
-                $itemPrice = (float) $forecastingMap[$itemCode]->price;
-            }
-            $forecastPrice = $itemPrice;
-            $actualPrice   = $itemPrice;
+            $forecastPrice = (isset($forecastingMap[$itemCode]) && (float)$forecastingMap[$itemCode]->price > 0)
+                ? (float) $forecastingMap[$itemCode]->price
+                : $itemPrice;
+            $actualPrice   = $itemPrice > 0 ? $itemPrice : $forecastPrice;
             $priceDeviationReason = $rawAttrs['price_deviation_reason'] ?? null;
 
             // Auto-detect realistic currency based on unit price magnitude:
@@ -1502,40 +1514,32 @@ class AnalysisController extends Controller
                 }
             }
 
-            if (!$hasActualDataMonth) {
-                $status    = 'Belum Ada Data';
-                $varQty    = null;
-                $varAmtUsd = null;
-                $varAmtIdr = null;
-                $varPct    = '—';
-            } else {
-                $varQty    = $aStockSum - $fStockSum;
-                $varAmtUsd = $aStockAmtUsd - $fStockAmtUsd;
-                $varAmtIdr = $aStockAmtIdr - $fStockAmtIdr;
-                $varPctVal = $fStockSum > 0 ? round(($varQty / $fStockSum) * 100, 1) : 0.0;
+            $varQty    = $aStockSum - $fStockSum;
+            $varAmtUsd = $aStockAmtUsd - $fStockAmtUsd;
+            $varAmtIdr = $aStockAmtIdr - $fStockAmtIdr;
+            $varPctVal = $fStockSum > 0 ? round(($varQty / $fStockSum) * 100, 1) : 0.0;
 
-                if ($fStockSum == 0 && $aStockSum == 0) {
-                    $status = 'No Demand';
-                } elseif ($fStockSum > 0 && abs($varQty) <= max(1, 0.05 * $fStockSum)) {
-                    $status = 'Balanced';
-                } elseif ($aStockSum > $fStockSum) {
-                    $status = 'Surplus';
-                } else {
-                    $status = 'Deficit';
-                }
-                $varPct = ($varQty >= 0 ? '+' : '') . $varPctVal . '%';
+            if ($fStockSum == 0 && $aStockSum == 0) {
+                $status = 'No Demand';
+            } elseif ($fStockSum > 0 && abs($varQty) <= max(1, 0.05 * $fStockSum)) {
+                $status = 'Balanced';
+            } elseif ($aStockSum > $fStockSum) {
+                $status = 'Surplus';
+            } else {
+                $status = 'Deficit';
             }
+            $varPct = ($varQty >= 0 ? '+' : '') . $varPctVal . '%';
 
             $stockMonthlySummary[$i] = [
                 'month_index'         => $i,
                 'month_name'          => $mLabel,
                 'has_actual_data'     => $hasActualDataMonth,
                 'forecast_stock_qty'  => $fStockSum,
-                'actual_stock_qty'    => $hasActualDataMonth ? $aStockSum : null,
+                'actual_stock_qty'    => $hasActualDataMonth ? $aStockSum : 0,
                 'forecast_stock_usd'  => $fStockAmtUsd,
-                'actual_stock_usd'    => $hasActualDataMonth ? $aStockAmtUsd : null,
+                'actual_stock_usd'    => $hasActualDataMonth ? $aStockAmtUsd : 0.0,
                 'forecast_stock_idr'  => $fStockAmtIdr,
-                'actual_stock_idr'    => $hasActualDataMonth ? $aStockAmtIdr : null,
+                'actual_stock_idr'    => $hasActualDataMonth ? $aStockAmtIdr : 0.0,
                 'variance_qty'        => $varQty,
                 'variance_pct'        => $varPct,
                 'variance_amount_usd' => $varAmtUsd,
@@ -3025,10 +3029,13 @@ class AnalysisController extends Controller
         return $targetYear . '-' . str_pad($targetMonthIndex + 1, 2, '0', STR_PAD_LEFT);
     }
 
-    private function parseYearMonth(?string $dateStr, ?string $periodStr = null, int $defaultYear = 2026): ?string
+    private function parseYearMonth($dateStr, ?string $periodStr = null, int $defaultYear = 2026): ?string
     {
+        if ($dateStr instanceof \DateTimeInterface) {
+            return $dateStr->format('Y-m');
+        }
         if (!empty($dateStr)) {
-            $dStr = trim($dateStr);
+            $dStr = trim((string)$dateStr);
 
             // 1. Format YYYY-MM-DD or YYYY/MM/DD
             if (preg_match('/^(\d{4})[\-\/](\d{1,2})/', $dStr, $m)) {

@@ -19,7 +19,7 @@ class CategoryDashboardTest extends TestCase
     {
         parent::setUp();
         $this->adminUser = User::factory()->create([
-            'role' => 'admin',
+            'role' => 'supervisor',
             'email' => 'admin_cat_test@kawai.co.id'
         ]);
 
@@ -206,5 +206,165 @@ class CategoryDashboardTest extends TestCase
             'monthly_target_units' => 30000.00,
             'status' => 'Review',
         ]);
+    }
+
+    public function test_forecast_excel_import_resolves_and_syncs_category_column()
+    {
+        $cat1 = PurchasingCategory::create([
+            'category_code' => 'PUR-01',
+            'category_name' => 'Kayu Akustik & Soundboard Spruce',
+            'pic_buyer'     => 'Staff Buyer',
+            'status'        => 'active',
+        ]);
+        $cat4 = PurchasingCategory::create([
+            'category_code' => 'PUR-04',
+            'category_name' => 'Finishing Polyester Resin & Chemical',
+            'pic_buyer'     => 'Staff Buyer',
+            'status'        => 'active',
+        ]);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Row 1: Header (Matching User's Excel)
+        $sheet->setCellValue('A1', 'Supplier Code');
+        $sheet->setCellValue('B1', 'Supplier Name');
+        $sheet->setCellValue('C1', 'Plant');
+        $sheet->setCellValue('D1', 'Kategori');
+        $sheet->setCellValue('E1', 'Material Code');
+        $sheet->setCellValue('F1', 'Description');
+        $sheet->setCellValue('G1', 'Unit price');
+        $sheet->setCellValue('H1', 'kurs');
+        $sheet->setCellValue('I1', 'Plan Stock');
+        $sheet->setCellValue('J1', 'Plan Outstand');
+
+        // Row 2: Data with PUR-04
+        $sheet->setCellValue('A2', 'C102');
+        $sheet->setCellValue('B2', 'PT. TRI JAYA TEKNIK KARAWANG');
+        $sheet->setCellValue('C2', 'KIP1');
+        $sheet->setCellValue('D2', 'PUR-04');
+        $sheet->setCellValue('E2', '1312006');
+        $sheet->setCellValue('F2', 'GP BRACKET KOMPOU');
+        $sheet->setCellValue('G2', '8470');
+        $sheet->setCellValue('H2', 'USD');
+        $sheet->setCellValue('I2', '100');
+        $sheet->setCellValue('J2', '500');
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'cat_test_') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tmpFile);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tmpFile,
+            'forecast_category_test.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($this->adminUser)->post(route('purchasing.outstanding.import'), [
+            'file' => $uploadedFile,
+        ]);
+
+        @unlink($tmpFile);
+
+        $response->assertRedirect();
+        
+        // Ensure the record in purchasing_outstandings has category_id == $cat4->id (PUR-04), NOT defaulted to $cat1->id
+        $this->assertDatabaseHas('purchasing_outstandings', [
+            'part_number' => '1312006',
+            'category_id' => $cat4->id,
+            'factory_code' => 'KIP 1',
+        ]);
+    }
+
+    public function test_integrated_importer_resolves_and_assigns_category_id_to_master_po_and_incoming()
+    {
+        $cat4 = PurchasingCategory::create([
+            'category_code' => 'PUR-04',
+            'category_name' => 'Finishing Polyester Resin & Chemical',
+            'pic_buyer'     => 'Staff Buyer',
+            'status'        => 'active',
+        ]);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        $sheet->setCellValue('A1', 'Supplier Code');
+        $sheet->setCellValue('B1', 'Supplier Name');
+        $sheet->setCellValue('C1', 'Delivery Date');
+        $sheet->setCellValue('D1', 'Plant');
+        $sheet->setCellValue('E1', 'Kategori');
+        $sheet->setCellValue('F1', 'Material Code');
+        $sheet->setCellValue('G1', 'Description');
+        $sheet->setCellValue('H1', 'PO No.');
+        $sheet->setCellValue('I1', 'Currency');
+        $sheet->setCellValue('J1', 'Price');
+        $sheet->setCellValue('K1', 'Plan');
+        $sheet->setCellValue('L1', 'Result');
+
+        $sheet->setCellValue('A2', 'C102');
+        $sheet->setCellValue('B2', 'PT. TRI JAYA TEKNIK KARAWANG');
+        $sheet->setCellValue('C2', '2026-07-15');
+        $sheet->setCellValue('D2', 'KIP 1');
+        $sheet->setCellValue('E2', 'PUR-04');
+        $sheet->setCellValue('F2', '1312006');
+        $sheet->setCellValue('G2', 'MAIN BOARD A');
+        $sheet->setCellValue('H2', 'KI-TJT-0023');
+        $sheet->setCellValue('I2', 'IDR');
+        $sheet->setCellValue('J2', 8470);
+        $sheet->setCellValue('K2', 210);
+        $sheet->setCellValue('L2', 210);
+
+        $tmpFile = tempnam(sys_get_temp_dir(), 'imp_test_') . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save($tmpFile);
+
+        $importer = app(\App\Services\Import\IntegratedPoIncomingImporter::class);
+        $analysis = $importer->parseAndAnalyze($tmpFile);
+        @unlink($tmpFile);
+
+        $this->assertTrue($analysis['success']);
+        $this->assertEquals($cat4->id, $analysis['master_po_rows'][0]['category_id']);
+        $this->assertEquals('PUR-04', $analysis['master_po_rows'][0]['category_code']);
+        $this->assertEquals($cat4->id, $analysis['incoming_rows'][0]['category_id']);
+
+        $execResult = $importer->executeImport($analysis, $this->adminUser->id);
+        $this->assertTrue($execResult['success']);
+
+        $this->assertDatabaseHas('master_pos', [
+            'item_code' => '1312006',
+            'po' => 'KI-TJT-0023',
+            'category_id' => $cat4->id,
+        ]);
+
+        $this->assertDatabaseHas('purchasing_logs', [
+            'item_code' => '1312006',
+            'po_reference' => 'KI-TJT-0023',
+            'purchasing_category_id' => $cat4->id,
+        ]);
+    }
+
+    public function test_ocr_category_normalizer_and_matcher()
+    {
+        $cat4 = PurchasingCategory::create([
+            'category_code' => 'PUR-04',
+            'category_name' => 'Finishing Polyester Resin & Chemical',
+            'pic_buyer'     => 'Staff Buyer',
+            'status'        => 'active',
+        ]);
+
+        // OCR Noise repair (Letter 'O' instead of digit '0', lower case, space variations)
+        $this->assertEquals('PUR-04', \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode('PUR-O4'));
+        $this->assertEquals('PUR-04', \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode('pur 04'));
+        $this->assertEquals('PUR-04', \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode('PUR04'));
+
+        $matcher = app(\App\Services\Ocr\MasterDictionaryMatcher::class);
+        $matched = $matcher->matchCategory('PUR-O4');
+        $this->assertEquals($cat4->id, $matched['category_id']);
+        $this->assertEquals('PUR-04', $matched['category_code']);
+
+        $matchedByName = $matcher->matchCategory('Finishing Polyester');
+        $this->assertEquals($cat4->id, $matchedByName['category_id']);
     }
 }

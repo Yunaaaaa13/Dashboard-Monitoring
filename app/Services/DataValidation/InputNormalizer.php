@@ -356,5 +356,26 @@ class InputNormalizer
         $upper = strtoupper(trim($value));
         return (bool) preg_match('/^(PT|CV|UD|PD|TBK|TOKO|YAYASAN)[\s\.]|\b(INDONESIA|SEJAHTERA|MAKMUR|ABADI|TEKNIK|JAYA|PERSADA|KARYA|PLASTIK|STEEL|LOGISTIK|GLOBAL|UTAMA|SENTOSA|BIMASAKTI|MITRA|TRADING)\b/i', $upper);
     }
+
+    /**
+     * Normalisasi Kode / Nama Kategori
+     * Contoh: 'pur-04' -> 'PUR-04', 'PUR 04' -> 'PUR-04', 'PUR04' -> 'PUR-04', 'PUR-O4' (OCR) -> 'PUR-04'
+     */
+    public static function normalizeCategoryCode(?string $value): string
+    {
+        if ($value === null || trim($value) === '') return '';
+        $val = strtoupper(trim(preg_replace('/[\x{00A0}\x{200B}\x{FEFF}]/u', ' ', (string)$value)));
+        
+        // OCR correction: O / o in PUR-O4 -> 0
+        $val = preg_replace('/^PUR[\s\-_]?O(\d)/i', 'PUR-0$1', $val);
+
+        // Normalize PUR-01, PUR-1, PUR 1, PUR01, PUR1
+        if (preg_match('/^PUR[\s\-_]?0?([1-9]\d*)/i', $val, $m)) {
+            $num = str_pad($m[1], 2, '0', STR_PAD_LEFT);
+            return "PUR-{$num}";
+        }
+
+        return $val;
+    }
 }
 

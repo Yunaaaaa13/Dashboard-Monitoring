@@ -70,6 +70,7 @@ class ForecastTemplateParser
             $rawSupplierCode = $this->getCellValue($row, $columnMap['supplier_code'] ?? -1);
             $rawSupplierName = $this->getCellValue($row, $columnMap['supplier_name'] ?? -1);
             $rawPlant        = $this->getCellValue($row, $columnMap['plant'] ?? -1, 'Plant 3');
+            $rawCategory     = $this->getCellValue($row, $columnMap['category'] ?? -1, '');
             $rawMaterialCode = $this->getCellValue($row, $columnMap['material_code'] ?? -1);
             $rawDescription  = $this->getCellValue($row, $columnMap['description'] ?? -1);
             $rawPrice        = $this->getCellValue($row, $columnMap['unit_price'] ?? -1, '0');
@@ -100,6 +101,11 @@ class ForecastTemplateParser
             $supMatch = $this->matcher->matchSupplier((string)$rawSupplierName);
             $supplierName = $supMatch['is_exact'] ? $supMatch['matched'] : ($supMatch['suggested'] ?? trim((string)$rawSupplierName));
             $supplierConfidence = $supMatch['similarity'] * 100;
+
+            $catMatch = $this->matcher->matchCategory((string)$rawCategory);
+            $categoryId = $catMatch['category_id'] ?? null;
+            $categoryCode = $catMatch['category_code'] ?? (string)$rawCategory;
+            $categoryName = $catMatch['category_name'] ?? '';
 
             $currency = InputNormalizer::normalizeCurrency((string)$rawCurrency);
             $unitPrice = InputNormalizer::normalizePrice((string)$rawPrice, $currency);
@@ -172,6 +178,10 @@ class ForecastTemplateParser
                 'supplier_code' => trim((string)$rawSupplierCode),
                 'supplier_name' => $supplierName,
                 'plant' => $plant,
+                'category_id' => $categoryId,
+                'category_code' => $categoryCode,
+                'category_name' => $categoryName,
+                'raw_category' => trim((string)$rawCategory),
                 'material_code' => $materialCode,
                 'raw_material_code' => trim((string)$rawMaterialCode),
                 'description' => trim((string)$rawDescription),
@@ -213,6 +223,7 @@ class ForecastTemplateParser
             'supplier_code' => -1,
             'supplier_name' => -1,
             'plant' => -1,
+            'category' => -1,
             'material_code' => -1,
             'drawing' => -1,
             'description' => -1,
@@ -239,6 +250,9 @@ class ForecastTemplateParser
                 }
                 if ($columnMap['plant'] === -1 && (str_contains($str, 'PLANT') || str_contains($str, 'FACTORY') || str_contains($str, 'PABRIK'))) {
                     $columnMap['plant'] = $colIdx;
+                }
+                if ($columnMap['category'] === -1 && (str_contains($str, 'KATEGORI') || str_contains($str, 'CATEGORY') || $str === 'KAT' || str_contains($str, 'PURCHASING CAT'))) {
+                    $columnMap['category'] = $colIdx;
                 }
                 if ($columnMap['material_code'] === -1 && (str_contains($str, 'MATERIAL CODE') || str_contains($str, 'PART NUMBER') || str_contains($str, 'ITEM CODE') || $str === 'PN' || $str === 'ITEM_CODE' || $str === 'PART_NO')) {
                     $columnMap['material_code'] = $colIdx;

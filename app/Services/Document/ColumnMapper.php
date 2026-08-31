@@ -12,7 +12,7 @@ class ColumnMapper
 {
     public const CANONICAL_FIELDS = [
         'supplier_code', 'supplier_name', 'delivery_date', 'item_code',
-        'description', 'po_number', 'currency', 'unit_price', 'plant',
+        'description', 'category', 'po_number', 'currency', 'unit_price', 'plant',
         'plan_qty', 'plan_amount', 'result_qty', 'result_amount',
         'remaining_qty', 'remaining_amount',
     ];
@@ -21,6 +21,7 @@ class ColumnMapper
         'po_number' => ['PO NO', 'PO NUMBER', 'NO PO', 'NOMOR PO', 'PO', 'PURCHASE ORDER', 'NO. PO', 'PO REF', 'PO REFERENCE', 'NO PO.', 'NOMER PO'],
         'item_code' => ['MATERIAL CODE', 'ITEM CODE', 'ITEM_CODE', 'PART NUMBER', 'PART NO', 'PART_NO', 'PN', 'DRAWING', 'KODE BARANG', 'KODE ITEM', 'KODE MATERIAL', 'NO MATERIAL', 'MATERIAL NO', 'MAT CODE', 'MATERIAL', 'ITEM', 'PART', 'ITEMCODE'],
         'description' => ['DESCRIPTION', 'DESKRIPSI', 'NAMA BARANG', 'ITEM NAME', 'NAMA MATERIAL', 'DESC', 'NAMA ITEM', 'NAMA PART', 'ITEM DESCRIPTION', 'MATERIAL DESCRIPTION', 'PART NAME'],
+        'category' => ['KATEGORI', 'CATEGORY', 'KATEGORI MATERIAL', 'PURCHASING CATEGORY', 'KODE KATEGORI', 'CATEGORY CODE', 'KATEGORI PENGADAAN', 'KAT', 'JENIS MATERIAL'],
         'supplier_code' => ['SUPPLIER CODE', 'VENDOR CODE', 'KODE SUPPLIER', 'VEND CODE', 'SUPP CODE', 'VEND_CODE', 'SUPP_CODE', 'SUPPLIER_CODE'],
         'supplier_name' => ['SUPPLIER NAME', 'VENDOR NAME', 'NAMA SUPPLIER', 'NAMA VENDOR', 'SUPPLIER', 'VENDOR', 'PEMASOK'],
         'delivery_date' => ['DELIVERY DATE', 'TANGGAL', 'DATE', 'TGL KIRIM', 'RECEIPT DATE', 'TANGGAL PO', 'PO DATE', 'TGL', 'RECEIVING DATE', 'TGL TERIMA', 'TANGGAL KIRIM', 'TANGGAL TERIMA'],

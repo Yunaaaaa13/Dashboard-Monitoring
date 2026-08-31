@@ -97,6 +97,7 @@ class IntegratedPoIncomingImporter
             $rawSupplierCode = $this->getVal($row, $cols['supplier_code']);
             $rawSupplierName = $this->getVal($row, $cols['supplier_name']);
             $rawDeliveryDate = $this->getVal($row, $cols['delivery_date']);
+            $rawCategory     = $this->getVal($row, $cols['category']);
             $rawMaterialCode = $this->getVal($row, $cols['material_code']);
             $rawDescription  = $this->getVal($row, $cols['description']);
             $rawPoNumber     = $this->getVal($row, $cols['po_number']);
@@ -120,6 +121,12 @@ class IntegratedPoIncomingImporter
             if (empty($rawMaterialCode) && empty($rawPoNumber) && empty($rawDescription)) {
                 continue;
             }
+
+            // Category Matching (PUR-01 .. PUR-04 atau Nama Kategori)
+            $catMatch     = $this->matcher->matchCategory((string)$rawCategory);
+            $categoryId   = $catMatch['category_id'] ?? null;
+            $categoryCode = $catMatch['category_code'] ?? (string)$rawCategory;
+            $categoryName = $catMatch['category_name'] ?? '';
 
             // Normalisasi Shared Fields
             $materialCode = InputNormalizer::cleanMaterialCode($rawMaterialCode ?: ($rawPoNumber ?: 'UNKNOWN'));
@@ -224,7 +231,7 @@ class IntegratedPoIncomingImporter
                     }
                 } elseif ($planQty > 0 && $resultQty == 0) {
                     $hasMasterPo = true;
-                    $hasIncoming = true; // Baris belum terkirim tetap dicatat di Incoming dengan actual_received = 0
+                    $hasIncoming = false;
                     $status = 'Not Received';
                 } elseif ($planQty == 0 && $resultQty > 0) {
                     $hasMasterPo = false;
@@ -252,6 +259,9 @@ class IntegratedPoIncomingImporter
                     'po'                 => $poNumber,
                     'item_code'          => $materialCode,
                     'factory_code'       => $plant,
+                    'category_id'        => $categoryId,
+                    'category_code'      => $categoryCode,
+                    'category_name'      => $categoryName,
                     'name'               => $description,
                     'qty'                => $planQty,
                     'price'              => $unitPrice,
@@ -276,6 +286,9 @@ class IntegratedPoIncomingImporter
                     'po_reference'       => $poNumber,
                     'item_code'          => $materialCode,
                     'factory_code'       => $plant,
+                    'category_id'        => $categoryId,
+                    'category_code'      => $categoryCode,
+                    'category_name'      => $categoryName,
                     'item_name'          => $description,
                     'period_month'       => $periodMonth,
                     'target_order'       => $planQty,
@@ -299,6 +312,10 @@ class IntegratedPoIncomingImporter
                 'row'                => $sourceRowNum,
                 'material_code'      => $materialCode,
                 'description'        => $description,
+                'category_id'        => $categoryId,
+                'category_code'      => $categoryCode,
+                'category_name'      => $categoryName,
+                'raw_category'       => trim((string)$rawCategory),
                 'supplier_name'      => $supplierName,
                 'po_number'          => $poNumber,
                 'plant'              => $plant,
@@ -383,12 +400,14 @@ class IntegratedPoIncomingImporter
         try {
             // 1. Simpan Master PO Records
             foreach ($masterPoRows as $po) {
+                $poCatId = !empty($po['category_id']) ? (int)$po['category_id'] : $defaultCatId;
                 MasterPo::create([
                     'tanggal'        => $po['tanggal'] ?: date('Y-m-d'),
                     'supplier'       => $po['supplier'],
                     'po'             => $po['po'],
                     'item_code'      => $po['item_code'],
                     'factory_code'   => $po['factory_code'],
+                    'category_id'    => $poCatId,
                     'name'           => $po['name'],
                     'qty'            => $po['qty'],
                     'price'          => $po['price'],
@@ -406,9 +425,10 @@ class IntegratedPoIncomingImporter
 
             // 2. Simpan Incoming / PurchasingLog Records
             foreach ($incomingRows as $inc) {
+                $incCatId = !empty($inc['category_id']) ? (int)$inc['category_id'] : $defaultCatId;
                 $canonicalIncPeriod = InputNormalizer::canonicalPeriod($inc['period_month']);
                 $log = PurchasingLog::create([
-                    'purchasing_category_id' => $defaultCatId,
+                    'purchasing_category_id' => $incCatId,
                     'user_id'                => $userId,
                     'receipt_date'           => $inc['receipt_date'] ?: date('Y-m-d'),
                     'item_code'              => $inc['item_code'],
@@ -520,6 +540,7 @@ class IntegratedPoIncomingImporter
             'delivery_date' => null,
             'material_code' => null,
             'description'   => null,
+            'category'      => null,
             'po_number'     => null,
             'currency'      => null,
             'unit_price'    => null,
@@ -544,6 +565,8 @@ class IntegratedPoIncomingImporter
                 $columns['supplier_name'] = $col;
             } elseif (!$columns['delivery_date'] && preg_match('/(DELIVERY[\s_]?DATE|TANGGAL|DATE|TGL[\s_]?KIRIM|RECEIPT[\s_]?DATE)/i', $combined)) {
                 $columns['delivery_date'] = $col;
+            } elseif (!$columns['category'] && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL)/i', $combined)) {
+                $columns['category'] = $col;
             } elseif (!$columns['material_code'] && preg_match('/(MATERIAL[\s_]?CODE|ITEM[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|\bPN\b|\bDRAWING\b|\bITEMCODE\b|\bITEM_CODE\b)/i', $combined)) {
                 $columns['material_code'] = $col;
             } elseif (!$columns['description'] && preg_match('/(DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|NAMA[\s_]?MATERIAL|\bDESC\b)/i', $combined) && !preg_match('/SUPPLIER/i', $combined)) {
@@ -627,18 +650,19 @@ class IntegratedPoIncomingImporter
             'A1' => 'Supplier Code',
             'B1' => 'Supplier Name',
             'C1' => 'Delivery Date',
-            'D1' => 'Material Code',
-            'E1' => 'Description',
-            'F1' => 'PO No.',
-            'G1' => 'Currency',
-            'H1' => 'Price',
-            'I1' => 'Plant',
-            'J1' => 'Plan',
-            'K1' => 'Plan Amount',
-            'L1' => 'Result',
-            'M1' => 'Result Amount',
-            'N1' => 'Remaining',
-            'O1' => 'Rem Amount',
+            'D1' => 'Plant',
+            'E1' => 'Kategori',
+            'F1' => 'Material Code',
+            'G1' => 'Description',
+            'H1' => 'PO No.',
+            'I1' => 'Currency',
+            'J1' => 'Price',
+            'K1' => 'Plan',
+            'L1' => 'Plan Amount',
+            'M1' => 'Result',
+            'N1' => 'Result Amount',
+            'O1' => 'Remaining',
+            'P1' => 'Rem Amount',
         ];
 
         foreach ($headers as $cell => $text) {
@@ -647,10 +671,10 @@ class IntegratedPoIncomingImporter
 
         // Contoh Data
         $sampleData = [
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 'KIP 1', 210, 1778700, 210, 1778700, 0, 0],
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 'KIP 1', 200, 1694000, 126, 1067220, 74, 626780],
-            ['C146', 'PT. SUMBER AGUNG SEJAHTERA ABADI', '2026-07-25', '1311010', 'SCREW B 4X12', 'KI-SAS-0006', 'USD', 2.50, 'KIP 2', 600, 1500, 0, 0, 600, 1500],
-            ['C096', 'CV. BIMASAKTI ANEKA NIAGA', '2026-07-28', '1314002', 'GESPER STRAPPING BAND', 'KI-BSA-0012', 'IDR', 95000, 'KIP 1', 0, 0, 120, 11400000, 0, 0],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 210, 1778700, 210, 1778700, 0, 0],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 200, 1694000, 126, 1067220, 74, 626780],
+            ['C146', 'PT. SUMBER AGUNG SEJAHTERA ABADI', '2026-07-25', 'KIP 2', 'PUR-01', '1311010', 'SCREW B 4X12', 'KI-SAS-0006', 'USD', 2.50, 600, 1500, 0, 0, 600, 1500],
+            ['C096', 'CV. BIMASAKTI ANEKA NIAGA', '2026-07-28', 'KIP 1', 'PUR-02', '1314002', 'GESPER STRAPPING BAND', 'KI-BSA-0012', 'IDR', 95000, 0, 0, 120, 11400000, 0, 0],
         ];
 
         $r = 2;
@@ -664,13 +688,13 @@ class IntegratedPoIncomingImporter
         }
 
         // Styling
-        $sheet->getStyle('A1:O1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:I1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Shared (Dark Slate)
-        $sheet->getStyle('J1:K1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0284C7'); // Master PO (Blue)
-        $sheet->getStyle('L1:M1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('059669'); // Incoming (Emerald)
-        $sheet->getStyle('N1:O1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('D97706'); // Remaining (Amber)
+        $sheet->getStyle('A1:P1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:J1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Shared (Dark Slate)
+        $sheet->getStyle('K1:L1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0284C7'); // Master PO (Blue)
+        $sheet->getStyle('M1:N1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('059669'); // Incoming (Emerald)
+        $sheet->getStyle('O1:P1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('D97706'); // Remaining (Amber)
 
-        foreach (range('A', 'O') as $col) {
+        foreach (range('A', 'P') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -690,14 +714,15 @@ class IntegratedPoIncomingImporter
             'A1' => 'Supplier Code',
             'B1' => 'Supplier Name',
             'C1' => 'Delivery Date',
-            'D1' => 'Material Code',
-            'E1' => 'Description',
-            'F1' => 'PO No.',
-            'G1' => 'Currency',
-            'H1' => 'Price',
-            'I1' => 'Plant',
-            'J1' => 'Plan',
-            'K1' => 'Plan Amount',
+            'D1' => 'Plant',
+            'E1' => 'Kategori',
+            'F1' => 'Material Code',
+            'G1' => 'Description',
+            'H1' => 'PO No.',
+            'I1' => 'Currency',
+            'J1' => 'Price',
+            'K1' => 'Plan',
+            'L1' => 'Plan Amount',
         ];
 
         foreach ($headers as $cell => $text) {
@@ -705,9 +730,9 @@ class IntegratedPoIncomingImporter
         }
 
         $sampleData = [
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 'KIP 1', 210, 1778700],
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 'KIP 1', 200, 1694000],
-            ['C146', 'PT. SUMBER AGUNG SEJAHTERA ABADI', '2026-07-25', '1311010', 'SCREW B 4X12', 'KI-SAS-0006', 'USD', 2.50, 'KIP 2', 600, 1500],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 210, 1778700],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 200, 1694000],
+            ['C146', 'PT. SUMBER AGUNG SEJAHTERA ABADI', '2026-07-25', 'KIP 2', 'PUR-01', '1311010', 'SCREW B 4X12', 'KI-SAS-0006', 'USD', 2.50, 600, 1500],
         ];
 
         $r = 2;
@@ -720,11 +745,11 @@ class IntegratedPoIncomingImporter
             $r++;
         }
 
-        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:I1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Slate
-        $sheet->getStyle('J1:K1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0284C7'); // Blue Plan
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:J1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Slate
+        $sheet->getStyle('K1:L1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('0284C7'); // Blue Plan
 
-        foreach (range('A', 'K') as $col) {
+        foreach (range('A', 'L') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 
@@ -744,14 +769,15 @@ class IntegratedPoIncomingImporter
             'A1' => 'Supplier Code',
             'B1' => 'Supplier Name',
             'C1' => 'Receipt Date',
-            'D1' => 'Material Code',
-            'E1' => 'Description',
-            'F1' => 'PO No.',
-            'G1' => 'Currency',
-            'H1' => 'Price',
-            'I1' => 'Plant',
-            'J1' => 'Result',
-            'K1' => 'Result Amount',
+            'D1' => 'Plant',
+            'E1' => 'Kategori',
+            'F1' => 'Material Code',
+            'G1' => 'Description',
+            'H1' => 'PO No.',
+            'I1' => 'Currency',
+            'J1' => 'Price',
+            'K1' => 'Result',
+            'L1' => 'Result Amount',
         ];
 
         foreach ($headers as $cell => $text) {
@@ -759,9 +785,9 @@ class IntegratedPoIncomingImporter
         }
 
         $sampleData = [
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 'KIP 1', 210, 1778700],
-            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 'KIP 1', 126, 1067220],
-            ['C096', 'CV. BIMASAKTI ANEKA NIAGA', '2026-07-28', '1314002', 'GESPER STRAPPING BAND', 'KI-BSA-0012', 'IDR', 95000, 'KIP 1', 120, 11400000],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-15', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0023', 'IDR', 8470, 210, 1778700],
+            ['C102', 'PT. TRI JAYA TEKNIK KARAWANG', '2026-07-20', 'KIP 1', 'PUR-04', '1312006', 'MAIN BOARD A', 'KI-TJT-0027', 'IDR', 8470, 126, 1067220],
+            ['C096', 'CV. BIMASAKTI ANEKA NIAGA', '2026-07-28', 'KIP 1', 'PUR-02', '1314002', 'GESPER STRAPPING BAND', 'KI-BSA-0012', 'IDR', 95000, 120, 11400000],
         ];
 
         $r = 2;
@@ -774,11 +800,11 @@ class IntegratedPoIncomingImporter
             $r++;
         }
 
-        $sheet->getStyle('A1:K1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
-        $sheet->getStyle('A1:I1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Slate
-        $sheet->getStyle('J1:K1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('059669'); // Emerald Result
+        $sheet->getStyle('A1:L1')->getFont()->setBold(true)->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle('A1:J1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('1E293B'); // Slate
+        $sheet->getStyle('K1:L1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setRGB('059669'); // Emerald Result
 
-        foreach (range('A', 'K') as $col) {
+        foreach (range('A', 'L') as $col) {
             $sheet->getColumnDimension($col)->setAutoSize(true);
         }
 

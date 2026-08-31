@@ -836,6 +836,9 @@ class PurchasingController extends Controller
                 'alert_msg'           => $alertMsg,
                 'status_note'         => $log->status_note,
                 'purchasing_category_id' => $log->purchasing_category_id,
+                'category_code'       => $log->category ? $log->category->category_code : '-',
+                'category_name'       => $log->category ? $log->category->category_name : '-',
+                'factory_code'        => $log->factory_code ?? ($master ? $master->factory_code : 'KIP 1'),
                 'delivery_category_code'  => $log->delivery_category_code ?? 'LOC',
                 'delivery_category_badge' => $log->delivery_category_badge,
                 'created_by'          => $log->user ? $log->user->name : 'System',
@@ -1109,6 +1112,7 @@ class PurchasingController extends Controller
             'po'         => $poNumber,
             'item_code'  => $itemCode,
             'factory_code' => strtoupper(trim($request->input('factory_code', 'KIP 1'))),
+            'category_id' => $request->input('category_id') ?: null,
             'name'       => !empty($validated['name']) ? $validated['name'] : null,
             'qty'        => !empty($validated['qty']) ? (int) $validated['qty'] : 0,
             'price'      => !empty($request->input('price')) ? (float) str_replace(',', '.', (string) $request->input('price')) : 0.0,
@@ -1520,6 +1524,7 @@ class PurchasingController extends Controller
             'search'                 => $search,
             'selectedDeliveryCategory' => $selectedDeliveryCategory,
             'deliveryCategories'     => \App\Models\DeliveryCategory::all(),
+            'categories'             => \App\Models\PurchasingCategory::all(),
             'suppliers'              => $suppliers,
             'selectedSupplier'       => $selectedSupplier,
         ]);
@@ -1665,6 +1670,7 @@ class PurchasingController extends Controller
             'po'        => $poNumber,
             'item_code' => $itemCode,
             'name'      => $request->input('name'),
+            'category_id' => $request->has('category_id') ? ($request->input('category_id') ?: null) : $mp->category_id,
             'qty'       => (int) $request->input('qty', 0),
             'price'     => $request->has('price') ? (float) str_replace(',', '.', (string) $request->input('price')) : ($mp->price ?? 0.0),
             'currency'  => strtoupper(trim($request->input('currency', $mp->currency ?? 'USD'))),
@@ -2671,13 +2677,14 @@ class PurchasingController extends Controller
                     if (!$headerIdx) $headerIdx = 1;
 
                     $header = $fileRows[$headerIdx];
-                    $tglC = 'C'; $suppC = 'B'; $itemC = 'D'; $poC = 'F'; $nameC = 'E'; $targetC = 'I'; $actualC = 'K'; $priceC = 'H'; $amountC = 'J'; $currencyC = 'G';
+                    $tglC = 'C'; $suppC = 'B'; $itemC = 'D'; $poC = 'F'; $nameC = 'E'; $targetC = 'I'; $actualC = 'K'; $priceC = 'H'; $amountC = 'J'; $currencyC = 'G'; $catC = null;
                     foreach ($header as $c => $val) {
                         $aboveVal = isset($fileRows[$headerIdx - 1][$c]) ? strtoupper(trim($fileRows[$headerIdx - 1][$c])) : '';
                         $cv = strtoupper(trim($val ?? ''));
                         $combined = trim($aboveVal . ' ' . $cv);
 
                         if (str_contains($combined, 'TANGGAL') || str_contains($combined, 'RECEIPT') || str_contains($combined, 'DATE')) $tglC = $c;
+                        elseif (str_contains($combined, 'KATEGORI') || str_contains($combined, 'CATEGORY') || $cv === 'KAT') $catC = $c;
                         elseif (str_contains($combined, 'SUPPLIER') || str_contains($combined, 'VENDOR') || str_contains($combined, 'TRADE')) $suppC = $c;
                         elseif ($cv === 'ITEM_CODE' || $cv === 'ITEM CODE' || str_contains($combined, 'MATERIAL CODE') || str_contains($combined, 'PART') || str_contains($combined, 'DRAWING') || $cv === 'PN') $itemC = $c;
                         elseif ($cv === 'ITEM_NAME' || $cv === 'ITEM NAME' || str_contains($combined, 'DESKRIPSI') || str_contains($combined, 'DESCRIPTION') || (str_contains($combined, 'NAMA') && !str_contains($combined, 'SUPPLIER'))) $nameC = $c;
@@ -2714,6 +2721,7 @@ class PurchasingController extends Controller
                             'itemcode' => $ic,
                             'po'       => $poNum,
                             'name'     => trim($r[$nameC] ?? ''),
+                            'category' => $catC ? trim((string)($r[$catC] ?? '')) : null,
                             'target_order' => $this->parseImportQuantity($r[$targetC] ?? 0),
                             'actual'       => $this->parseImportQuantity($r[$actualC] ?? 0),
                             '_excel_row'   => $excelRow,
@@ -2883,7 +2891,21 @@ class PurchasingController extends Controller
             $periodMonth = date('Y-m', strtotime($tanggal));
 
             $outstandingItem = $outstandingMap[$item_code] ?? null;
-            $categoryId = $outstandingItem ? $outstandingItem->category_id : $fallbackCategoryId;
+            $rawCat = !empty($r['category']) ? trim((string)$r['category']) : null;
+            $categoryId = null;
+            if (!empty($rawCat)) {
+                $normCat = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($rawCat);
+                $matchedCat = \App\Models\PurchasingCategory::where('category_code', $normCat)
+                    ->orWhere('category_code', $rawCat)
+                    ->orWhere('category_name', 'LIKE', "%{$rawCat}%")
+                    ->first();
+                if ($matchedCat) {
+                    $categoryId = $matchedCat->id;
+                }
+            }
+            if (!$categoryId) {
+                $categoryId = $outstandingItem ? $outstandingItem->category_id : $fallbackCategoryId;
+            }
 
             if ($price <= 0 && $masterPo && isset($masterPo->price) && (float)$masterPo->price > 0) {
                 $price = (float) $masterPo->price;

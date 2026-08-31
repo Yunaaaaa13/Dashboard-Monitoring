@@ -16,6 +16,7 @@ class MasterDictionaryMatcher
 {
     protected array $suppliers = [];
     protected array $materials = [];
+    protected array $categories = [];
     protected array $plants = ['Plant 3', 'Plant 1', 'Plant 2', 'Factory 3', 'Factory 1'];
     protected array $currencies = ['USD', 'IDR', 'JPY', 'EUR', 'SGD'];
 
@@ -35,9 +36,12 @@ class MasterDictionaryMatcher
             $m2 = PurchasingOutstanding::pluck('drawing')->filter()->toArray();
             $m3 = MasterPo::pluck('item_code')->filter()->toArray();
             $this->materials = array_unique(array_filter(array_merge($m1, $m2, $m3)));
+
+            $this->categories = PurchasingCategory::all()->toArray();
         } catch (\Throwable $e) {
             $this->suppliers = [];
             $this->materials = [];
+            $this->categories = [];
         }
     }
 
@@ -202,4 +206,113 @@ class MasterDictionaryMatcher
             'suggested' => $normalized,
         ];
     }
+
+    /**
+     * Cari kecocokan untuk Kategori Material (PUR-01 .. PUR-04 atau nama kategori)
+     *
+     * @param string $input
+     * @param float $minSimilarity
+     * @return array [ 'is_exact' => bool, 'category_id' => ?int, 'category_code' => ?string, 'category_name' => ?string, 'similarity' => float, 'suggested' => ?string ]
+     */
+    public function matchCategory(string $input, float $minSimilarity = 0.65): array
+    {
+        $raw = trim($input);
+        if ($raw === '') {
+            return [
+                'is_exact' => false,
+                'category_id' => null,
+                'category_code' => null,
+                'category_name' => null,
+                'similarity' => 0.0,
+                'suggested' => null,
+            ];
+        }
+
+        $normalizedCode = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($raw);
+        $upperQuery = strtoupper($raw);
+
+        // 1. Exact or normalized category_code match (e.g. PUR-04, PUR 04, PUR04, PUR-O4)
+        foreach ($this->categories as $cat) {
+            $code = strtoupper(trim($cat['category_code'] ?? ''));
+            if ($code === $normalizedCode || $code === $upperQuery) {
+                return [
+                    'is_exact' => true,
+                    'category_id' => (int) $cat['id'],
+                    'category_code' => $code,
+                    'category_name' => $cat['category_name'] ?? '',
+                    'similarity' => 1.0,
+                    'suggested' => $code . ' - ' . ($cat['category_name'] ?? ''),
+                ];
+            }
+        }
+
+        // 2. Substring / code presence match (e.g. "Kategori PUR-04 Material")
+        foreach ($this->categories as $cat) {
+            $code = strtoupper(trim($cat['category_code'] ?? ''));
+            if (!empty($code) && str_contains($upperQuery, $code)) {
+                return [
+                    'is_exact' => true,
+                    'category_id' => (int) $cat['id'],
+                    'category_code' => $code,
+                    'category_name' => $cat['category_name'] ?? '',
+                    'similarity' => 0.95,
+                    'suggested' => $code . ' - ' . ($cat['category_name'] ?? ''),
+                ];
+            }
+        }
+
+        // 3. Name exact or substring match (e.g. "Kayu Akustik", "Finishing", "Resin")
+        foreach ($this->categories as $cat) {
+            $name = strtoupper(trim($cat['category_name'] ?? ''));
+            if (!empty($name) && ($name === $upperQuery || str_contains($upperQuery, $name) || str_contains($name, $upperQuery))) {
+                return [
+                    'is_exact' => true,
+                    'category_id' => (int) $cat['id'],
+                    'category_code' => $cat['category_code'] ?? '',
+                    'category_name' => $cat['category_name'] ?? '',
+                    'similarity' => 0.90,
+                    'suggested' => ($cat['category_code'] ?? '') . ' - ' . ($cat['category_name'] ?? ''),
+                ];
+            }
+        }
+
+        // 4. Fuzzy Levenshtein match on Category Name
+        $bestMatch = null;
+        $highestSim = 0.0;
+
+        foreach ($this->categories as $cat) {
+            $target = strtoupper(trim($cat['category_name'] ?? ''));
+            if (empty($target)) continue;
+
+            $lev = levenshtein($upperQuery, $target);
+            $maxLen = max(strlen($upperQuery), strlen($target));
+            $sim = $maxLen > 0 ? (1 - ($lev / $maxLen)) : 0.0;
+
+            if ($sim > $highestSim) {
+                $highestSim = $sim;
+                $bestMatch = $cat;
+            }
+        }
+
+        if ($highestSim >= $minSimilarity && $bestMatch !== null) {
+            return [
+                'is_exact' => false,
+                'category_id' => (int) $bestMatch['id'],
+                'category_code' => $bestMatch['category_code'] ?? '',
+                'category_name' => $bestMatch['category_name'] ?? '',
+                'similarity' => round($highestSim, 2),
+                'suggested' => ($bestMatch['category_code'] ?? '') . ' - ' . ($bestMatch['category_name'] ?? ''),
+            ];
+        }
+
+        return [
+            'is_exact' => false,
+            'category_id' => null,
+            'category_code' => null,
+            'category_name' => null,
+            'similarity' => round($highestSim, 2),
+            'suggested' => null,
+        ];
+    }
 }
+

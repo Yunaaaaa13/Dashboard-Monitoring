@@ -529,9 +529,9 @@
                                 <th class="text-end text-success">Result Amount</th>
                                 <th class="text-end text-warning">Remaining</th>
                                 <th class="text-end text-warning">Rem Amount</th>
-                                <th class="text-center">Persen</th>
-                                <th class="text-center">Completed</th>
+                                                  <th class="text-center">Completed</th>
                                 <th class="text-center text-warning">Kode Pabrik</th>
+                                <th class="text-center text-info">Kategori</th>
                                 <th>Pencatat / Verifikasi</th>
                                 <th class="text-center">Aksi</th>
                                 <th class="text-center text-nowrap" style="background: rgba(59,130,246,0.15); color: #60a5fa;">Kategori Pengantaran</th>
@@ -584,7 +584,7 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge {{ $isIdr ? 'bg-success bg-opacity-25 text-success border border-success' : 'bg-info bg-opacity-25 text-info border border-info' }} px-2 py-1 fw-bold">
-                                            {{ $isIdr ? 'IDR' : strtoupper($row->currency ?? 'USD') }}
+                                             {{ $isIdr ? 'IDR' : strtoupper($row->currency ?? 'USD') }}
                                         </span>
                                     </td>
                                     <td class="text-end font-monospace fw-semibold text-warning">
@@ -628,6 +628,15 @@
                                     </td>
                                     <td class="text-center">
                                         <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-50 px-2 py-1 font-monospace">{{ $row->factory_code ?? 'KIP 1' }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        @if(!empty($row->category_code) && $row->category_code !== '-')
+                                            <span class="badge bg-primary bg-opacity-25 text-info border border-primary border-opacity-50 px-2 py-1" title="{{ $row->category_name ?? '' }}">
+                                                {{ $row->category_code }}
+                                            </span>
+                                        @else
+                                            <span class="badge bg-secondary bg-opacity-25 text-muted border border-secondary px-2 py-1">-</span>
+                                        @endif
                                     </td>
                                     <td>
                                         <div class="d-flex align-items-center gap-2">
