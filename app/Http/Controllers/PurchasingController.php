@@ -91,14 +91,24 @@ class PurchasingController extends Controller
         $targetOrder   = $overallMetrics['target'];
         $totalPending  = $overallMetrics['pending'];
 
-        $fulfillmentPercentage = $targetOrder > 0 
-            ? round(($totalReceived / $targetOrder) * 100, 1) 
-            : 0;
-
         $targetOutstandingQuery = \App\Models\PurchasingOutstanding::query();
         if ($selectedCategoryId) {
             $targetOutstandingQuery->where('category_id', $selectedCategoryId);
         }
+        if ($selectedSupplier && $selectedSupplier !== 'All') {
+            $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
+            $targetOutstandingQuery->whereIn('supplier_name', $variations);
+        }
+
+        // Jika log penerimaan belum ada, ambil target langsung dari kuantitas order material (Step 1)
+        if ($targetOrder <= 0) {
+            $targetOrder = (int) $targetOutstandingQuery->sum('order_qty');
+            $totalPending = max(0, $targetOrder - $totalReceived);
+        }
+
+        $fulfillmentPercentage = $targetOrder > 0 
+            ? round(($totalReceived / $targetOrder) * 100, 1) 
+            : 0;
         if ($selectedSupplier && $selectedSupplier !== 'All') {
             $variations = \App\Services\DataValidation\InputNormalizer::getSupplierVariations($selectedSupplier);
             $targetOutstandingQuery->whereIn('supplier_name', $variations);
@@ -283,9 +293,13 @@ class PurchasingController extends Controller
 
             $receivedQty = $mMetrics['received'];
 
-            // Master planning forecast requirement across all users
-            $fcQuery = \App\Models\Forecasting::where(function($q) use ($periodStr) {
-                $q->where('periode', $periodStr)->orWhere('period_month', $periodStr);
+            // Master planning forecast requirement across all users (multi-format period matching)
+            $abbrList = $monthNumToAbbr[$num] ?? [];
+            $mShortName = strtoupper(date('M', strtotime($periodStr . '-01')));
+            $allMatchKeys = array_unique(array_merge($abbrList, [$periodStr, $mShortName . '-' . substr($selectedYear, -2), $mShortName . ' ' . $selectedYear]));
+
+            $fcQuery = \App\Models\Forecasting::where(function($q) use ($allMatchKeys) {
+                $q->whereIn('periode', $allMatchKeys)->orWhereIn('period_month', $allMatchKeys);
             });
             if ($selectedUserId) {
                 $fcQuery->where('user_id', $selectedUserId);
@@ -293,6 +307,12 @@ class PurchasingController extends Controller
             $fcPoTarget = (int) $fcQuery->sum('po_qty');
             if ($fcPoTarget <= 0) {
                 $fcPoTarget = (int) $fcQuery->sum('forecast_qty');
+            }
+            if ($fcPoTarget <= 0) {
+                $mCol = "m{$num}_po";
+                if (\Illuminate\Support\Facades\Schema::hasColumn('purchasing_outstandings', $mCol)) {
+                    $fcPoTarget = (int) \App\Models\PurchasingOutstanding::sum($mCol);
+                }
             }
             $targetQty = max($fcPoTarget, (int)$mMetrics['target']);
             $pendingQty = max(0, $targetQty - $receivedQty);
@@ -397,7 +417,16 @@ class PurchasingController extends Controller
 
             $catReceived = $cMetrics['received'];
             $catTarget   = $cMetrics['target'];
-            $catPending  = $cMetrics['pending'];
+
+            // Fallback cerdas: jika belum ada log incoming di Step 3, ambil target dari Step 1 (PurchasingOutstanding) jika ada item untuk kategori ini
+            if ($catTarget <= 0) {
+                $poItems = \App\Models\PurchasingOutstanding::where('category_id', $cat->id);
+                if ($poItems->exists()) {
+                    $catTarget = (int) $poItems->sum('order_qty');
+                }
+            }
+
+            $catPending  = max(0, $catTarget - $catReceived);
             $catAch      = $catTarget > 0 ? round(($catReceived / $catTarget) * 100, 1) : 0;
 
             // PIC kategori berasal dari akun buyer yang ditautkan pada master kategori.

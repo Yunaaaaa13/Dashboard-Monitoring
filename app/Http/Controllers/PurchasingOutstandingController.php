@@ -2027,23 +2027,23 @@ class PurchasingOutstandingController extends Controller
             $forecastQtyCol = null;
 
             foreach ($combinedHeaders as $col => $headerText) {
-                $ht = strtoupper($headerText);
+                $ht = strtoupper(trim($headerText));
 
                 $leftmostMonthCol = !empty($monthStarts) ? $numToCol(min(array_map($colToNum, $monthStarts))) : 'XFD';
                 $isFieldCol = empty($monthBlocks) || empty($monthStarts) || ($colToNum($col) < $colToNum($leftmostMonthCol));
 
                 if ($isFieldCol) {
-                    if (!$suppCodeCol && preg_match('/(SUPPLIER[\s_]?CODE|KODE[\s_]?SUPPLIER|VENDOR[\s_]?CODE|KODE[\s_]?VENDOR|VEND_CODE|SUPP_CODE)/i', $ht)) {
+                    if (!$suppCodeCol && preg_match('/(SUPPLIER[\s_]?CODE|KODE[\s_]?SUPPLIER|VENDOR[\s_]?CODE|KODE[\s_]?VENDOR|VEND[\s_]?CODE|SUPP[\s_]?CODE|KD[\s_\.]?SUPP|KD[\s_\.]?VENDOR|KD[\s_\.]?SUPPLIER)/i', $ht)) {
                         $suppCodeCol = $col;
-                    } elseif (!$suppCol && preg_match('/(SUPPLIER[\s_]?NAME|NAMA[\s_]?SUPPLIER|NAMA[\s_]?VENDOR|VENDOR[\s_]?NAME|\bSUPPLIER\b|\bVENDOR\b|TRADE[\s_]?NAME|\bSUPP\b)/i', $ht) && !preg_match('/SUPPLIER[\s_]?CODE/i', $ht)) {
+                    } elseif (!$suppCol && preg_match('/(SUPPLIER[\s_]?NAME|NAMA[\s_]?SUPPLIER|NAMA[\s_]?VENDOR|VENDOR[\s_]?NAME|\bSUPPLIER\b|\bVENDOR\b|TRADE[\s_]?NAME|\bSUPP\b)/i', $ht) && !preg_match('/(CODE|KODE|VEND_CODE|SUPP_CODE)/i', $ht)) {
                         $suppCol = $col;
-                    } elseif (!$itemCodeCol && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|\bPN\b|\bDRAWING\b|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL)/i', $ht)) {
-                        $itemCodeCol = $col;
                     } elseif (!$factoryCodeCol && preg_match('/(FACTORY[\s_]?CODE|KODE[\s_]?PABRIK|\bFACTORY\b|\bPLANT\b|\bPABRIK\b)/i', $ht)) {
                         $factoryCodeCol = $col;
                     } elseif (!$categoryCol && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL|\bPUR[\s\-_]?\d{2}\b)/i', $ht)) {
                         $categoryCol = $col;
-                    } elseif (!$descCol && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|MATERIAL[\s_]?NAME)/i', $ht)) {
+                    } elseif (!$itemCodeCol && !preg_match('/(SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK|KATEGORI|CATEGORY|PUR[\s\-_]?\d)/i', $ht) && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|ITEM[\s_]?NO|NO[\s_\.]?PART|NO[\s_\.]?ITEM|NO[\s_\.]?BARANG|NO[\s_\.]?MATERIAL|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL|KODE[\s_]?ITEM|KODE[\s_]?PART|\bPN\b|\bP\/N\b|\bDRAWING\b|\bDWG\b|\bKOMPONEN\b|\bSKU\b|PART[\s_]?#|ITEM[\s_]?#|MAT[\s_]?#|MAT[\s_]?CODE|\bITEM\b|\bPART\b|\bPARTS\b|\bMATERIAL\b)/i', $ht)) {
+                        $itemCodeCol = $col;
+                    } elseif (!$descCol && !preg_match('/(KATEGORI|CATEGORY|PUR[\s\-_]?\d|SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK)/i', $ht) && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|MATERIAL[\s_]?NAME|PART[\s_]?NAME|PRODUCT[\s_]?NAME|NAMA[\s_]?PRODUK|NAMA[\s_]?ITEM|NAMA[\s_]?PART|NAMA[\s_]?MATERIAL|ITEM[\s_]?DESCRIPTION|MATERIAL[\s_]?DESCRIPTION|PART[\s_]?DESCRIPTION|\bDESC\b|\bDESCR\b|KETERANGAN|\bKET\b|SPESIFIKASI|SPECIFICATION|\bSPEC\b|\bSPECS\b|UKURAN|\bSIZE\b)/i', $ht)) {
                         $descCol = $col;
                     } elseif (!$typeCol && preg_match('/\bTYPE\b|\bTIPE\b|\bMODEL\b|\bSPEC\b/i', $ht)) {
                         $typeCol = $col;
@@ -2082,16 +2082,46 @@ class PurchasingOutstandingController extends Controller
             if ($forecastQtyCol) $forecastCol = $forecastQtyCol;
             if ($poQtyCol)       $poCol       = $poQtyCol;
 
-            // Strict & Standard Positional Fallbacks
-            if (!$itemCodeCol && !$suppCol) {
-                $itemCodeCol = 'B';
-                $suppCol = 'E';
-            } elseif (!$itemCodeCol && $suppCol) {
-                $itemCodeCol = $suppCodeCol ?: ($suppCol === 'B' ? 'F' : 'B');
-            } elseif ($itemCodeCol && !$suppCol) {
-                $suppCol = $suppCodeCol ?: ($itemCodeCol === 'B' ? 'E' : 'B');
+            // Safe positional fallbacks that NEVER collide with suppCodeCol, suppCol, factoryCodeCol, or categoryCol
+            $excludedCols = array_filter([$suppCodeCol, $suppCol, $factoryCodeCol, $categoryCol, $priceCol, $currencyCol]);
+
+            if (!$itemCodeCol) {
+                foreach ($allHeaderCols as $c) {
+                    if ($colToNum($c) < $colToNum($leftmostMonthCol) && !in_array($c, $excludedCols, true)) {
+                        $itemCodeCol = $c;
+                        $excludedCols[] = $c;
+                        break;
+                    }
+                }
+                if (!$itemCodeCol) {
+                    foreach (['E', 'F', 'B', 'C', 'D'] as $c) {
+                        if (!in_array($c, $excludedCols, true)) {
+                            $itemCodeCol = $c;
+                            $excludedCols[] = $c;
+                            break;
+                        }
+                    }
+                }
             }
-            if (!$descCol)        $descCol        = 'C';
+
+            if (!$descCol) {
+                foreach ($allHeaderCols as $c) {
+                    if ($colToNum($c) < $colToNum($leftmostMonthCol) && !in_array($c, $excludedCols, true) && $c !== $itemCodeCol) {
+                        $descCol = $c;
+                        $excludedCols[] = $c;
+                        break;
+                    }
+                }
+                if (!$descCol) {
+                    foreach (['F', 'E', 'D', 'C'] as $c) {
+                        if (!in_array($c, $excludedCols, true) && $c !== $itemCodeCol) {
+                            $descCol = $c;
+                            break;
+                        }
+                    }
+                }
+            }
+
             if (!$factoryCodeCol) $factoryCodeCol = 'D';
             if (!$priceCol)       $priceCol       = 'F';
             if (!$currencyCol)    $currencyCol    = 'G';
@@ -2107,11 +2137,7 @@ class PurchasingOutstandingController extends Controller
             $firstCategory = $allCategories->where('status', 'Active')->first() ?? $allCategories->first();
             $defaultCatId = $firstCategory ? $firstCategory->id : 1;
 
-            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $dataStartRowIdx, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, &$allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
-                $existingRows = PurchasingOutstanding::orderBy('id', 'asc')->get();
-                $existingCount = $existingRows->count();
-                $rowIndex = 0;
-
+            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $dataStartRowIdx, $allHeaderCols, $colToNum, $leftmostMonthCol, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, &$allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
                 $skipKeywords = ['ITEM CODE', 'ITEM', 'PN', 'PART NUMBER', 'PART NO', 'TOTAL', 'GRAND TOTAL', 'NO', 'ITEM CODE (PK)', 'KATEGORI', 'DESCRIPTION & SUPPLIER', 'DESCRIPTION', 'DESKRIPSI', 'KETERANGAN', 'NOTE', 'SUB TOTAL', 'SUBTOTAL'];
                 $isCompanyName = function(?string $text): bool {
                     if (empty($text)) return false;
@@ -2122,32 +2148,121 @@ class PurchasingOutstandingController extends Controller
                     return false;
                 };
 
+                $isVendorCode = function(?string $text): bool {
+                    if (empty($text)) return false;
+                    return (bool) preg_match('/^C\d{3,4}$/i', trim($text));
+                };
+
+                $isCategoryCode = function(?string $text): bool {
+                    if (empty($text)) return false;
+                    return (bool) preg_match('/^PUR[\s\-_]?0?[1-9]\d*$/i', trim($text));
+                };
+
+                $isPlantCode = function(?string $text): bool {
+                    if (empty($text)) return false;
+                    return (bool) preg_match('/^(KIP|PLANT|PABRIK)\s*[1-4]?$/i', trim($text));
+                };
+
                 $codeOccurrences = [];
                 $forecastingBatch = [];
 
                 foreach ($dataRows as $rIdx => $row) {
-                    $rawCode = trim($row[$itemCodeCol] ?? '');
-                    $rawDesc = trim($row[$descCol] ?? '');
-                    $rawSupp = trim($row[$suppCol] ?? '');
-                    $rawSuppCode = $suppCodeCol ? trim($row[$suppCodeCol] ?? '') : '';
+                    $rawCode = trim((string)($row[$itemCodeCol] ?? ''));
+                    $rawDesc = trim((string)($row[$descCol] ?? ''));
+                    $rawSupp = trim((string)($row[$suppCol] ?? ''));
+                    $rawSuppCode = $suppCodeCol ? trim((string)($row[$suppCodeCol] ?? '')) : '';
+                    $rawCategory = $categoryCol ? trim((string)($row[$categoryCol] ?? '')) : '';
+                    $rawFactory = ($factoryCodeCol && !empty(trim((string)($row[$factoryCodeCol] ?? '')))) ? strtoupper(trim((string)$row[$factoryCodeCol])) : '';
 
+                    // Step A: Supplier Disambiguation
                     if ($isCompanyName($rawCode)) {
                         $suppVal = $rawCode;
-                        $itemCodeVal = !empty($rawSupp) && !$isCompanyName($rawSupp) ? $rawSupp : (!empty($rawSuppCode) && !$isCompanyName($rawSuppCode) ? $rawSuppCode : (!empty($rawDesc) ? $rawDesc : $rawCode));
+                        $rawCode = '';
                     } elseif ($isCompanyName($rawSupp)) {
                         $suppVal = $rawSupp;
-                        $itemCodeVal = !empty($rawCode) ? $rawCode : ($rawSuppCode ?: $rawDesc);
                     } else {
-                        $itemCodeVal = !empty($rawCode) ? $rawCode : ($rawDesc ?: $rawSupp);
                         $suppVal = $rawSupp ?: $rawSuppCode;
                     }
 
+                    if ($isVendorCode($rawSupp) && empty($rawSuppCode)) {
+                        $rawSuppCode = $rawSupp;
+                        if (!$isCompanyName($suppVal)) $suppVal = '';
+                    }
+
+                    // Step B: Content-Aware Relocation
+                    // If rawCode was matched to a vendor code (C017) or category code (PUR-03)
+                    if ($isVendorCode($rawCode)) {
+                        if (empty($rawSuppCode)) $rawSuppCode = $rawCode;
+                        $rawCode = '';
+                    } elseif ($isCategoryCode($rawCode)) {
+                        if (empty($rawCategory)) $rawCategory = $rawCode;
+                        $rawCode = '';
+                    }
+
+                    // If rawDesc was matched to a category code (PUR-03) or vendor code (C017) or plant
+                    if ($isCategoryCode($rawDesc)) {
+                        if (empty($rawCategory)) $rawCategory = $rawDesc;
+                        $rawDesc = '';
+                    } elseif ($isVendorCode($rawDesc)) {
+                        if (empty($rawSuppCode)) $rawSuppCode = $rawDesc;
+                        $rawDesc = '';
+                    } elseif ($isPlantCode($rawDesc)) {
+                        if (empty($rawFactory)) $rawFactory = $rawDesc;
+                        $rawDesc = '';
+                    }
+
+                    // Step C: Scan row cells if rawCode or rawDesc are missing
+                    if (empty($rawCode) || empty($rawDesc)) {
+                        foreach ($allHeaderCols as $cKey) {
+                            if ($colToNum($cKey) >= $colToNum($leftmostMonthCol)) continue;
+                            $strVal = trim((string)($row[$cKey] ?? ''));
+                            if ($strVal === '' || in_array(strtoupper($strVal), $skipKeywords, true)) continue;
+
+                            if ($isCompanyName($strVal) && empty($suppVal)) {
+                                $suppVal = $strVal;
+                                continue;
+                            }
+                            if ($isVendorCode($strVal) && empty($rawSuppCode)) {
+                                $rawSuppCode = $strVal;
+                                continue;
+                            }
+                            if ($isCategoryCode($strVal) && empty($rawCategory)) {
+                                $rawCategory = $strVal;
+                                continue;
+                            }
+                            if ($isPlantCode($strVal) && empty($rawFactory)) {
+                                $rawFactory = $strVal;
+                                continue;
+                            }
+
+                            // Candidate for Item Code
+                            if (empty($rawCode) && !$isCompanyName($strVal) && !$isVendorCode($strVal) && !$isCategoryCode($strVal) && !$isPlantCode($strVal)) {
+                                if ((preg_match('/[0-9]/', $strVal) && strlen($strVal) <= 30 && !str_contains($strVal, '  ') && !is_numeric($strVal)) || (is_numeric($strVal) && strlen($strVal) >= 4 && (int)$strVal > 1000 && !str_contains($strVal, '.'))) {
+                                    $rawCode = $strVal;
+                                    continue;
+                                }
+                            }
+
+                            // Candidate for Description
+                            if (empty($rawDesc) && $strVal !== $rawCode && !$isCompanyName($strVal) && !$isVendorCode($strVal) && !$isCategoryCode($strVal) && !$isPlantCode($strVal)) {
+                                if (preg_match('/[a-zA-Z]/', $strVal) && !is_numeric($strVal)) {
+                                    $rawDesc = $strVal;
+                                    continue;
+                                }
+                            }
+                        }
+                    }
+
+                    $itemCodeVal = !empty($rawCode) ? $rawCode : (!empty($rawSuppCode) && !$isVendorCode($rawSuppCode) ? $rawSuppCode : $rawDesc);
+                    if (empty($itemCodeVal) && !empty($rawSuppCode)) {
+                        $itemCodeVal = $rawSuppCode;
+                    }
                     if (empty($itemCodeVal)) continue;
+
                     $itemCodeUpper = strtoupper($itemCodeVal);
                     if (in_array($itemCodeUpper, $skipKeywords) || $parseCellMonth($itemCodeVal) !== null) continue;
                     
                     $itemCodeClean = strtoupper($itemCodeVal);
-                    $rawFactory = ($factoryCodeCol && !empty(trim($row[$factoryCodeCol] ?? ''))) ? strtoupper(trim($row[$factoryCodeCol])) : '';
 
                     $factoryVal = 'KIP 1';
                     if (in_array($rawFactory, ['KIP 1', 'KIP1', 'KIP', 'PLANT 1', 'PLANT1', 'PABRIK 1', 'P1'])) {
@@ -2163,8 +2278,8 @@ class PurchasingOutstandingController extends Controller
                         $factoryVal = 'KIP 1';
                     }
                     
-                    $descVal = !empty($rawDesc) ? $rawDesc : ($itemCodeClean !== $rawCode ? $rawCode : $itemCodeClean);
-                    $typeVal = $typeCol ? trim($row[$typeCol] ?? '') : '';
+                    $descVal = !empty($rawDesc) ? $rawDesc : ($itemCodeClean !== $rawCode && !empty($rawCode) ? $rawCode : $itemCodeClean);
+                    $typeVal = $typeCol ? trim((string)($row[$typeCol] ?? '')) : '';
                     $fullDesc = $typeVal ? ($descVal . ' (' . $typeVal . ')') : $descVal;
                     $suppClean = strtoupper(trim($suppVal ?? ''));
                     $compositeKey = $itemCodeClean . '___' . $factoryVal . '___' . $suppClean;
@@ -2172,6 +2287,15 @@ class PurchasingOutstandingController extends Controller
 
                     $outstandVal = ($outstandCol && isset($row[$outstandCol])) ? (int) $this->parseCleanNumber($row[$outstandCol]) : 0;
                     $stockVal = ($stockCol && isset($row[$stockCol])) ? (int) $this->parseCleanNumber($row[$stockCol]) : 0;
+
+                    // Fallback to Month 0 (Pre-Month) columns if standalone columns were 0 or missing
+                    if ($outstandVal === 0 && isset($monthBlocks[0]['outstandCol']) && isset($row[$monthBlocks[0]['outstandCol']])) {
+                        $outstandVal = (int) $this->parseCleanNumber($row[$monthBlocks[0]['outstandCol']]);
+                    }
+                    if ($stockVal === 0 && isset($monthBlocks[0]['stockCol']) && isset($row[$monthBlocks[0]['stockCol']])) {
+                        $stockVal = (int) $this->parseCleanNumber($row[$monthBlocks[0]['stockCol']]);
+                    }
+
                     $priceVal = $priceCol ? (float) $this->parseCleanNumber($row[$priceCol] ?? 0) : 0.0;
                     $poVal = $poCol ? (int) $this->parseCleanNumber($row[$poCol] ?? 0) : 0;
                     $prodVal = $prodCol ? (int) $this->parseCleanNumber($row[$prodCol] ?? 0) : 0;
@@ -2187,13 +2311,13 @@ class PurchasingOutstandingController extends Controller
                     $currencyVal = $currencyVal ?: $defaultCurrency;
 
                     $resolvedCategoryId = $defaultCatId;
-                    if ($categoryCol && !empty($row[$categoryCol])) {
-                        $rawCategory = trim((string)$row[$categoryCol]);
-                        $normCatCode = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($rawCategory);
+                    $effectiveCategory = !empty($rawCategory) ? $rawCategory : ($categoryCol && !empty($row[$categoryCol]) ? trim((string)$row[$categoryCol]) : '');
+                    if (!empty($effectiveCategory)) {
+                        $normCatCode = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($effectiveCategory);
                         $matchedCategory = $allCategories->first(fn($c) => strtoupper(trim($c->category_code)) === $normCatCode);
                         if (!$matchedCategory) {
                             $catNameMap = ['PUR-01' => 'Raw Material Kayu', 'PUR-02' => 'Raw Material Logam', 'PUR-03' => 'Consumable & Tools', 'PUR-04' => 'Komponen Packing'];
-                            $catName = $catNameMap[$normCatCode] ?? ($rawCategory ?: $normCatCode);
+                            $catName = $catNameMap[$normCatCode] ?? ($effectiveCategory ?: $normCatCode);
                             $matchedCategory = \App\Models\PurchasingCategory::firstOrCreate(
                                 ['category_code' => $normCatCode],
                                 [
@@ -2232,9 +2356,20 @@ class PurchasingOutstandingController extends Controller
                     $createData['order_qty'] = $poVal > 0 ? $poVal : ($totalMonthPo > 0 ? $totalMonthPo : $outstandVal);
                     $createData['amount'] = $createData['order_qty'] * $priceVal;
 
-                    if ($rowIndex < $existingCount) { $existingRows[$rowIndex]->update($createData); $updateCount++; }
-                    else { PurchasingOutstanding::create($createData); $importCount++; }
-                    $rowIndex++;
+                    // Robust Business Key Lookup: part_number + factory_code
+                    PurchasingOutstanding::withoutEvents(function() use ($itemCodeClean, $factoryVal, $createData, &$updateCount, &$importCount) {
+                        $existingItem = PurchasingOutstanding::where('part_number', $itemCodeClean)
+                            ->where('factory_code', $factoryVal)
+                            ->first();
+
+                        if ($existingItem) {
+                            $existingItem->update($createData);
+                            $updateCount++;
+                        } else {
+                            PurchasingOutstanding::create($createData);
+                            $importCount++;
+                        }
+                    });
 
                     $runningOutstand = $outstandVal; $runningStock = $stockVal;
                     foreach ($monthBlocks as $mIdx => $mBlock) {
@@ -2261,9 +2396,8 @@ class PurchasingOutstandingController extends Controller
                         $runningOutstand = $calcOutstanding; $runningStock = $calcStock;
                     }
                 }
-                if ($rowIndex < $existingCount) { for ($k = $rowIndex; $k < $existingCount; $k++) $existingRows[$k]->delete(); }
 
-                \Illuminate\Support\Facades\DB::table('forecastings')->delete();
+                // Update or Insert forecast records without nuking existing categories
                 $userId = \Illuminate\Support\Facades\Auth::id(); $now = now();
                 foreach ($forecastingBatch as $fcData) {
                     \Illuminate\Support\Facades\DB::table('forecastings')->updateOrInsert(

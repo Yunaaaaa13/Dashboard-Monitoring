@@ -2034,21 +2034,29 @@ document.addEventListener('DOMContentLoaded', function() {
                     return keywords.some(kw => clean.includes(kw));
                 };
 
-                // Scan for column positions (Item Code, Factory/Plant, Supplier)
+                // Scan for column positions (Item Code, Factory/Plant, Supplier, Supplier Code)
                 let itemCodeColKey = null;
                 let factoryColKey = null;
                 let suppColKey = null;
+                let suppCodeColKey = null;
 
                 for (let r = 0; r < dataStart; r++) {
                     const hRow = rows[r] || {};
                     for (let colKey in hRow) {
                         const val = String(hRow[colKey] || '').toUpperCase().trim();
                         if (!val) continue;
-                        if (!itemCodeColKey && (
-                            val === 'MATERIAL CODE' || val === 'ITEM CODE' || val === 'PART NUMBER' || val === 'PART NO' ||
+                        if (!suppCodeColKey && (
+                            val === 'SUPPLIER CODE' || val === 'KODE SUPPLIER' || val === 'VENDOR CODE' || val === 'KODE VENDOR' ||
+                            val.includes('SUPPLIER CODE') || val.includes('VENDOR CODE') || val.includes('KD SUPP') || val.includes('KD. SUPP') || val.includes('SUPP CODE')
+                        )) {
+                            suppCodeColKey = colKey;
+                        }
+                        if (!itemCodeColKey && !val.includes('SUPPLIER') && !val.includes('VENDOR') && !val.includes('PLANT') && !val.includes('PABRIK') && !val.includes('KATEGORI') && !val.includes('CATEGORY') && (
+                            val === 'MATERIAL CODE' || val === 'ITEM CODE' || val === 'PART NUMBER' || val === 'PART NO' || val === 'PART NO.' ||
                             val === 'MATERIAL_CODE' || val === 'ITEM_CODE' || val === 'PART_NUMBER' || val === 'KODE MATERIAL' ||
                             val === 'KODE BARANG' || val === 'KODE ITEM' || val === 'KODE PART' || val === 'DRAWING' || val === 'PN' ||
-                            val.includes('MATERIAL CODE') || val.includes('ITEM CODE') || val.includes('PART NUMBER')
+                            val === 'ITEM' || val === 'PART' || val === 'MATERIAL' || val === 'NO. PART' || val === 'NO PART' || val === 'NO. BARANG' ||
+                            val.includes('MATERIAL CODE') || val.includes('ITEM CODE') || val.includes('PART NUMBER') || val.includes('KODE BARANG')
                         )) {
                             itemCodeColKey = colKey;
                         }
@@ -2069,15 +2077,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
                 // Cek duplikasi baris: Part Number + Plant/Factory + Supplier
                 const codeMap = {};
-                const skipList = ['ITEM CODE','ITEM_CODE','PART NUMBER','PART_NUMBER','TOTAL','GRAND TOTAL','NO','KATEGORI','DESCRIPTION'];
+                const skipList = ['ITEM CODE','ITEM_CODE','PART NUMBER','PART_NUMBER','TOTAL','GRAND TOTAL','NO','KATEGORI','DESCRIPTION','DESKRIPSI'];
+                const isVendorCode = (s) => /^C\d{3,4}$/i.test(String(s).trim());
+                const isCategoryCode = (s) => /^PUR[\s\-_]?\d{2}$/i.test(String(s).trim());
                 
                 for (let i = dataStart; i < rows.length; i++) {
                     const row = rows[i];
                     let rawCode = itemCodeColKey ? String(row[itemCodeColKey] || '').trim() : '';
-                    if (!rawCode || isCompanyName(rawCode)) {
-                        for (let cand of ['E', 'B', 'C', 'D', 'A', 'F']) {
+                    if (!rawCode || isCompanyName(rawCode) || isVendorCode(rawCode) || isCategoryCode(rawCode)) {
+                        for (let cand of ['E', 'F', 'B', 'C', 'D', 'A']) {
+                            if (cand === suppCodeColKey) continue;
                             let v = String(row[cand] || '').trim();
-                            if (v && !isCompanyName(v) && !skipList.includes(v.toUpperCase()) && !v.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i)) {
+                            if (v && !isCompanyName(v) && !isVendorCode(v) && !isCategoryCode(v) && !skipList.includes(v.toUpperCase()) && !v.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i)) {
                                 rawCode = v;
                                 break;
                             }
@@ -2085,7 +2096,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
 
                     const code = rawCode.trim().toUpperCase();
-                    if (!code || skipList.includes(code) || code.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i) || isCompanyName(code)) {
+                    if (!code || skipList.includes(code) || code.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i) || isCompanyName(code) || isVendorCode(code) || isCategoryCode(code)) {
                         continue;
                     }
 
