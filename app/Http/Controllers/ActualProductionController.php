@@ -196,12 +196,38 @@ class ActualProductionController extends Controller
             $qty  = (int)$request->qty;
             $plant = strtoupper(trim((string)$request->input('factory_code', 'KIP 1')));
 
+            $desc     = trim((string)$request->input('description', ''));
+            $suppName = trim((string)$request->input('supplier_name', ''));
+            $suppCode = strtoupper(trim((string)$request->input('supplier_code', '')));
+
+            if (empty($desc) || empty($suppName)) {
+                $os = PurchasingOutstanding::where('part_number', $code)->orWhere('drawing', $code)->first();
+                if ($os) {
+                    if (empty($desc)) $desc = $os->description ?: 'Material Item';
+                    if (empty($suppName)) $suppName = $os->supplier_name ?: '';
+                    if (empty($suppCode) && !empty($os->supplier_code)) $suppCode = $os->supplier_code;
+                }
+                if (empty($desc)) {
+                    $mp = MasterPo::where('item_code', $code)->first();
+                    if ($mp) {
+                        $desc = $mp->name ?: 'Material Item';
+                        if (empty($suppName)) $suppName = $mp->supplier ?: '';
+                    }
+                }
+                if (empty($desc)) {
+                    $fc = Forecasting::where('part_number', $code)->first();
+                    if ($fc) {
+                        $desc = $fc->description ?: 'Material Item';
+                    }
+                }
+            }
+
             $actual = ActualProduction::create([
                 'tanggal_produksi'       => $request->tanggal_produksi,
                 'item_code'              => $code,
-                'supplier_code'          => strtoupper(trim((string)$request->input('supplier_code', ''))),
-                'supplier_name'          => trim((string)$request->input('supplier_name', '')),
-                'description'            => trim((string)$request->input('description', '')),
+                'supplier_code'          => $suppCode,
+                'supplier_name'          => $suppName,
+                'description'            => $desc ?: 'Material Item',
                 'factory_code'           => $plant,
                 'qty'                    => $qty,
                 'currency'               => strtoupper(trim((string)$request->input('currency', 'USD'))),

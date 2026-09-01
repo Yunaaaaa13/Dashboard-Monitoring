@@ -993,18 +993,37 @@ class InventoryController extends Controller
         $status = $stock < 0 ? 'DEFICIT' : 'OPTIMAL';
 
         $description = trim($validated['description'] ?? '');
+        $suppName = $validated['supplier_name'] ?? null;
+        $suppCode = $validated['supplier_code'] ?? null;
+
+        $os = PurchasingOutstanding::where('part_number', $itemCodeClean)
+            ->orWhere('drawing', $itemCodeClean)
+            ->first();
+
         if (empty($description)) {
-            $os = PurchasingOutstanding::where('part_number', $itemCodeClean)
-                ->orWhere('drawing', $itemCodeClean)
-                ->first();
             $description = $os?->description ?: 'Material Inventory Item';
+        }
+        if (empty($suppName) && $os) {
+            $suppName = $os->supplier_name ?: null;
+        }
+        if (empty($suppCode) && $os) {
+            $suppCode = $os->supplier_code ?: null;
+        }
+        if (empty($suppName)) {
+            $mp = MasterPo::where('item_code', $itemCodeClean)->first();
+            if ($mp) {
+                $suppName = $mp->supplier ?: null;
+                if (empty($description) || $description === 'Material Inventory Item') {
+                    $description = $mp->name ?: 'Material Inventory Item';
+                }
+            }
         }
 
         Inventory::create([
             'tanggal_inventory' => $validated['tanggal_inventory'],
             'part_number'       => $itemCodeClean,
-            'supplier_code'     => $validated['supplier_code'] ?? null,
-            'supplier_name'     => $validated['supplier_name'] ?? null,
+            'supplier_code'     => $suppCode,
+            'supplier_name'     => $suppName,
             'factory_code'      => $plant,
             'description'       => $description,
             'current_stock'     => $stock,

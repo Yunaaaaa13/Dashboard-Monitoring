@@ -779,6 +779,8 @@
                                                 data-target="{{ $master->order_qty }}"
                                                 data-price="{{ $master->price ?? 0 }}"
                                                 data-currency="{{ $master->currency ?? 'USD' }}"
+                                                data-factory="{{ $master->factory_code ?? 'Plant 3' }}"
+                                                data-delivery="{{ $master->delivery_category_code ?? 'LOC' }}"
                                                 data-date="{{ $master->po_date }}"
                                                 data-category="{{ $master->purchasing_category_id }}">
                                             {{ $master->part_number ?: $master->drawing }} | Spec: {{ $master->drawing ?: '-' }} | {{ $master->description }}
@@ -806,6 +808,8 @@
                                                 data-target="{{ $master->order_qty }}"
                                                 data-price="{{ $master->price ?? 0 }}"
                                                 data-currency="{{ $master->currency ?? 'USD' }}"
+                                                data-factory="{{ $master->factory_code ?? 'Plant 3' }}"
+                                                data-delivery="{{ $master->delivery_category_code ?? 'LOC' }}"
                                                 data-date="{{ $master->po_date }}"
                                                 data-category="{{ $master->purchasing_category_id }}">
                                             PO: {{ $master->po_number ?: $master->part_number }} | Item Code: {{ $master->part_number ?: $master->drawing }} | {{ $master->description }}
@@ -1193,7 +1197,7 @@ function escapeHtml(text) {
 }
 
 // Select item code from popup modal
-function selectItemCodeFromPopup(itemCode, poReference, supplier, name, categoryId, targetOrder, poDate) {
+function selectItemCodeFromPopup(itemCode, poReference, supplier, name, categoryId, targetOrder, poDate, price, currency, factoryCode, deliveryCategory) {
     const inputItemCode = document.getElementById('inputItemCode');
     const inputPoReference = document.getElementById('inputPoReference');
     const inputSupplier = document.getElementById('inputSupplier');
@@ -1202,6 +1206,9 @@ function selectItemCodeFromPopup(itemCode, poReference, supplier, name, category
     const inputTargetOrder = document.getElementById('inputTargetOrder');
     const inputReceiptDate = document.getElementById('inputReceiptDate');
     const inputPeriodMonth = document.getElementById('inputPeriodMonth');
+    const inputPrice = document.getElementById('inputPrice');
+    const inputCurrency = document.getElementById('inputCurrency');
+    const selectDeliveryCategory = document.getElementById('selectDeliveryCategory');
 
     if (inputItemCode) inputItemCode.value = itemCode;
     if (inputPoReference) inputPoReference.value = poReference;
@@ -1209,6 +1216,9 @@ function selectItemCodeFromPopup(itemCode, poReference, supplier, name, category
     if (inputItemName) inputItemName.value = name;
     if (selectCategory) selectCategory.value = categoryId || '';
     if (inputTargetOrder) inputTargetOrder.value = targetOrder || 0;
+    if (price && inputPrice) inputPrice.value = price;
+    if (currency && inputCurrency) inputCurrency.value = currency;
+    if (deliveryCategory && selectDeliveryCategory) selectDeliveryCategory.value = deliveryCategory;
     if (poDate && inputReceiptDate) {
         inputReceiptDate.value = poDate;
         const parts = poDate.split('-');
@@ -1252,6 +1262,10 @@ document.addEventListener('DOMContentLoaded', function() {
             supplier_name: supplierVal,
             target_order: targetVal,
             po_date: dateVal,
+            price: item.price || 0,
+            currency: item.currency || 'USD',
+            factory_code: item.factory_code || 'Plant 3',
+            delivery_category_code: item.delivery_category_code || 'LOC',
             category_id: item.purchasing_category_id || null,
             source: 'Master PO (Step 2)'
         });
@@ -1269,6 +1283,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 supplier_name: item.supplier_name || '',
                 target_order: item.target_order || 0,
                 po_date: item.receipt_date || '',
+                price: item.price || 0,
+                currency: item.currency || 'USD',
+                factory_code: item.factory_code || 'Plant 3',
+                delivery_category_code: item.delivery_category_code || 'LOC',
                 category_id: item.purchasing_category_id,
                 source: 'Realisasi PO (Step 3)'
             });
@@ -1280,6 +1298,12 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (!existing.po_date && item.receipt_date) {
                 existing.po_date = item.receipt_date;
+            }
+            if (!existing.price && item.price) {
+                existing.price = item.price;
+            }
+            if (!existing.currency && item.currency) {
+                existing.currency = item.currency;
             }
         }
     });
@@ -1331,6 +1355,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 const escapedSupplier = escapeHtml(supplierRaw);
                 const escapedDesc = escapeHtml(descRaw);
                 const escapedPoDate = escapeHtml(poDateRaw);
+                const itemPrice = Number(item.price || 0);
+                const itemCurrency = escapeHtml(String(item.currency || 'USD'));
+                const itemFactory = escapeHtml(String(item.factory_code || 'Plant 3'));
+                const itemDelivery = escapeHtml(String(item.delivery_category_code || 'LOC'));
                 
                 let sourceBadge = '';
                 const itemSource = String(item.source || '');
@@ -1351,7 +1379,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     <td>${sourceBadge}</td>
                     <td class="text-center">
                         <button type="button" class="btn btn-sm btn-info px-2 py-1 fw-bold text-dark rounded" 
-                            onclick="selectItemCodeFromPopup('${escapedItemCode}', '${escapedPo}', '${escapedSupplier}', '${escapedDesc}', ${item.category_id || 'null'}, ${targetQty}, '${escapedPoDate}')">
+                            onclick="selectItemCodeFromPopup('${escapedItemCode}', '${escapedPo}', '${escapedSupplier}', '${escapedDesc}', ${item.category_id || 'null'}, ${targetQty}, '${escapedPoDate}', ${itemPrice}, '${itemCurrency}', '${itemFactory}', '${itemDelivery}')">
                             Pilih
                         </button>
                     </td>

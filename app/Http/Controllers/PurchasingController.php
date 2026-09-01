@@ -738,6 +738,10 @@ class PurchasingController extends Controller
                     'description'            => (string) ($po->name ?: 'Material Item'),
                     'supplier_name'          => $po->supplier ? (string) $po->supplier : '',
                     'order_qty'              => (int) $po->qty,
+                    'price'                  => (float) ($po->price ?? 0),
+                    'currency'               => strtoupper(trim((string)($po->currency ?: 'USD'))),
+                    'factory_code'           => (string) ($po->factory_code ?: 'Plant 3'),
+                    'delivery_category_code' => (string) ($po->delivery_category_code ?: 'LOC'),
                     'po_date'                => !empty($po->tanggal) ? date('Y-m-d', strtotime($po->tanggal)) : date('Y-m-d'),
                     'purchasing_category_id' => $po->category_id,
                 ];
