@@ -24,6 +24,13 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
+        try {
+            \App\Models\MasterPo::ensureSchemaIntegrity();
+            \App\Models\PurchasingLog::ensureSchemaIntegrity();
+        } catch (\Throwable $e) {
+            // Ignore if DB connection not ready yet
+        }
+
         View::composer(['purchasing.*', 'partials.*', 'production.*'], function ($view) {
             $registeredItemsMap = [];
             $registeredItems = [];

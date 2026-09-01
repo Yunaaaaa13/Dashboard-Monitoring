@@ -1013,11 +1013,19 @@ class PurchasingController extends Controller
         $inputCurrency = strtoupper(trim($request->input('currency', '')));
         $finalCurrency = !empty($inputCurrency) ? $inputCurrency : strtoupper(trim($masterPo->currency ?? 'USD'));
 
+        $purchasingCatId = $validated['purchasing_category_id'] ?? ($masterPo->category_id ?? null);
+        if (!$purchasingCatId) {
+            $purchasingCatId = \App\Models\PurchasingOutstanding::where('part_number', $itemCodeClean)
+                ->orWhere('drawing', $itemCodeClean)
+                ->value('category_id');
+        }
+
         $log = PurchasingLog::create([
-            'purchasing_category_id' => $validated['purchasing_category_id'] ?? null,
+            'purchasing_category_id' => $purchasingCatId,
             'user_id' => Auth::id(),
             'receipt_date' => $receiptDate,
             'item_code' => $itemCodeClean,
+            'factory_code' => trim((string)$request->input('factory_code', $masterPo->factory_code ?? 'Plant 3')),
             'po_reference' => $poClean,
             'item_name' => $masterPo->name ?: ($validated['item_name'] ?? 'Material Item'),
             'supplier_name' => $masterPo->supplier ?: ($validated['supplier_name'] ?? null),
@@ -1085,18 +1093,7 @@ class PurchasingController extends Controller
 
         $itemCode = $this->normalizePoValue($validated['item_code']);
         $poNumber = $this->normalizePoValue($validated['po']);
-        if (!\App\Models\Forecasting::where('part_number', $itemCode)->exists() && !\App\Models\PurchasingOutstanding::where('part_number', $itemCode)->orWhere('drawing', $itemCode)->exists()) {
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Item Code harus terlebih dahulu terdaftar pada Master Forecast (Step 1).'], 422);
-            }
-            return redirect()->back()->with('error', 'Item Code harus terlebih dahulu terdaftar pada Master Forecast (Step 1).');
-        }
-        if (\App\Models\MasterPo::where('po', $poNumber)->where('item_code', $itemCode)->exists()) {
-            if ($request->wantsJson() || $request->ajax()) {
-                return response()->json(['success' => false, 'message' => 'Pasangan Nomor PO dan Item Code sudah digunakan.'], 422);
-            }
-            return redirect()->back()->with('error', 'Pasangan Nomor PO dan Item Code sudah digunakan.');
-        }
+        $poDate = !empty($validated['tanggal']) ? $validated['tanggal'] : date('Y-m-d');
 
         if (empty($itemCode) || empty($poNumber)) {
             if ($request->wantsJson() || $request->ajax()) {
@@ -1105,17 +1102,79 @@ class PurchasingController extends Controller
             return redirect()->back()->with('error', 'Mohon isi minimal Item Code atau PO Number.');
         }
 
+        // Auto-register item code di Step 1 (PurchasingOutstanding) jika belum ada
+        $existsInStep1 = \App\Models\PurchasingOutstanding::where(function($q) use ($itemCode) {
+            $q->where('part_number', $itemCode)->orWhere('drawing', $itemCode);
+        })->exists() || \App\Models\Forecasting::where('part_number', $itemCode)->exists();
+
+        if (!$existsInStep1) {
+            \App\Models\PurchasingOutstanding::create([
+                'po_number'     => $poNumber,
+                'po_date'       => $poDate,
+                'part_number'   => $itemCode,
+                'drawing'       => $itemCode,
+                'category_id'   => $request->input('category_id') ?: null,
+                'factory_code'  => $request->input('factory_code', 'Plant 3'),
+                'description'   => $validated['name'] ?: $itemCode,
+                'supplier_name' => $validated['supplier'] ?? null,
+                'plan_stock'    => 0,
+                'plan_outstand' => 0,
+                'price'         => !empty($request->input('price')) ? (float) str_replace(',', '.', (string) $request->input('price')) : 0.0,
+                'currency'      => strtoupper(trim($request->input('currency', 'USD'))),
+            ]);
+        }
+
+        if (\App\Models\MasterPo::where('po', $poNumber)->where('item_code', $itemCode)->where('tanggal', $poDate)->exists()) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Entri Master PO dengan No. PO, Item Code, dan Tanggal tersebut sudah terdaftar.'], 422);
+            }
+            return redirect()->back()->with('error', 'Entri Master PO dengan No. PO, Item Code, dan Tanggal tersebut sudah terdaftar.');
+        }
+
+        $catId = $request->input('category_id') ?: null;
+        if (!$catId) {
+            $catId = \App\Models\PurchasingOutstanding::where('part_number', $itemCode)
+                ->orWhere('drawing', $itemCode)
+                ->value('category_id');
+        }
+
+        $itemName = !empty($validated['name']) ? $validated['name'] : null;
+        if (!$itemName) {
+            $itemName = \App\Models\PurchasingOutstanding::where('part_number', $itemCode)
+                ->orWhere('drawing', $itemCode)
+                ->value('description')
+                ?: \App\Models\Forecasting::where('part_number', $itemCode)->value('description');
+        }
+
+        $rawPrice = $request->input('price');
+        $price = !empty($rawPrice) ? (float) str_replace(',', '.', (string) $rawPrice) : 0.0;
+        if ($price <= 0) {
+            $price = (float) (\App\Models\PurchasingOutstanding::where('part_number', $itemCode)->orWhere('drawing', $itemCode)->value('price')
+                ?: \App\Models\Forecasting::where('part_number', $itemCode)->where('price', '>', 0)->value('price')
+                ?: 0.0);
+        }
+
+        $currency = strtoupper(trim($request->input('currency', 'USD')));
+        if ($price > 300 && in_array($currency, ['USD', 'DOLLAR', '$'])) {
+            $currency = 'IDR';
+        }
+
+        $factoryCode = trim((string)$request->input('factory_code', 'Plant 3'));
+        if (empty($factoryCode)) {
+            $factoryCode = 'Plant 3';
+        }
+
         $mp = \App\Models\MasterPo::create([
             'tanggal'    => !empty($validated['tanggal']) ? $validated['tanggal'] : date('Y-m-d'),
             'supplier'   => !empty($validated['supplier']) ? $validated['supplier'] : null,
             'po'         => $poNumber,
             'item_code'  => $itemCode,
-            'factory_code' => strtoupper(trim($request->input('factory_code', 'KIP 1'))),
-            'category_id' => $request->input('category_id') ?: null,
-            'name'       => !empty($validated['name']) ? $validated['name'] : null,
+            'factory_code' => $factoryCode,
+            'category_id' => $catId,
+            'name'       => $itemName ?: $itemCode,
             'qty'        => !empty($validated['qty']) ? (int) $validated['qty'] : 0,
-            'price'      => !empty($request->input('price')) ? (float) str_replace(',', '.', (string) $request->input('price')) : 0.0,
-            'currency'   => strtoupper(trim($request->input('currency', 'USD'))),
+            'price'      => $price,
+            'currency'   => $currency,
             'created_by' => Auth::id(),
             'user_id'    => Auth::id(),
             'delivery_category_code' => $request->input('delivery_category_code', 'LOC'),
@@ -1388,9 +1447,10 @@ class PurchasingController extends Controller
         $finalCurrency = !empty($inputCurrency) ? $inputCurrency : strtoupper(trim($log->currency ?? 'USD'));
 
         $log->update([
-            'purchasing_category_id' => $validated['purchasing_category_id'] ?? null,
+            'purchasing_category_id' => $validated['purchasing_category_id'] ?? $log->purchasing_category_id,
             'receipt_date' => $receiptDate,
             'item_code' => $itemCodeClean,
+            'factory_code' => trim((string)$request->input('factory_code', $log->factory_code ?? 'Plant 3')),
             'po_reference' => $poClean,
             'item_name' => $validated['item_name'] ?? $log->item_name,
             'supplier_name' => $validated['supplier_name'] ?? $log->supplier_name,
@@ -1604,36 +1664,46 @@ class PurchasingController extends Controller
         // Clear static cache in PurchasingOutstanding so getPoForMonth recalculates fresh per month
         \App\Models\PurchasingOutstanding::clearCalcCaches();
 
+        $targetPartNumber = $itemCodeClean;
+        $targetDrawing    = null;
+        $m1Period         = !empty($tanggal) ? date('Y-m', strtotime($tanggal)) : date('Y-m');
+
         $matchedStep1List = \App\Models\PurchasingOutstanding::where('part_number', $itemCodeClean)
             ->orWhere('drawing', $itemCodeClean)
             ->orWhere('description', 'like', "%{$itemCodeClean}%")
             ->get();
 
-        foreach ($matchedStep1List as $matchedStep1) {
-            $targetPartNumber = $matchedStep1->part_number ?: $itemCodeClean;
-            $targetDrawing    = $matchedStep1->drawing;
+        if ($matchedStep1List->isNotEmpty()) {
+            $firstMatched     = $matchedStep1List->first();
+            $targetPartNumber = $firstMatched->part_number ?: $itemCodeClean;
+            $targetDrawing    = $firstMatched->drawing;
+            $m1Period         = $firstMatched->getPeriodForMonth(1) ?: $m1Period;
 
-            for ($i = 1; $i <= 36; $i++) {
-                $period = $matchedStep1->getPeriodForMonth($i);
-                $mNum   = $matchedStep1->getMonthNum($i);
-                $poForMonth = (int) \App\Models\MasterPo::where(function($q) use ($itemCodeClean, $targetPartNumber, $targetDrawing) {
-                        $q->where('item_code', $itemCodeClean)
-                          ->orWhere('item_code', $targetPartNumber)
-                          ->when($targetDrawing, fn($q2) => $q2->orWhere('item_code', $targetDrawing));
-                    })
-                    ->where(function($q) use ($period, $mNum) {
-                        $q->where('tanggal', 'like', "{$period}%")
-                          ->orWhere('tanggal', 'like', "%-{$mNum}-%");
-                    })
-                    ->sum('qty');
+            foreach ($matchedStep1List as $matchedStep1) {
+                $mPart = $matchedStep1->part_number ?: $itemCodeClean;
+                $mDraw = $matchedStep1->drawing;
 
-                $matchedStep1->{"m{$i}_po"} = $poForMonth;
+                for ($i = 1; $i <= 36; $i++) {
+                    $period = $matchedStep1->getPeriodForMonth($i);
+                    $mNum   = $matchedStep1->getMonthNum($i);
+                    $poForMonth = (int) \App\Models\MasterPo::where(function($q) use ($itemCodeClean, $mPart, $mDraw) {
+                            $q->where('item_code', $itemCodeClean)
+                              ->orWhere('item_code', $mPart)
+                              ->when($mDraw, fn($q2) => $q2->orWhere('item_code', $mDraw));
+                        })
+                        ->where(function($q) use ($period, $mNum) {
+                            $q->where('tanggal', 'like', "{$period}%")
+                              ->orWhere('tanggal', 'like', "%-{$mNum}-%");
+                        })
+                        ->sum('qty');
+
+                    $matchedStep1->{"m{$i}_po"} = $poForMonth;
+                }
+                $matchedStep1->save();
             }
-            $matchedStep1->save();
         }
 
         // Scope legacy Forecasting model to first month's period (e.g. 2026-01)
-        $m1Period = $matchedStep1 ? $matchedStep1->getPeriodForMonth(1) : date('Y-m');
         $m1PoSum  = (int) \App\Models\MasterPo::where(function($q) use ($itemCodeClean, $targetPartNumber, $targetDrawing) {
                 $q->where('item_code', $itemCodeClean)
                   ->orWhere('item_code', $targetPartNumber)
@@ -1685,16 +1755,23 @@ class PurchasingController extends Controller
         if (\App\Models\MasterPo::where('po', $poNumber)->where('item_code', $itemCode)->where('id', '!=', $mp->id)->exists()) {
             return redirect()->back()->with('error', 'Pasangan Nomor PO dan Item Code sudah digunakan.');
         }
+        $rawPrice = $request->has('price') ? (float) str_replace(',', '.', (string) $request->input('price')) : ($mp->price ?? 0.0);
+        $curr = strtoupper(trim($request->input('currency', $mp->currency ?? 'USD')));
+        if ($rawPrice > 300 && in_array($curr, ['USD', 'DOLLAR', '$'])) {
+            $curr = 'IDR';
+        }
+
         $mp->update([
-            'tanggal'   => $request->input('tanggal'),
-            'supplier'  => $request->input('supplier'),
+            'tanggal'   => $request->input('tanggal', $mp->tanggal),
+            'supplier'  => $request->input('supplier', $mp->supplier),
             'po'        => $poNumber,
             'item_code' => $itemCode,
-            'name'      => $request->input('name'),
+            'factory_code' => trim((string)$request->input('factory_code', $mp->factory_code ?? 'Plant 3')),
+            'name'      => $request->input('name', $mp->name),
             'category_id' => $request->has('category_id') ? ($request->input('category_id') ?: null) : $mp->category_id,
-            'qty'       => (int) $request->input('qty', 0),
-            'price'     => $request->has('price') ? (float) str_replace(',', '.', (string) $request->input('price')) : ($mp->price ?? 0.0),
-            'currency'  => strtoupper(trim($request->input('currency', $mp->currency ?? 'USD'))),
+            'qty'       => (int) $request->input('qty', $mp->qty),
+            'price'     => $rawPrice,
+            'currency'  => $curr,
             'delivery_category_code' => $request->input('delivery_category_code', $mp->delivery_category_code ?? 'LOC'),
         ]);
 
