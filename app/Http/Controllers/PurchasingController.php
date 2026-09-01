@@ -292,8 +292,7 @@ class PurchasingController extends Controller
             }
             $fcPoTarget = (int) $fcQuery->sum('po_qty');
             if ($fcPoTarget <= 0) {
-                $rawFc = (int) $fcQuery->sum('forecast_qty');
-                $fcPoTarget = ($rawFc > 500000) ? 0 : $rawFc;
+                $fcPoTarget = (int) $fcQuery->sum('forecast_qty');
             }
             $targetQty = max($fcPoTarget, (int)$mMetrics['target']);
             $pendingQty = max(0, $targetQty - $receivedQty);

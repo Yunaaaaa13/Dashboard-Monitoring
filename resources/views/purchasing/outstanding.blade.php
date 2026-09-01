@@ -138,6 +138,38 @@
             border-radius: 16px;
             color: #F3F4F6;
         }
+        .modal-dialog-scrollable .modal-content,
+        .modal-dialog .modal-content {
+            max-height: calc(100vh - 2.5rem) !important;
+            max-height: calc(100dvh - 2.5rem) !important;
+            display: flex !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        .modal-dialog-scrollable form,
+        .modal-dialog .modal-content > form {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            max-height: 100% !important;
+            overflow: hidden !important;
+        }
+        .modal-dialog-scrollable .modal-body,
+        .modal-dialog .modal-content > form > .modal-body {
+            overflow-y: auto !important;
+            flex: 1 1 auto !important;
+            min-height: 0 !important;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,255,255,0.25) transparent;
+        }
+        .modal-dialog-scrollable .modal-footer,
+        .modal-dialog .modal-content > form > .modal-footer {
+            flex-shrink: 0 !important;
+            position: sticky !important;
+            bottom: 0 !important;
+            z-index: 10 !important;
+        }
         .modal-content-dark .text-muted {
             color: #cbd5e1 !important;
         }
@@ -1608,7 +1640,7 @@
 <div class="modal fade" id="modalImportPlant3" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border border-secondary border-opacity-25 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
-            <div class="modal-header px-4 py-3 border-bottom border-secondary border-opacity-25" style="background: #1e293b !important;">
+            <div class="modal-header px-4 py-3 border-bottom border-secondary border-opacity-25" style="background: #1e293b !important; position: sticky; top: 0; z-index: 10;">
                 <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-spreadsheet-fill text-success fs-4"></i>
                     <span>Smart Import Excel (Pemetaan Otomatis v2)</span>
@@ -1617,42 +1649,49 @@
             </div>
             <form action="{{ route('purchasing.outstanding.import') }}" method="POST" enctype="multipart/form-data" id="formImportExcel" onsubmit="showImportProgress()">
                 @csrf
-                <div class="modal-body p-4" style="background: #0b1120 !important;">
-                    <!-- Template Format Reference -->
+                <div class="modal-body p-4 style-scrollbar" style="background: #0b1120 !important; overflow-y: auto; max-height: calc(100vh - 180px);">
+                    <!-- Template Format Reference (Collapsible for Clean Layout) -->
                     <div class="alert border border-info border-opacity-50 text-light p-3 mb-3 rounded-3 small" style="background: rgba(56, 189, 248, 0.08);">
-                        <div class="d-flex align-items-center gap-2 mb-2 fw-bold text-info fs-6">
-                            <i class="bi bi-table"></i> Format Template Excel (3-Baris Header):
+                        <div class="d-flex align-items-center justify-content-between cursor-pointer" data-bs-toggle="collapse" data-bs-target="#collapseTemplateFormat" aria-expanded="true" style="cursor: pointer;">
+                            <div class="d-flex align-items-center gap-2 fw-bold text-info fs-6">
+                                <i class="bi bi-table"></i> Format Template Excel (3-Baris Header):
+                            </div>
+                            <span class="badge bg-info bg-opacity-25 text-info border border-info border-opacity-50" style="font-size: 0.72rem;">
+                                <i class="bi bi-chevron-down me-1"></i>Petunjuk Format
+                            </span>
                         </div>
-                        <div class="table-responsive" style="max-height: 120px;">
-                            <table class="table table-sm table-bordered mb-0" style="font-size: 0.68rem; background: rgba(0,0,0,0.3);">
-                                <tbody>
-                                    <tr style="background: rgba(56, 189, 248, 0.15);">
-                                        <td class="text-white fw-bold">ITEM CODE</td>
-                                        <td class="text-white fw-bold">DESCRIPTION</td>
-                                        <td class="text-white fw-bold">SUPPLIER</td>
-                                        <td class="text-white fw-bold">PRICE</td>
-                                        <td colspan="2" class="text-center text-primary fw-bold">Jun-26</td>
-                                        <td colspan="2" class="text-center text-success fw-bold">Jul-26</td>
-                                    </tr>
-                                    <tr style="background: rgba(56, 189, 248, 0.08);">
-                                        <td></td><td></td><td></td><td></td>
-                                        <td class="text-danger text-center">OUTSTANDING</td>
-                                        <td class="text-info text-center">STOCK</td>
-                                        <td class="text-info text-center">PO</td>
-                                        <td class="text-warning text-center">PROD</td>
-                                    </tr>
-                                    <tr style="background: rgba(56, 189, 248, 0.05);">
-                                        <td></td><td></td><td></td><td></td>
-                                        <td class="text-center text-muted">QTY | AMOUNT</td>
-                                        <td class="text-center text-muted">QTY | AMOUNT</td>
-                                        <td class="text-center text-muted">QTY | AMOUNT</td>
-                                        <td class="text-center text-muted">QTY</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <div class="mt-2 text-muted" style="font-size: 0.72rem;">
-                            <i class="bi bi-info-circle me-1"></i>Header bisa 1-3 baris. Bulan, QTY, AMOUNT terdeteksi otomatis. Data dimulai setelah header terakhir.
+                        <div class="collapse show mt-2" id="collapseTemplateFormat">
+                            <div class="table-responsive" style="max-height: 100px;">
+                                <table class="table table-sm table-bordered mb-0" style="font-size: 0.68rem; background: rgba(0,0,0,0.3);">
+                                    <tbody>
+                                        <tr style="background: rgba(56, 189, 248, 0.15);">
+                                            <td class="text-white fw-bold">ITEM CODE</td>
+                                            <td class="text-white fw-bold">DESCRIPTION</td>
+                                            <td class="text-white fw-bold">SUPPLIER</td>
+                                            <td class="text-white fw-bold">PRICE</td>
+                                            <td colspan="2" class="text-center text-primary fw-bold">Jun-26</td>
+                                            <td colspan="2" class="text-center text-success fw-bold">Jul-26</td>
+                                        </tr>
+                                        <tr style="background: rgba(56, 189, 248, 0.08);">
+                                            <td></td><td></td><td></td><td></td>
+                                            <td class="text-danger text-center">OUTSTANDING</td>
+                                            <td class="text-info text-center">STOCK</td>
+                                            <td class="text-info text-center">PO</td>
+                                            <td class="text-warning text-center">PROD</td>
+                                        </tr>
+                                        <tr style="background: rgba(56, 189, 248, 0.05);">
+                                            <td></td><td></td><td></td><td></td>
+                                            <td class="text-center text-muted">QTY | AMOUNT</td>
+                                            <td class="text-center text-muted">QTY | AMOUNT</td>
+                                            <td class="text-center text-muted">QTY | AMOUNT</td>
+                                            <td class="text-center text-muted">QTY</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-2 text-muted" style="font-size: 0.72rem;">
+                                <i class="bi bi-info-circle me-1"></i>Header bisa 1-3 baris. Bulan, QTY, AMOUNT terdeteksi otomatis. Data dimulai setelah header terakhir.
+                            </div>
                         </div>
                     </div>
 
@@ -1709,7 +1748,7 @@
                                 <div id="previewColumns" class="d-flex flex-wrap gap-1">-</div>
                             </div>
                             <div id="previewWarnings" class="mt-2 d-none">
-                                <div class="alert alert-warning border-warning border-opacity-50 py-2 px-3 mb-0 small" style="background: rgba(245, 158, 11, 0.1);">
+                                <div class="alert alert-warning border-warning border-opacity-50 py-2 px-3 mb-0 small" style="background: rgba(245, 158, 11, 0.1); max-height: 140px; overflow-y: auto; scrollbar-width: thin;">
                                     <i class="bi bi-exclamation-triangle-fill me-1"></i>
                                     <span id="previewWarningText"></span>
                                 </div>
@@ -1729,7 +1768,7 @@
                         <div class="text-muted mt-1" style="font-size: 0.7rem;">Memproses data...</div>
                     </div>
                 </div>
-                <div class="modal-footer px-4 py-3 border-top border-secondary border-opacity-25" style="background: #1e293b !important;">
+                <div class="modal-footer px-4 py-3 border-top border-secondary border-opacity-25" style="background: #1e293b !important; position: sticky; bottom: 0; z-index: 10;">
                     <button type="button" class="btn btn-outline-light rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
                     <button type="submit" id="btnSubmitImport" class="btn btn-success fw-bold rounded-pill px-5 shadow">
                         <i class="bi bi-upload me-1"></i> Upload &amp; Petakan Otomatis
@@ -1747,12 +1786,12 @@
 @endphp
 @if(!empty($dupWarnings) && is_array($dupWarnings))
 <div class="modal fade show" id="modalDuplicatesNotification" tabindex="-1" aria-labelledby="modalDuplicatesNotificationLabel" aria-hidden="true" style="display: block; background: rgba(0,0,0,0.85); z-index: 1060;">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
         <div class="modal-content border border-warning border-opacity-75 shadow-lg" style="background: #0f172a !important; border-radius: 20px; color: #ffffff;">
             <div class="modal-header px-4 py-3 border-bottom border-warning border-opacity-25" style="background: rgba(245, 158, 11, 0.15) !important;">
                 <h5 class="modal-title fw-bold text-warning d-flex align-items-center gap-2" id="modalDuplicatesNotificationLabel">
                     <i class="bi bi-exclamation-triangle-fill fs-3 text-warning"></i>
-                    <span>Peringatan: Item Code Duplikat Terdeteksi</span>
+                    <span>Peringatan: Item Code Duplikat Pada Plant yang Sama Terdeteksi</span>
                 </h5>
                 <button type="button" class="btn-close btn-close-white" onclick="closeDuplicateModal()"></button>
             </div>
@@ -1762,44 +1801,63 @@
                         <i class="bi bi-info-circle-fill me-1"></i> Informasi Pengunggahan File Excel:
                     </div>
                     <div>
-                        Sistem mendeteksi ada <strong>{{ count($dupWarnings) }} Item Code</strong> yang di-input <strong>lebih dari 1 kali</strong> di dalam file Excel yang baru Anda unggah.
+                        Sistem mendeteksi ada <strong>{{ count($dupWarnings) }} entri Item Code</strong> yang di-input <strong>lebih dari 1 kali untuk Plant yang persis sama</strong> di dalam file Excel.
                     </div>
-                    <div class="mt-2 text-muted" style="font-size: 0.76rem;">
-                        <i class="bi bi-check2-circle text-success me-1"></i> <strong>Semua baris di Excel tetap berhasil di-import (100% tersimpan).</strong> Gunakan rincian baris di bawah ini untuk mengecek dan mengoreksi file Excel Anda jika ada kesalahan input.
+                    <div class="mt-2 text-info" style="font-size: 0.78rem;">
+                        <i class="bi bi-info-circle me-1"></i> <strong>Multi-Plant Note:</strong> Item code yang sama namun digunakan oleh Plant berbeda (contoh: <code>KIP 1</code> vs <code>KIP 2</code> vs <code>KIP 4</code>) adalah kebutuhan terpisah yang valid dan <strong>BUKAN</strong> duplikat.
+                    </div>
+                    <div class="mt-1 text-muted" style="font-size: 0.76rem;">
+                        <i class="bi bi-check2-circle text-success me-1"></i> <strong>Semua baris di Excel tetap berhasil di-import (100% tersimpan).</strong>
                     </div>
                 </div>
 
-                <div class="table-responsive rounded-3 border border-secondary border-opacity-25" style="max-height: 320px;">
+                <div class="table-responsive rounded-3 border border-secondary border-opacity-25" style="max-height: 340px;">
                     <table class="table table-dark table-hover table-bordered mb-0 align-middle small" style="font-size: 0.8rem; background: rgba(0,0,0,0.3);">
                         <thead style="background: #1e293b;" class="text-warning fw-bold sticky-top">
                             <tr>
                                 <th style="width: 40px;" class="text-center">No</th>
                                 <th>Item Code / Part Number</th>
-                                <th class="text-center" style="width: 110px;">Frekuensi</th>
+                                <th class="text-center" style="width: 90px;">Plant</th>
+                                <th>Supplier / Vendor</th>
+                                <th class="text-center" style="width: 100px;">Frekuensi</th>
                                 <th>Posisi Baris di Excel</th>
                                 <th>Deskripsi Barang</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($dupWarnings as $idx => $dup)
+                            @php
+                                $dispCode = $dup['part_number'] ?? $dup['code'] ?? '-';
+                                $dispPlant = $dup['factory_code'] ?? $dup['plant'] ?? 'KIP 1';
+                                $dispSupp = !empty($dup['supplier']) ? $dup['supplier'] : '-';
+                                $dispCount = $dup['count'] ?? (is_array($dup['rows'] ?? null) ? count($dup['rows']) : 2);
+                                $dispRows = is_array($dup['rows'] ?? null) ? $dup['rows'] : [];
+                                $dispDesc = is_array($dup['descriptions'] ?? null) ? implode(', ', $dup['descriptions']) : ($dup['description'] ?? '-');
+                            @endphp
                             <tr>
                                 <td class="text-center text-muted fw-bold">{{ $idx + 1 }}</td>
                                 <td class="fw-bold text-warning">
-                                    <code class="px-2 py-1 bg-dark text-warning border border-warning border-opacity-25 rounded">{{ $dup['code'] }}</code>
+                                    <code class="px-2 py-1 bg-dark text-warning border border-warning border-opacity-25 rounded">{{ $dispCode }}</code>
                                 </td>
                                 <td class="text-center">
+                                    <span class="badge bg-primary bg-opacity-25 text-primary border border-primary border-opacity-50 px-2 py-1">
+                                        {{ $dispPlant }}
+                                    </span>
+                                </td>
+                                <td class="text-light">{{ $dispSupp }}</td>
+                                <td class="text-center">
                                     <span class="badge bg-danger bg-opacity-25 text-danger border border-danger border-opacity-50 px-2 py-1">
-                                        <i class="bi bi-layers-fill me-1"></i>{{ $dup['count'] }}x muncul
+                                        <i class="bi bi-layers-fill me-1"></i>{{ $dispCount }}x muncul
                                     </span>
                                 </td>
                                 <td>
                                     <div class="d-flex flex-wrap gap-1">
-                                        @foreach($dup['rows'] as $rNum)
+                                        @foreach($dispRows as $rNum)
                                         <span class="badge bg-warning bg-opacity-25 text-warning border border-secondary border-opacity-25 px-2 py-1">Baris {{ $rNum }}</span>
                                         @endforeach
                                     </div>
                                 </td>
-                                <td class="text-light">{{ implode(', ', $dup['descriptions']) }}</td>
+                                <td class="text-light">{{ $dispDesc }}</td>
                             </tr>
                             @endforeach
                         </tbody>
@@ -1807,7 +1865,7 @@
                 </div>
             </div>
             <div class="modal-footer px-4 py-3 border-top border-secondary border-opacity-25 d-flex justify-content-between" style="background: #1e293b !important;">
-                
+                <span class="text-muted small">Total item duplikat terdeteksi: <strong>{{ count($dupWarnings) }}</strong></span>
                 <button type="button" class="btn btn-warning fw-bold rounded-pill px-5 shadow" onclick="closeDuplicateModal()">
                     <i class="bi bi-check-circle-fill me-1"></i> Tutup
                 </button>
@@ -1842,7 +1900,43 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 const data = new Uint8Array(evt.target.result);
                 const wb = XLSX.read(data, { type: 'array', cellDates: true, dateNF: 'MMM-YY' });
-                const ws = wb.Sheets[wb.SheetNames[0]];
+                
+                // Cari sheet dengan data dan keyword terbanyak (multi-sheet support)
+                let targetSheet = wb.Sheets[wb.SheetNames[0]];
+                let maxSheetScore = -1;
+                let bestSheetName = wb.SheetNames[0];
+
+                const headerKeywords = [
+                    'ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 
+                    'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)', 'MATERIAL CODE', 'MATERIAL_CODE', 'MATERIAL',
+                    'KODE BARANG', 'KODE MATERIAL', 'KODE ITEM', 'KODE PART', 'KOMPONEN', 'SKU', 'CODE'
+                ];
+
+                for (let sName of wb.SheetNames) {
+                    let s = wb.Sheets[sName];
+                    if (!s || !s['!ref']) continue;
+                    let rJson = XLSX.utils.sheet_to_json(s, { header: 'A', raw: true, defval: '' });
+                    if (!rJson || rJson.length === 0) continue;
+
+                    let sScore = 0;
+                    for (let i = 0; i < Math.min(rJson.length, 30); i++) {
+                        let rVals = Object.values(rJson[i]).map(v => String(v ?? '').toUpperCase().trim());
+                        rVals.forEach(v => {
+                            if (!v) return;
+                            if (headerKeywords.some(kw => v === kw || v.includes(kw))) sScore += 10;
+                            if (v.includes('SUPPLIER') || v.includes('VENDOR') || v.includes('PLANT') || v.includes('KATEGORI') || v.includes('PUR-')) sScore += 4;
+                            if (v.includes('OUTSTANDING') || v.includes('STOCK') || v.includes('PO') || v.includes('PROD')) sScore += 3;
+                        });
+                    }
+                    sScore += Math.min(rJson.length, 50);
+                    if (sScore > maxSheetScore) {
+                        maxSheetScore = sScore;
+                        targetSheet = s;
+                        bestSheetName = sName;
+                    }
+                }
+
+                const ws = targetSheet;
                 const rows = XLSX.utils.sheet_to_json(ws, { header: 'A', raw: true, defval: '' });
                 
                 if (!rows || rows.length === 0) {
@@ -1853,18 +1947,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Detect header row with scoring
                 let headerRowIdx = -1;
                 let maxHScore = 0;
-                const headerKeywords = [
-                    'ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 
-                    'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)', 'MATERIAL CODE', 'MATERIAL_CODE', 'MATERIAL',
-                    'KODE BARANG', 'KODE MATERIAL', 'KODE ITEM', 'KODE PART', 'KOMPONEN', 'SKU', 'CODE'
-                ];
-                for (let i = 0; i < Math.min(rows.length, 30); i++) {
+                for (let i = 0; i < Math.min(rows.length, 35); i++) {
                     const rowVals = Object.values(rows[i]).map(v => String(v ?? '').toUpperCase().trim());
                     let score = 0;
                     rowVals.forEach(v => {
                         if (!v) return;
-                        if (headerKeywords.some(kw => v === kw || v.startsWith(kw) || v.includes(kw))) score += 3;
-                        if (v.includes('SUPPLIER') || v.includes('VENDOR') || v.includes('DESCRIPTION') || v.includes('PRICE') || v.includes('PO') || v.includes('STOCK')) score += 1;
+                        if (headerKeywords.some(kw => v === kw || v.startsWith(kw) || v.includes(kw))) score += 4;
+                        if (v.includes('SUPPLIER') || v.includes('VENDOR') || v.includes('DESCRIPTION') || v.includes('PRICE') || v.includes('PO') || v.includes('STOCK') || v.includes('PLANT') || v.includes('KATEGORI')) score += 1;
                     });
                     if (score > maxHScore) {
                         maxHScore = score;
@@ -1878,8 +1967,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const months = new Set();
                 const detectedCols = new Set();
                 
-                // Scan header rows (headerRowIdx ± 2)
-                for (let i = Math.max(0, headerRowIdx - 2); i < Math.min(rows.length, headerRowIdx + 5); i++) {
+                // Scan header rows from row 0 to headerRowIdx + 5
+                for (let i = 0; i < Math.min(rows.length, headerRowIdx + 6); i++) {
                     Object.entries(rows[i]).forEach(([col, val]) => {
                         const str = String(val ?? '').trim();
                         const mMatch = str.match(monthPattern);
@@ -1892,7 +1981,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             const yr = mMatch[2].length === 2 ? '20' + mMatch[2] : mMatch[2];
                             months.add(mShort + '-' + yr.slice(-2));
                         }
-                        // Also detect serial dates
                         if (typeof val === 'number' && val >= 40000 && val <= 50000) {
                             const d = new Date((val - 25569) * 86400000);
                             const mNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
@@ -1903,16 +1991,16 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 // Detect columns
                 const colKeywords = {
-                    'ITEM CODE': 'Item Code', 'PART NUMBER': 'Part Number',
-                    'DESCRIPTION': 'Description', 'DECRIPTION': 'Description',
-                    'SUPPLIER': 'Supplier', 'PRICE': 'Price',
-                    'CURRENCY': 'Currency', 'OUTSTANDING': 'Outstanding',
+                    'ITEM CODE': 'Item Code', 'PART NUMBER': 'Part Number', 'MATERIAL CODE': 'Material Code',
+                    'DESCRIPTION': 'Description', 'DECRIPTION': 'Description', 'KATEGORI': 'Kategori', 'CATEGORY': 'Kategori',
+                    'SUPPLIER': 'Supplier', 'VENDOR': 'Supplier', 'PLANT': 'Plant', 'PRICE': 'Price',
+                    'CURRENCY': 'Currency', 'KURS': 'Currency', 'OUTSTANDING': 'Outstanding',
                     'STOCK': 'Stock', 'PO': 'PO', 'PROD': 'Produksi',
                     'FORECAST': 'Forecast', 'INCOMING': 'Incoming', 'DELIVERY': 'Incoming',
                     'QTY': 'QTY', 'AMOUNT': 'Amount'
                 };
                 
-                for (let i = Math.max(0, headerRowIdx); i < Math.min(rows.length, headerRowIdx + 5); i++) {
+                for (let i = 0; i < Math.min(rows.length, headerRowIdx + 6); i++) {
                     Object.values(rows[i]).forEach(val => {
                         const str = String(val ?? '').toUpperCase().trim();
                         Object.entries(colKeywords).forEach(([key, label]) => {
@@ -1937,33 +2025,84 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 const dataRowCount = Math.max(0, rows.length - dataStart);
                 
-                // Scan for client-side duplicate Item Codes + Factory Code + Supplier
+                // Helper deteksi nama perusahaan (PT, CV, UD, dll)
+                const isCompanyName = function(text) {
+                    if (!text) return false;
+                    const clean = String(text).trim().toUpperCase();
+                    if (/^(PT\b|PT\.|CV\b|CV\.|UD\b|UD\.|FA\b|FA\.|TBK\b|INC\b|LTD\b|CORP\b)/i.test(clean)) return true;
+                    const keywords = ['SEJAHTERA', 'INDONESIA', 'NIAGA', 'BIMASAKTI', 'ANEKA', 'SUMBER', 'AGUNG', 'JAYA', 'ABADI', 'SUKSES', 'PERSERO', 'MAKMUR', 'SENTOSA', 'UTAMA', 'KARYA', 'MANDIRI'];
+                    return keywords.some(kw => clean.includes(kw));
+                };
+
+                // Scan for column positions (Item Code, Factory/Plant, Supplier)
+                let itemCodeColKey = null;
                 let factoryColKey = null;
                 let suppColKey = null;
-                const headerRow = rows[headerRowIdx] || {};
-                for (let colKey in headerRow) {
-                    const val = String(headerRow[colKey] || '').toUpperCase().trim();
-                    if (!factoryColKey && (val.includes('FACTORY') || val.includes('PABRIK') || val.includes('KIP') || val.includes('PLANT'))) {
-                        factoryColKey = colKey;
-                    }
-                    if (!suppColKey && (val.includes('SUPPLIER') || val.includes('VENDOR'))) {
-                        suppColKey = colKey;
+
+                for (let r = 0; r < dataStart; r++) {
+                    const hRow = rows[r] || {};
+                    for (let colKey in hRow) {
+                        const val = String(hRow[colKey] || '').toUpperCase().trim();
+                        if (!val) continue;
+                        if (!itemCodeColKey && (
+                            val === 'MATERIAL CODE' || val === 'ITEM CODE' || val === 'PART NUMBER' || val === 'PART NO' ||
+                            val === 'MATERIAL_CODE' || val === 'ITEM_CODE' || val === 'PART_NUMBER' || val === 'KODE MATERIAL' ||
+                            val === 'KODE BARANG' || val === 'KODE ITEM' || val === 'KODE PART' || val === 'DRAWING' || val === 'PN' ||
+                            val.includes('MATERIAL CODE') || val.includes('ITEM CODE') || val.includes('PART NUMBER')
+                        )) {
+                            itemCodeColKey = colKey;
+                        }
+                        if (!factoryColKey && (
+                            val === 'PLANT' || val === 'FACTORY CODE' || val === 'KODE PABRIK' || val === 'FACTORY' || val === 'PABRIK' ||
+                            val.includes('PLANT') || val.includes('FACTORY') || val.includes('PABRIK')
+                        )) {
+                            factoryColKey = colKey;
+                        }
+                        if (!suppColKey && (
+                            val === 'SUPPLIER NAME' || val === 'NAMA SUPPLIER' || val === 'VENDOR NAME' || val === 'NAMA VENDOR' ||
+                            (val.includes('SUPPLIER') && !val.includes('CODE')) || (val.includes('VENDOR') && !val.includes('CODE'))
+                        )) {
+                            suppColKey = colKey;
+                        }
                     }
                 }
 
+                // Cek duplikasi baris: Part Number + Plant/Factory + Supplier
                 const codeMap = {};
-                const skipList = ['ITEM CODE','ITEM_CODE','PART NUMBER','PART_NUMBER','TOTAL','GRAND TOTAL','NO'];
+                const skipList = ['ITEM CODE','ITEM_CODE','PART NUMBER','PART_NUMBER','TOTAL','GRAND TOTAL','NO','KATEGORI','DESCRIPTION'];
+                
                 for (let i = dataStart; i < rows.length; i++) {
                     const row = rows[i];
-                    const code = String(row['B'] || row['C'] || '').trim().toUpperCase();
-                    const factory = factoryColKey ? String(row[factoryColKey] || 'KIP 1').trim().toUpperCase() : 'KIP 1';
-                    const supp = suppColKey ? String(row[suppColKey] || '').trim().toUpperCase() : '';
-                    const compKey = code + ' [' + factory + (supp ? ' - ' + supp : '') + ']';
-                    if (code && !skipList.includes(code) && !code.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i)) {
-                        if (!codeMap[compKey]) codeMap[compKey] = [];
-                        codeMap[compKey].push(i + 1); // 1-based row number
+                    let rawCode = itemCodeColKey ? String(row[itemCodeColKey] || '').trim() : '';
+                    if (!rawCode || isCompanyName(rawCode)) {
+                        for (let cand of ['E', 'B', 'C', 'D', 'A', 'F']) {
+                            let v = String(row[cand] || '').trim();
+                            if (v && !isCompanyName(v) && !skipList.includes(v.toUpperCase()) && !v.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i)) {
+                                rawCode = v;
+                                break;
+                            }
+                        }
                     }
+
+                    const code = rawCode.trim().toUpperCase();
+                    if (!code || skipList.includes(code) || code.match(/^(PO|PROD|STOCK|QTY|AMOUNT|FORECAST)$/i) || isCompanyName(code)) {
+                        continue;
+                    }
+
+                    let rawFactory = factoryColKey ? String(row[factoryColKey] || '').trim().toUpperCase() : '';
+                    let normFactory = 'KIP 1';
+                    if (rawFactory.includes('4') || rawFactory.includes('P4')) normFactory = 'KIP 4';
+                    else if (rawFactory.includes('3') || rawFactory.includes('P3')) normFactory = 'KIP 3';
+                    else if (rawFactory.includes('2') || rawFactory.includes('P2')) normFactory = 'KIP 2';
+                    else if (rawFactory.includes('1') || rawFactory.includes('P1')) normFactory = 'KIP 1';
+
+                    let rawSupp = suppColKey ? String(row[suppColKey] || '').trim().toUpperCase() : '';
+                    const compKey = code + ' [' + normFactory + (rawSupp ? ' - ' + rawSupp : '') + ']';
+
+                    if (!codeMap[compKey]) codeMap[compKey] = [];
+                    codeMap[compKey].push(i + 1); // 1-based row number
                 }
+
                 const dupEntries = Object.entries(codeMap).filter(([k, v]) => v.length > 1);
 
                 // Update UI
@@ -1994,7 +2133,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (!detectedCols.has('Item Code') && !detectedCols.has('Part Number')) warnings.push('Kolom ITEM CODE / PART NUMBER tidak ditemukan.');
                 if (dataRowCount === 0) warnings.push('Tidak ada baris data terdeteksi setelah header.');
                 if (dupEntries.length > 0) {
-                    const dupDetail = dupEntries.slice(0, 4).map(([k, v]) => `<code>${k}</code> (${v.length}x: Baris ${v.join(', ')})`).join(', ');
+                    const dupDetail = dupEntries.slice(0, 4).map(([k, v]) => {
+                        const rowsShown = v.slice(0, 5).join(', ');
+                        const extra = v.length > 5 ? ` +${v.length - 5} lainnya` : '';
+                        return `<code>${k}</code> (${v.length}x: Baris ${rowsShown}${extra})`;
+                    }).join(', ');
                     warnings.push('⚠️ <strong>Item Code Duplikat:</strong> Terdeteksi <strong>' + dupEntries.length + ' Item Code duplikat</strong> di Excel: ' + dupDetail + (dupEntries.length > 4 ? '...' : ''));
                 }
                 if (dataRowCount > 2000) warnings.push('File sangat besar (' + dataRowCount + ' baris). Proses mungkin memakan waktu lama.');

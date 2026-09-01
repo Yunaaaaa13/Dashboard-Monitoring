@@ -1547,52 +1547,16 @@ class PurchasingOutstandingController extends Controller
                 $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($realPath);
             }
 
-            $sheet = $spreadsheet->getActiveSheet();
-            // Disabling $calculateFormulas (parameter 2 = false) prevents PHP formula recalculation loops on #DIV/0! and complex formulas
-            $rows = $sheet->toArray(null, false, true, true);
-            
-            if (empty($rows)) {
-                return redirect()->back()->with('error', 'File Excel kosong atau tidak terbaca.');
-            }
+            $allSheetNames = $spreadsheet->getSheetNames();
+            $bestSheet = null;
+            $bestSheetScore = -1;
+            $bestRows = [];
 
-            // ==============================================================
-            // 1. DETEKSI BARIS HEADER UTAMA
-            //    Cari baris yang memiliki 'ITEM CODE', 'PART NUMBER', dsb.
-            //    Ini menandai awal dari blok multi-baris header.
-            // ==============================================================
-            $headerRowIdx = null;
-            $bestScore = 0;
             $itemKeywords = [
                 'ITEM CODE', 'ITEM_CODE', 'ITEM', 'PART NUMBER', 'PART_NUMBER', 'PART NO', 'PN', 
                 'DRAWING', 'NO. BARANG', 'ITEM CODE (PK)', 'MATERIAL CODE', 'MATERIAL_CODE', 'MATERIAL',
                 'KODE BARANG', 'KODE MATERIAL', 'KODE ITEM', 'KODE PART', 'KOMPONEN', 'SKU', 'CODE'
             ];
-
-            foreach ($rows as $rIdx => $row) {
-                if ($rIdx > 30) break;
-                $rowScore = 0;
-                foreach ($row as $col => $val) {
-                    $cleanVal = strtoupper(trim((string)($val ?? '')));
-                    if (!$cleanVal) continue;
-                    foreach ($itemKeywords as $ikw) {
-                        if ($cleanVal === $ikw || str_starts_with($cleanVal, $ikw) || str_contains($cleanVal, $ikw)) {
-                            $rowScore += 3;
-                            break;
-                        }
-                    }
-                    if (str_contains($cleanVal, 'SUPPLIER') || str_contains($cleanVal, 'VENDOR') || str_contains($cleanVal, 'DESCRIPTION') || str_contains($cleanVal, 'PRICE') || str_contains($cleanVal, 'PO') || str_contains($cleanVal, 'STOCK')) {
-                        $rowScore += 1;
-                    }
-                }
-                if ($rowScore > $bestScore) {
-                    $bestScore = $rowScore;
-                    $headerRowIdx = $rIdx;
-                }
-            }
-
-            if ($headerRowIdx === null) {
-                $headerRowIdx = 1; // Fallback ke baris 1
-            }
 
             // Helper internal untuk mengurai nilai sel menjadi info bulan (Mendukung Serial Date Excel 46174 & String "JUN-26")
             $parseCellMonth = function($val) {
@@ -1630,14 +1594,100 @@ class PurchasingOutstandingController extends Controller
                 return null;
             };
 
+            // Multi-sheet inspection: cari sheet yang memiliki data dan header yang paling lengkap
+            foreach ($allSheetNames as $sheetName) {
+                $candidateSheet = $spreadsheet->getSheetByName($sheetName);
+                if (!$candidateSheet) continue;
+                $candRows = $candidateSheet->toArray(null, false, true, true);
+                if (empty($candRows)) continue;
+
+                $sheetScore = 0;
+                $dataRowsCount = 0;
+                foreach ($candRows as $rIdx => $cRow) {
+                    if ($rIdx > 35) {
+                        $dataRowsCount++;
+                        continue;
+                    }
+                    foreach ($cRow as $cVal) {
+                        $cleanVal = strtoupper(trim((string)($cVal ?? '')));
+                        if (!$cleanVal) continue;
+                        foreach ($itemKeywords as $ikw) {
+                            if ($cleanVal === $ikw || str_starts_with($cleanVal, $ikw) || str_contains($cleanVal, $ikw)) {
+                                $sheetScore += 10;
+                                break;
+                            }
+                        }
+                        if (str_contains($cleanVal, 'SUPPLIER') || str_contains($cleanVal, 'MATERIAL') || str_contains($cleanVal, 'PLANT') || str_contains($cleanVal, 'KATEGORI') || str_contains($cleanVal, 'PUR-')) {
+                            $sheetScore += 4;
+                        }
+                        if (str_contains($cleanVal, 'OUTSTANDING') || str_contains($cleanVal, 'STOCK') || str_contains($cleanVal, 'PO') || str_contains($cleanVal, 'PROD')) {
+                            $sheetScore += 3;
+                        }
+                        if ($parseCellMonth($cVal) !== null) {
+                            $sheetScore += 5;
+                        }
+                    }
+                }
+                $sheetScore += min($dataRowsCount, 50);
+
+                if ($sheetScore > $bestSheetScore) {
+                    $bestSheetScore = $sheetScore;
+                    $bestSheet = $candidateSheet;
+                    $bestRows = $candRows;
+                }
+            }
+
+            if (empty($bestRows)) {
+                $bestSheet = $spreadsheet->getActiveSheet();
+                $bestRows = $bestSheet ? $bestSheet->toArray(null, false, true, true) : [];
+            }
+            $rows = $bestRows;
+            
+            if (empty($rows)) {
+                return redirect()->back()->with('error', 'File Excel kosong atau tidak terbaca.');
+            }
+
+            // ==============================================================
+            // 1. DETEKSI BARIS HEADER UTAMA
+            //    Cari baris yang memiliki 'ITEM CODE', 'PART NUMBER', 'MATERIAL CODE', dsb.
+            //    Ini menandai awal dari blok multi-baris header.
+            // ==============================================================
+            $headerRowIdx = null;
+            $bestScore = 0;
+
+            foreach ($rows as $rIdx => $row) {
+                if ($rIdx > 35) break;
+                $rowScore = 0;
+                foreach ($row as $col => $val) {
+                    $cleanVal = strtoupper(trim((string)($val ?? '')));
+                    if (!$cleanVal) continue;
+                    foreach ($itemKeywords as $ikw) {
+                        if ($cleanVal === $ikw || str_starts_with($cleanVal, $ikw) || str_contains($cleanVal, $ikw)) {
+                            $rowScore += 4;
+                            break;
+                        }
+                    }
+                    if (str_contains($cleanVal, 'SUPPLIER') || str_contains($cleanVal, 'VENDOR') || str_contains($cleanVal, 'DESCRIPTION') || str_contains($cleanVal, 'PRICE') || str_contains($cleanVal, 'PO') || str_contains($cleanVal, 'STOCK') || str_contains($cleanVal, 'PLANT') || str_contains($cleanVal, 'KATEGORI')) {
+                        $rowScore += 1;
+                    }
+                }
+                if ($rowScore > $bestScore) {
+                    $bestScore = $rowScore;
+                    $headerRowIdx = $rIdx;
+                }
+            }
+
+            if ($headerRowIdx === null) {
+                $headerRowIdx = 1; // Fallback ke baris 1
+            }
+
             // ==============================================================
             // 2. DETEKSI BLOK HEADER MULTI-BARIS (termasuk sub-header bulan)
-            //    Enhanced: Mendukung template 3-baris header (baris bulan,
+            //    Enhanced: Mendukung template 3-4 baris header (baris bulan,
             //    baris group OUTSTANDING/STOCK/PO, baris QTY/AMOUNT).
             //    dataStartRowIdx = baris pertama data nyata (setelah header).
             // ==============================================================
             $dataStartRowIdx = $headerRowIdx + 1;
-            // Extended keyword list untuk mendeteksi sub-header rows
             $subHeaderKeywords = [
                 'PO', 'PROD', 'PRODUKSI', 'STOCK', 'STOK', 'OUTSTANDING',
                 'INVENTORY', 'INVENTORI', 'INV',
@@ -1653,113 +1703,48 @@ class PurchasingOutstandingController extends Controller
                 if (!isset($rows[$scanRow])) break;
                 $rowData = $rows[$scanRow];
                 
-                // Cek apakah baris ini adalah baris sub-header (mengandung nama bulan)
-                $hasMonthName = false;
+                $firstCells = array_values(array_filter(array_map('trim', $rowData)));
+                if (empty($firstCells)) {
+                    continue; // Skip blank lines between headers
+                }
+                
+                $firstCellVal = strtoupper($firstCells[0]);
+                
+                // Hitung berapa sel pada baris ini yang cocok dengan sub-header keywords
+                $matchCount = 0;
+                $nonEmptyCount = 0;
+                $textualMonthMatch = 0;
+                $textMonthPattern = '/\b(JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|SEP|OCT|OKT|NOV|DEC|DES)[\s\-]?\d{2,4}\b/i';
+                
                 foreach ($rowData as $col => $val) {
-                    if ($parseCellMonth($val) !== null) {
-                        $hasMonthName = true;
-                        break;
-                    }
-                }
-                
-                // Jika baris mengandung bulan → pasti sub-header
-                if ($hasMonthName) {
-                    $dataStartRowIdx = $scanRow + 1;
-                    continue;
-                }
-                
-                // Cek kata kunci sub-header di semua sel baris
-                $firstCellKey = array_key_first($rowData);
-                $firstCellVal = strtoupper(trim((string)($rowData[$firstCellKey] ?? '')));
-                
-                // Jika sel pertama berisi teks sub-header umum (bukan item code nyata)
-                if (!empty($firstCellVal) && in_array($firstCellVal, $subHeaderKeywords)) {
-                    $dataStartRowIdx = $scanRow + 1;
-                    continue;
-                }
-                
-                // Enhanced: Hitung berapa banyak sel berisi keyword sub-header vs total sel non-kosong
-                $subHeaderWordCount = 0;
-                $totalTextCells = 0;
-                $totalNonEmptyCells = 0;
-                foreach ($rowData as $val) {
-                    $vClean = strtoupper(trim((string)$val));
-                    if (!empty($vClean)) {
-                        $totalNonEmptyCells++;
-                        if (!is_numeric($vClean)) {
-                            $totalTextCells++;
-                            if (in_array($vClean, $subHeaderKeywords) || $vClean === '%') {
-                                $subHeaderWordCount++;
-                            }
+                    $clean = strtoupper(trim((string)($val ?? '')));
+                    if (!empty($clean)) {
+                        $nonEmptyCount++;
+                        if (in_array($clean, $subHeaderKeywords)) {
+                            $matchCount++;
+                        }
+                        if (preg_match($textMonthPattern, $clean)) {
+                            $textualMonthMatch++;
                         }
                     }
                 }
                 
-                // Baris kosong di kolom A/B/C tapi punya banyak keyword → sub-header
-                if (empty($firstCellVal)) {
-                    // Jika ada 2+ kata kunci sub-header di baris ini → baris sub-header
-                    if ($subHeaderWordCount >= 2) {
-                        $dataStartRowIdx = $scanRow + 1;
-                        continue;
-                    }
-                    // Jika semua sel teks adalah kata kunci sub-header (100%) → sub-header juga
-                    if ($totalTextCells > 0 && ($subHeaderWordCount / $totalTextCells) >= 0.8) {
-                        $dataStartRowIdx = $scanRow + 1;
-                        continue;
-                    }
-                    // Jika baris hanya berisi QTY dan AMOUNT (row ke-3 dari multi-row header)
-                    $qtyAmountCount = 0;
-                    foreach ($rowData as $val) {
-                        $vClean = strtoupper(trim((string)$val));
-                        if (in_array($vClean, ['QTY', 'BQTY', 'B.QTY', 'B QTY', 'AMOUNT', 'AMT', 'JUMLAH', '%'])) {
-                            $qtyAmountCount++;
-                        }
-                    }
-                    if ($qtyAmountCount >= 2) {
-                        $dataStartRowIdx = $scanRow + 1;
-                        continue;
-                    }
-                }
-                
-                // Enhanced: Jika > 50% sel non-kosong berisi keyword → sub-header
-                if ($totalNonEmptyCells > 0 && $subHeaderWordCount > 0 && ($subHeaderWordCount / $totalNonEmptyCells) >= 0.5) {
+                // Jika baris ini dominan subheader keyword atau baris header bulan lanjutan
+                if ($textualMonthMatch > 0 || in_array($firstCellVal, $subHeaderKeywords) || ($nonEmptyCount > 0 && ($matchCount / $nonEmptyCount) >= 0.4)) {
                     $dataStartRowIdx = $scanRow + 1;
                     continue;
                 }
                 
-                // Jika sel pertama non-kosong dan bukan kata kunci → ini baris data pertama
-                $nonEmptyCells = array_filter($rowData, fn($v) => !empty(trim((string)$v)));
-                $nonEmptyCount = count($nonEmptyCells);
-                if ($nonEmptyCount > 0 && !empty($firstCellVal) && !in_array($firstCellVal, $subHeaderKeywords)) {
-                    // Extra check: Jika sel pertama murni angka kecil (nomor urut) DAN banyak keyword di baris → sub-header
-                    if (is_numeric($firstCellVal) && (int)$firstCellVal <= 10 && $subHeaderWordCount >= 2) {
-                        $dataStartRowIdx = $scanRow + 1;
-                        continue;
-                    }
-                    $dataStartRowIdx = $scanRow;
-                    break;
-                }
-                
-                // Jika semua sel kosong → mungkin baris kosong antara, skip saja
-                if ($nonEmptyCount === 0) {
-                    continue;
-                }
+                // Jika sudah menemukan baris data nyata, stop
+                break;
             }
 
-
             // ==============================================================
-            // 3. BANGUN COMBINED HEADERS dari semua baris header block
-            //    (baris headerRowIdx sampai dataStartRowIdx-1, TIDAK melebihi data)
+            // 3. BANGUN COMBINED HEADERS dari SEMUA baris header block (mulai dari baris 1)
             // ==============================================================
             $combinedHeaders = [];
             $allHeaderCols = [];
-            for ($hRow = $headerRowIdx; $hRow < $dataStartRowIdx; $hRow++) {
-                if (isset($rows[$hRow])) {
-                    $allHeaderCols = array_unique(array_merge($allHeaderCols, array_keys($rows[$hRow])));
-                }
-            }
-            // Juga gabungkan kolom dari 2 baris di atas headerRowIdx (untuk parent merged header)
-            for ($hRow = max(1, $headerRowIdx - 2); $hRow < $headerRowIdx; $hRow++) {
+            for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                 if (isset($rows[$hRow])) {
                     $allHeaderCols = array_unique(array_merge($allHeaderCols, array_keys($rows[$hRow])));
                 }
@@ -1767,7 +1752,7 @@ class PurchasingOutstandingController extends Controller
             
             // Build per-row header texts for fine-grained QTY/AMOUNT detection
             $perRowHeaders = [];
-            for ($hRow = max(1, $headerRowIdx - 2); $hRow < $dataStartRowIdx; $hRow++) {
+            for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                 if (isset($rows[$hRow])) {
                     foreach ($rows[$hRow] as $col => $val) {
                         $v = strtoupper(trim((string)($val ?? '')));
@@ -1780,7 +1765,7 @@ class PurchasingOutstandingController extends Controller
             
             foreach ($allHeaderCols as $col) {
                 $parts = [];
-                for ($hRow = max(1, $headerRowIdx - 2); $hRow < $dataStartRowIdx; $hRow++) {
+                for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                     if (isset($rows[$hRow][$col])) {
                         $v = strtoupper(trim($rows[$hRow][$col]));
                         if ($v && !in_array($v, $parts)) {
@@ -1792,8 +1777,7 @@ class PurchasingOutstandingController extends Controller
             }
 
             // ==============================================================
-            // 4. DETEKSI BULAN LANGSUNG DARI BARIS HEADER (Mendukung Date Serial & String)
-            //    Enhanced: Deteksi QTY vs AMOUNT kolom per bulan
+            // 4. DETEKSI BULAN LANGSUNG DARI SEMUA BARIS HEADER (Baris 1 s/d dataStartRowIdx-1)
             // ==============================================================
             $monthBlocks = [];
             $currentMonthStr = null;
@@ -1802,7 +1786,7 @@ class PurchasingOutstandingController extends Controller
             $monthIndexCount = -1;
             $monthColsScanned = []; // col -> monthIndex
 
-            for ($hRow = max(1, $headerRowIdx - 2); $hRow < $dataStartRowIdx; $hRow++) {
+            for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                 if (!isset($rows[$hRow])) continue;
                 foreach ($rows[$hRow] as $col => $val) {
                     $mInfo = $parseCellMonth($val);
@@ -1814,7 +1798,6 @@ class PurchasingOutstandingController extends Controller
                             $monthIndexCount++;
                             
                             if (!isset($monthBlocks[$monthIndexCount])) {
-                                // Map month short name to numeric month
                                 $monthNumMap = ['JAN'=>1,'FEB'=>2,'MAR'=>3,'APR'=>4,'MAY'=>5,'JUN'=>6,'JUL'=>7,'AUG'=>8,'SEP'=>9,'OCT'=>10,'NOV'=>11,'DEC'=>12];
                                 $mNum = $monthNumMap[$currentMShort] ?? 1;
                                 $periodYYYYMM = $currentYrDigits . '-' . str_pad($mNum, 2, '0', STR_PAD_LEFT);
@@ -1852,13 +1835,12 @@ class PurchasingOutstandingController extends Controller
             $colToNum = fn($c) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::columnIndexFromString($c);
             $numToCol = fn($i) => \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
 
-            // Petakan sub-header PO/PROD/STOCK/INVENTORY/OUTSTANDING/FORECAST ke bulan yang benar
             $monthStarts = [];
             foreach ($monthBlocks as $mIdx => $mBlock) {
                 $monthStarts[$mIdx] = $mBlock['startCol'];
             }
             
-            // Helper: Tentukan month index untuk kolom tertentu (menggunakan perbandingan indeks numerik kolom)
+            // Helper: Tentukan month index untuk kolom tertentu
             $getMonthIdxForCol = function($col) use ($monthColsScanned, $monthStarts, $colToNum) {
                 if (isset($monthColsScanned[$col])) {
                     return $monthColsScanned[$col];
@@ -1879,11 +1861,10 @@ class PurchasingOutstandingController extends Controller
             };
             
             // Pass 1: Detect group headers (OUTSTANDING, STOCK, INVENTORY, PO, FORECAST, DELIVERY, PROD)
-            // These are in row 2 of the multi-row header (the middle row)
-            $colGroupMap = []; // col => 'PO'|'OUTSTANDING'|'STOCK'|'INVENTORY'|'FORECAST'|'DELIVERY'|'PROD'
+            $colGroupMap = [];
             $lastGroupName = null;
             
-            for ($hRow = max(1, $headerRowIdx - 2); $hRow < $dataStartRowIdx; $hRow++) {
+            for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                 if (!isset($rows[$hRow])) continue;
                 foreach ($rows[$hRow] as $col => $val) {
                     $cellVal = strtoupper(trim((string)($val ?? '')));
@@ -1892,44 +1873,33 @@ class PurchasingOutstandingController extends Controller
                     $assignedMonthIdx = $getMonthIdxForCol($col);
                     if ($assignedMonthIdx === null || !isset($monthBlocks[$assignedMonthIdx])) continue;
                     
-                    // Detect group name
                     if (preg_match('/^INVENTORY$|\bINVENTORY\b|\bINVENTORI\b|\bINV\b/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['inventoryCol']) $monthBlocks[$assignedMonthIdx]['inventoryCol'] = $col;
                         $colGroupMap[$col] = 'INVENTORY';
-                        $lastGroupName = 'INVENTORY';
                     } elseif (preg_match('/^PO$|\bPO\b/i', $cellVal) && !preg_match('/OUTSTANDING|STOCK|FORECAST|INVENTORY/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['poCol']) $monthBlocks[$assignedMonthIdx]['poCol'] = $col;
                         $colGroupMap[$col] = 'PO';
-                        $lastGroupName = 'PO';
                     } elseif (preg_match('/^PROD$|\bPROD\b|PRODUKSI/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['prodCol']) $monthBlocks[$assignedMonthIdx]['prodCol'] = $col;
                         $colGroupMap[$col] = 'PROD';
-                        $lastGroupName = 'PROD';
                     } elseif (preg_match('/^STOCK$|\bSTOCK\b|\bSTOK\b/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['stockCol']) $monthBlocks[$assignedMonthIdx]['stockCol'] = $col;
                         $colGroupMap[$col] = 'STOCK';
-                        $lastGroupName = 'STOCK';
                     } elseif (preg_match('/OUTSTANDING/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['outstandCol']) $monthBlocks[$assignedMonthIdx]['outstandCol'] = $col;
                         $colGroupMap[$col] = 'OUTSTANDING';
-                        $lastGroupName = 'OUTSTANDING';
                     } elseif (preg_match('/FORECAST|TARGET/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['forecastCol']) $monthBlocks[$assignedMonthIdx]['forecastCol'] = $col;
                         $colGroupMap[$col] = 'FORECAST';
-                        $lastGroupName = 'FORECAST';
                     } elseif (preg_match('/DELIVERY|DELIVERI/i', $cellVal)) {
                         if (!$monthBlocks[$assignedMonthIdx]['deliveryCol']) $monthBlocks[$assignedMonthIdx]['deliveryCol'] = $col;
                         $colGroupMap[$col] = 'DELIVERY';
-                        $lastGroupName = 'DELIVERY';
                     }
                 }
             }
             
-            // Pass 2: Detect QTY and AMOUNT sub-columns (row 3 of multi-row header)
-            // For each QTY/AMOUNT cell, find which group it belongs to by looking at:
-            //   1. The group header directly above it (same column in row above)
-            //   2. The nearest group header to the left (merged cell scenario)
-            for ($hRow = max(1, $headerRowIdx - 2); $hRow < $dataStartRowIdx; $hRow++) {
+            // Pass 2: Detect QTY and AMOUNT sub-columns
+            for ($hRow = 1; $hRow < $dataStartRowIdx; $hRow++) {
                 if (!isset($rows[$hRow])) continue;
                 foreach ($rows[$hRow] as $col => $val) {
                     $cellVal = strtoupper(trim((string)($val ?? '')));
@@ -1943,11 +1913,10 @@ class PurchasingOutstandingController extends Controller
                     $assignedMonthIdx = $getMonthIdxForCol($col);
                     if ($assignedMonthIdx === null || !isset($monthBlocks[$assignedMonthIdx])) continue;
                     
-                    // Find the parent group: check column directly above, or the nearest group col to the left
                     $parentGroup = null;
                     
                     // Check same column in previous rows
-                    for ($checkRow = $hRow - 1; $checkRow >= max(1, $headerRowIdx - 2); $checkRow--) {
+                    for ($checkRow = $hRow - 1; $checkRow >= 1; $checkRow--) {
                         if (isset($colGroupMap[$col])) {
                             $parentGroup = $colGroupMap[$col];
                             break;
@@ -1964,7 +1933,7 @@ class PurchasingOutstandingController extends Controller
                         }
                     }
                     
-                    // If no parent found directly above, search nearest group to the left in same month
+                    // Search nearest group to the left in same month
                     if (!$parentGroup) {
                         $nearestGroupCol = null;
                         $nearestGroupName = null;
@@ -1985,7 +1954,6 @@ class PurchasingOutstandingController extends Controller
                     $mb = &$monthBlocks[$assignedMonthIdx];
                     
                     if ($isQty) {
-                        // Assign QTY col (prefer first found, don't overwrite)
                         match ($parentGroup) {
                             'INVENTORY'   => $mb['inventoryCol'] = $mb['inventoryCol'] ?? $col,
                             'PO'          => $mb['poCol'] = $mb['poCol'] ?? $col,
@@ -2012,8 +1980,7 @@ class PurchasingOutstandingController extends Controller
                 }
             }
             
-            // Pass 3: For groups with a column but no explicit QTY/AMOUNT sub-columns,
-            // check if the next column is AMOUNT by position (common pattern: QTY then AMOUNT)
+            // Pass 3: Check next column for AMOUNT
             foreach ($monthBlocks as $mIdx => &$mb) {
                 $groups = [
                     'po'        => 'poCol',
@@ -2026,7 +1993,6 @@ class PurchasingOutstandingController extends Controller
                 foreach ($groups as $prefix => $qtyKey) {
                     $amtKey = $prefix . 'AmountCol';
                     if ($mb[$qtyKey] && !$mb[$amtKey]) {
-                        // Check if next column after QTY col has AMOUNT in combined header
                         $nextCol = $numToCol($colToNum($mb[$qtyKey]) + 1);
                         if (isset($combinedHeaders[$nextCol])) {
                             $nextHt = strtoupper($combinedHeaders[$nextCol]);
@@ -2040,7 +2006,7 @@ class PurchasingOutstandingController extends Controller
             unset($mb);
 
             // ==============================================================
-            // 5. DETEKSI KOLOM FIELD (ITEM CODE, DESC, SUPPLIER, PRICE, CURRENCY, KATEGORI, dll.)
+            // 5. DETEKSI KOLOM FIELD (ITEM CODE, DESC, SUPPLIER, PRICE, dll.)
             // ==============================================================
             $itemCodeCol = null;
             $factoryCodeCol = null;
@@ -2070,21 +2036,21 @@ class PurchasingOutstandingController extends Controller
                 if ($isFieldCol) {
                     if (!$suppCodeCol && preg_match('/(SUPPLIER[\s_]?CODE|KODE[\s_]?SUPPLIER|VENDOR[\s_]?CODE|KODE[\s_]?VENDOR|VEND_CODE|SUPP_CODE)/i', $ht)) {
                         $suppCodeCol = $col;
-                    } elseif (!$itemCodeCol && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|\bPN\b|\bDRAWING\b|KODE[\s_]?BARANG)/i', $ht)) {
-                        $itemCodeCol = $col;
-                    } elseif (!$factoryCodeCol && preg_match('/(FACTORY[\s_]?CODE|KODE[\s_]?PABRIK|\bFACTORY\b|\bPLANT\b)/i', $ht)) {
-                        $factoryCodeCol = $col;
-                    } elseif (!$categoryCol && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL)/i', $ht)) {
-                        $categoryCol = $col;
-                    } elseif (!$descCol && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME)/i', $ht)) {
-                        $descCol = $col;
-                    } elseif (!$suppCol && preg_match('/(SUPPLIER|VENDOR|TRADE[\s_]?NAME|\bSUPP\b)/i', $ht)) {
+                    } elseif (!$suppCol && preg_match('/(SUPPLIER[\s_]?NAME|NAMA[\s_]?SUPPLIER|NAMA[\s_]?VENDOR|VENDOR[\s_]?NAME|\bSUPPLIER\b|\bVENDOR\b|TRADE[\s_]?NAME|\bSUPP\b)/i', $ht) && !preg_match('/SUPPLIER[\s_]?CODE/i', $ht)) {
                         $suppCol = $col;
+                    } elseif (!$itemCodeCol && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|\bPN\b|\bDRAWING\b|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL)/i', $ht)) {
+                        $itemCodeCol = $col;
+                    } elseif (!$factoryCodeCol && preg_match('/(FACTORY[\s_]?CODE|KODE[\s_]?PABRIK|\bFACTORY\b|\bPLANT\b|\bPABRIK\b)/i', $ht)) {
+                        $factoryCodeCol = $col;
+                    } elseif (!$categoryCol && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL|\bPUR[\s\-_]?\d{2}\b)/i', $ht)) {
+                        $categoryCol = $col;
+                    } elseif (!$descCol && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|MATERIAL[\s_]?NAME)/i', $ht)) {
+                        $descCol = $col;
                     } elseif (!$typeCol && preg_match('/\bTYPE\b|\bTIPE\b|\bMODEL\b|\bSPEC\b/i', $ht)) {
                         $typeCol = $col;
-                    } elseif (!$priceCol && preg_match('/\bPRICE\b|\bHARGA\b|UNIT PRICE/i', $ht)) {
+                    } elseif (!$priceCol && preg_match('/(UNIT[\s_]?PRICE|HARGA[\s_]?SATUAN|\bPRICE\b|\bHARGA\b)/i', $ht)) {
                         $priceCol = $col;
-                    } elseif (!$currencyCol && preg_match('/CURRENCY|MATA[\s_]?UANG|KURS/i', $ht)) {
+                    } elseif (!$currencyCol && preg_match('/(CURRENCY|MATA[\s_]?UANG|\bKURS\b|\bKU\b)/i', $ht)) {
                         $currencyCol = $col;
                     } elseif (preg_match('/OUTSTANDING/i', $ht)) {
                         if (preg_match('/\bQTY\b|\bUNIT\b|\bJML\b/i', $ht)) {
@@ -2101,10 +2067,7 @@ class PurchasingOutstandingController extends Controller
                             if (!$forecastQtyCol) $forecastQtyCol = $col;
                         }
                         if (!$forecastCol) $forecastCol = $col;
-                    } elseif (
-                        preg_match('/\bPO\b|P\.O\.|\bPURCHASE[\s_]ORDER\b|\bORDER\b/i', $ht) &&
-                        !preg_match('/OUTSTANDING|STOCK|FORECAST/i', $ht)
-                    ) {
+                    } elseif (preg_match('/\bPO\b|P\.O\.|\bPURCHASE[\s_]ORDER\b|\bORDER\b/i', $ht) && !preg_match('/OUTSTANDING|STOCK|FORECAST/i', $ht)) {
                         if (preg_match('/\bQTY\b|\bUNIT\b|\bJML\b/i', $ht)) {
                             if (!$poQtyCol) $poQtyCol = $col;
                         }
@@ -2125,7 +2088,6 @@ class PurchasingOutstandingController extends Controller
                 $itemCodeCol = 'B';
                 $suppCol = 'E';
             } elseif (!$itemCodeCol && $suppCol) {
-                // If suppCol is 'B', item code might be in 'F' or 'E' or another field
                 $itemCodeCol = $suppCodeCol ?: ($suppCol === 'B' ? 'F' : 'B');
             } elseif ($itemCodeCol && !$suppCol) {
                 $suppCol = $suppCodeCol ?: ($itemCodeCol === 'B' ? 'E' : 'B');
@@ -2136,7 +2098,7 @@ class PurchasingOutstandingController extends Controller
             if (!$currencyCol)    $currencyCol    = 'G';
 
             // ==============================================================
-            // 6. PROSES DATA ROWS — Mulai dari $dataStartRowIdx
+            // 6. PROSES DATA ROWS
             // ==============================================================
             $importCount = 0;
             $updateCount = 0;
@@ -2146,29 +2108,21 @@ class PurchasingOutstandingController extends Controller
             $firstCategory = $allCategories->where('status', 'Active')->first() ?? $allCategories->first();
             $defaultCatId = $firstCategory ? $firstCategory->id : 1;
 
-            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, $allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
-                // Fetch existing records ordered by ID for 1-to-1 row index matching with Excel
+            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $dataStartRowIdx, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, &$allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
                 $existingRows = PurchasingOutstanding::orderBy('id', 'asc')->get();
                 $existingCount = $existingRows->count();
                 $rowIndex = 0;
 
                 $skipKeywords = ['ITEM CODE', 'ITEM', 'PN', 'PART NUMBER', 'PART NO', 'TOTAL', 'GRAND TOTAL', 'NO', 'ITEM CODE (PK)', 'KATEGORI', 'DESCRIPTION & SUPPLIER', 'DESCRIPTION', 'DESKRIPSI', 'KETERANGAN', 'NOTE', 'SUB TOTAL', 'SUBTOTAL'];
-
-                // Helper deteksi nama perusahaan / supplier
                 $isCompanyName = function(?string $text): bool {
                     if (empty($text)) return false;
                     $clean = strtoupper(trim($text));
-                    if (preg_match('/^(PT\b|PT\.|CV\b|CV\.|UD\b|UD\.|FA\b|FA\.|TBK\b|INC\b|LTD\b|CORP\b)/i', $clean)) {
-                        return true;
-                    }
+                    if (preg_match('/^(PT\b|PT\.|CV\b|CV\.|UD\b|UD\.|FA\b|FA\.|TBK\b|INC\b|LTD\b|CORP\b)/i', $clean)) return true;
                     $keywords = ['SEJAHTERA', 'INDONESIA', 'NIAGA', 'BIMASAKTI', 'ANEKA', 'SUMBER', 'AGUNG', 'JAYA', 'ABADI', 'SUKSES', 'PERSERO', 'MAKMUR', 'SENTOSA', 'UTAMA', 'KARYA', 'MANDIRI'];
-                    foreach ($keywords as $kw) {
-                        if (str_contains($clean, $kw)) return true;
-                    }
+                    foreach ($keywords as $kw) { if (str_contains($clean, $kw)) return true; }
                     return false;
                 };
 
-                // Track item code occurrences to detect duplicates in Excel
                 $codeOccurrences = [];
                 $forecastingBatch = [];
 
@@ -2178,16 +2132,9 @@ class PurchasingOutstandingController extends Controller
                     $rawSupp = trim($row[$suppCol] ?? '');
                     $rawSuppCode = $suppCodeCol ? trim($row[$suppCodeCol] ?? '') : '';
 
-                    // Evaluasi Disambiguasi: Jika $rawCode adalah Nama Perusahaan (CV./PT.)
                     if ($isCompanyName($rawCode)) {
                         $suppVal = $rawCode;
-                        if (!empty($rawSupp) && !$isCompanyName($rawSupp)) {
-                            $itemCodeVal = $rawSupp;
-                        } elseif (!empty($rawSuppCode) && !$isCompanyName($rawSuppCode)) {
-                            $itemCodeVal = $rawSuppCode;
-                        } else {
-                            $itemCodeVal = !empty($rawDesc) ? $rawDesc : $rawCode;
-                        }
+                        $itemCodeVal = !empty($rawSupp) && !$isCompanyName($rawSupp) ? $rawSupp : (!empty($rawSuppCode) && !$isCompanyName($rawSuppCode) ? $rawSuppCode : (!empty($rawDesc) ? $rawDesc : $rawCode));
                     } elseif ($isCompanyName($rawSupp)) {
                         $suppVal = $rawSupp;
                         $itemCodeVal = !empty($rawCode) ? $rawCode : ($rawSuppCode ?: $rawDesc);
@@ -2197,16 +2144,12 @@ class PurchasingOutstandingController extends Controller
                     }
 
                     if (empty($itemCodeVal)) continue;
-                    
                     $itemCodeUpper = strtoupper($itemCodeVal);
-                    if (in_array($itemCodeUpper, $skipKeywords)) continue;
-                    if ($parseCellMonth($itemCodeVal) !== null) continue;
-                    if (preg_match('/^(PO|PROD|PRODUKSI|STOCK|STOK|OUTSTANDING|QTY|BQTY|FORECAST|TARGET|DELIVERY|RATIO|KETERANGAN|NOTE|%|AMOUNT|AMT)$/i', $itemCodeVal)) continue;
+                    if (in_array($itemCodeUpper, $skipKeywords) || $parseCellMonth($itemCodeVal) !== null) continue;
                     
                     $itemCodeClean = strtoupper($itemCodeVal);
                     $rawFactory = ($factoryCodeCol && !empty(trim($row[$factoryCodeCol] ?? ''))) ? strtoupper(trim($row[$factoryCodeCol])) : '';
 
-                    // Strict factory code matching (max 4-5 chars: KIP 1, KIP 2, KIP 3, KIP 4)
                     $factoryVal = 'KIP 1';
                     if (in_array($rawFactory, ['KIP 1', 'KIP1', 'KIP', 'PLANT 1', 'PLANT1', 'PABRIK 1', 'P1'])) {
                         $factoryVal = 'KIP 1';
@@ -2217,343 +2160,151 @@ class PurchasingOutstandingController extends Controller
                     } elseif (in_array($rawFactory, ['KIP 4', 'KIP4', 'PLANT 4', 'PLANT4', 'PABRIK 4', 'P4'])) {
                         $factoryVal = 'KIP 4';
                     } else {
-                        if (!empty($rawFactory) && $isCompanyName($rawFactory)) {
-                            if (empty($suppVal)) {
-                                $suppVal = trim($row[$factoryCodeCol]);
-                            }
-                        }
+                        if (!empty($rawFactory) && $isCompanyName($rawFactory)) $suppVal = trim($row[$factoryCodeCol]);
                         $factoryVal = 'KIP 1';
                     }
                     
-                    // Description
                     $descVal = !empty($rawDesc) ? $rawDesc : ($itemCodeClean !== $rawCode ? $rawCode : $itemCodeClean);
                     $typeVal = $typeCol ? trim($row[$typeCol] ?? '') : '';
                     $fullDesc = $typeVal ? ($descVal . ' (' . $typeVal . ')') : $descVal;
-
                     $suppClean = strtoupper(trim($suppVal ?? ''));
-
-                    // Catat kemunculan (item_code + factory_code + supplier) & nomor baris Excel untuk notifikasi duplikat
                     $compositeKey = $itemCodeClean . '___' . $factoryVal . '___' . $suppClean;
-                    $codeOccurrences[$compositeKey][] = [
-                        'row'  => $rIdx,
-                        'desc' => $fullDesc . ' [' . $factoryVal . ($suppVal ? ' - ' . $suppVal : '') . ']',
-                    ];
+                    $codeOccurrences[$compositeKey][] = ['row' => $rIdx, 'desc' => $fullDesc];
 
-                    // Baseline Outstanding & Stock dari Month 0 (Premonth = Jun)
-                    $outstandVal  = 0;
-                    $stockVal     = 0;
+                    $outstandVal = ($outstandCol && isset($row[$outstandCol])) ? (int) $this->parseCleanNumber($row[$outstandCol]) : 0;
+                    $stockVal = ($stockCol && isset($row[$stockCol])) ? (int) $this->parseCleanNumber($row[$stockCol]) : 0;
+                    $priceVal = $priceCol ? (float) $this->parseCleanNumber($row[$priceCol] ?? 0) : 0.0;
+                    $poVal = $poCol ? (int) $this->parseCleanNumber($row[$poCol] ?? 0) : 0;
+                    $prodVal = $prodCol ? (int) $this->parseCleanNumber($row[$prodCol] ?? 0) : 0;
+                    if ($prodVal === 0 && ($forecastCol && isset($row[$forecastCol]))) $prodVal = (int) $this->parseCleanNumber($row[$forecastCol]);
 
-                    if (isset($monthBlocks[0])) {
-                        $oCol = $monthBlocks[0]['outstandCol'];
-                        $sCol = $monthBlocks[0]['stockCol'] ?? ($monthBlocks[0]['inventoryCol'] ?? null);
-                        if ($oCol && isset($row[$oCol])) $outstandVal = (int) $this->parseCleanNumber($row[$oCol]);
-                        if ($sCol && isset($row[$sCol])) $stockVal    = (int) $this->parseCleanNumber($row[$sCol]);
-                    }
-
-                    if ($outstandVal === 0 && $outstandCol && isset($row[$outstandCol])) {
-                        $outstandVal = (int) $this->parseCleanNumber($row[$outstandCol]);
-                    }
-                    if ($stockVal === 0 && $stockCol && isset($row[$stockCol])) {
-                        $stockVal = (int) $this->parseCleanNumber($row[$stockCol]);
-                    }
-
-                    // Price
-                    $priceVal    = $priceCol ? (float) $this->parseCleanNumber($row[$priceCol] ?? 0) : 0.0;
-                    $poVal       = $poCol ? (int) $this->parseCleanNumber($row[$poCol] ?? 0) : 0;
-                    $prodVal     = $prodCol ? (int) $this->parseCleanNumber($row[$prodCol] ?? 0) : 0;
-                    $forecastVal = $forecastCol ? (int) $this->parseCleanNumber($row[$forecastCol] ?? 0) : 0;
-                    if ($prodVal === 0 && $forecastVal > 0) {
-                        $prodVal = $forecastVal;
-                    }
-
-                    // Currency
-                    $defaultCurrency = strtoupper(trim($request->input('import_currency', $request->input('currency', 'IDR'))));
-                    if (!in_array($defaultCurrency, ['USD', 'IDR', 'ALL'])) {
-                        $defaultCurrency = 'IDR';
-                    }
-                    if ($defaultCurrency === 'ALL') $defaultCurrency = 'IDR';
-
+                    $defaultCurrency = strtoupper(trim($request->input('import_currency', 'IDR')));
                     $currencyVal = null;
-                    
-                    if ($currencyCol && isset($row[$currencyCol]) && !empty(trim((string)$row[$currencyCol]))) {
+                    if ($currencyCol && isset($row[$currencyCol])) {
                         $rawC = strtoupper(trim((string)$row[$currencyCol]));
-                        if (str_contains($rawC, 'IDR') || str_contains($rawC, 'RUPIAH') || str_contains($rawC, 'RP')) {
-                            $currencyVal = 'IDR';
-                        } elseif (str_contains($rawC, 'USD') || str_contains($rawC, 'DOLLAR') || str_contains($rawC, '$')) {
-                            $currencyVal = 'USD';
-                        }
+                        if (str_contains($rawC, 'IDR') || str_contains($rawC, 'RP')) $currencyVal = 'IDR';
+                        elseif (str_contains($rawC, 'USD') || str_contains($rawC, '$')) $currencyVal = 'USD';
                     }
-                    
-                    if (!$currencyVal && $priceCol) {
-                        $nextColChar = chr(ord($priceCol) + 1);
-                        if (isset($row[$nextColChar]) && !empty(trim((string)$row[$nextColChar]))) {
-                            $rawNext = strtoupper(trim((string)$row[$nextColChar]));
-                            if (str_contains($rawNext, 'IDR') || str_contains($rawNext, 'RUPIAH') || str_contains($rawNext, 'RP')) {
-                                $currencyVal = 'IDR';
-                            } elseif (str_contains($rawNext, 'USD') || str_contains($rawNext, 'DOLLAR') || str_contains($rawNext, '$')) {
-                                $currencyVal = 'USD';
-                            }
-                        }
-                    }
-                    
-                    if (!$currencyVal) {
-                        foreach ($row as $cellVal) {
-                            $cvClean = strtoupper(trim((string)$cellVal));
-                            if (in_array($cvClean, ['IDR', 'RUPIAH', 'RP'])) {
-                                $currencyVal = 'IDR';
-                                break;
-                            } elseif (in_array($cvClean, ['USD', 'DOLLAR', '$'])) {
-                                $currencyVal = 'USD';
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (!$currencyVal) {
-                        $currencyVal = $defaultCurrency;
-                    }
+                    $currencyVal = $currencyVal ?: $defaultCurrency;
 
-                    // Category Resolution dari Kolom Excel (e.g. PUR-04, PUR-01, RM KAYU, PACKING, dll)
-                    $rawCategory = $categoryCol ? trim((string)($row[$categoryCol] ?? '')) : '';
                     $resolvedCategoryId = $defaultCatId;
-
-                    if (!empty($rawCategory)) {
+                    if ($categoryCol && !empty($row[$categoryCol])) {
+                        $rawCategory = trim((string)$row[$categoryCol]);
                         $normCatCode = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($rawCategory);
-                        $upperCat = strtoupper($rawCategory);
-                        $matchedCategory = null;
-
-                        foreach ($allCategories as $cat) {
-                            $catCodeUpper = strtoupper(trim($cat->category_code));
-                            if ($catCodeUpper === $normCatCode || $catCodeUpper === $upperCat || str_contains($upperCat, $catCodeUpper)) {
-                                $matchedCategory = $cat;
-                                break;
-                            }
-                        }
-
+                        $matchedCategory = $allCategories->first(fn($c) => strtoupper(trim($c->category_code)) === $normCatCode);
                         if (!$matchedCategory) {
-                            foreach ($allCategories as $cat) {
-                                $catNameUpper = strtoupper(trim($cat->category_name));
-                                if (!empty($catNameUpper) && (str_contains($upperCat, $catNameUpper) || str_contains($catNameUpper, $upperCat))) {
-                                    $matchedCategory = $cat;
-                                    break;
-                                }
-                            }
+                            $catNameMap = ['PUR-01' => 'Raw Material Kayu', 'PUR-02' => 'Raw Material Logam', 'PUR-03' => 'Consumable & Tools', 'PUR-04' => 'Komponen Packing'];
+                            $catName = $catNameMap[$normCatCode] ?? ($rawCategory ?: $normCatCode);
+                            $matchedCategory = \App\Models\PurchasingCategory::firstOrCreate(
+                                ['category_code' => $normCatCode],
+                                [
+                                    'category_name' => $catName,
+                                    'pic_buyer' => 'Procurement KI',
+                                    'monthly_target_units' => 5000,
+                                    'status' => 'Active',
+                                ]
+                            );
+                            $allCategories = \App\Models\PurchasingCategory::all();
                         }
-
-                        if (!$matchedCategory) {
-                            $matcher = new \App\Services\Ocr\MasterDictionaryMatcher([], $allCategories->toArray());
-                            $matchRes = $matcher->matchCategory($rawCategory);
-                            if (!empty($matchRes['category_id'])) {
-                                $matchedCategory = $allCategories->firstWhere('id', $matchRes['category_id']);
-                            }
-                        }
-
-                        if ($matchedCategory) {
-                            $resolvedCategoryId = $matchedCategory->id;
-                        }
+                        if ($matchedCategory) $resolvedCategoryId = $matchedCategory->id;
                     }
 
+                    $monthlyPoValues = [];
                     $createData = [
-                        'po_number'      => 'PO-' . $itemCodeClean,
-                        'po_date'        => date('Y-m-d'),
-                        'part_number'    => $itemCodeClean,
-                        'factory_code'   => $factoryVal,
-                        'description'    => $fullDesc,
-                        'category_id'    => $resolvedCategoryId,
-                        'order_qty'      => $poVal,
-                        'drawing'        => $typeVal ?: $itemCodeClean,
-                        'price'          => $priceVal,
-                        'currency'       => $currencyVal,
-                        'amount'         => $poVal * $priceVal,
-                        'complete'       => 0,
-                        'status'         => 'Pending',
-                        'workflow_stage' => 'waiting_manager',
-                        'approval_notes' => 'Di-import dari Excel (Smart Mapping Multi-Bulan) - Menunggu Manager',
-                        'supplier_name'  => $suppVal,
-                        'plan_stock'     => $stockVal,
-                        'plan_outstand'  => $outstandVal,
+                        'po_number' => 'PO-' . $itemCodeClean, 'po_date' => date('Y-m-d'), 'part_number' => $itemCodeClean,
+                        'factory_code' => $factoryVal, 'description' => $fullDesc, 'category_id' => $resolvedCategoryId,
+                        'drawing' => $typeVal ?: $itemCodeClean, 'price' => $priceVal, 'currency' => $currencyVal,
+                        'complete' => 0, 'status' => 'Pending', 'workflow_stage' => 'waiting_manager',
+                        'approval_notes' => 'Di-import dari Excel', 'supplier_name' => $suppVal,
+                        'plan_stock' => $stockVal, 'plan_outstand' => $outstandVal
                     ];
 
-                    for ($i = 1; $i <= 36; $i++) {
-                        $mPo   = 0;
-                        $mProd = 0;
-                        $mDel  = 0;
-
+                    for ($i = 0; $i <= 36; $i++) {
+                        $mPo = 0; $mProd = 0;
                         if (isset($monthBlocks[$i])) {
-                            $poC   = $monthBlocks[$i]['poCol'];
-                            $prodC = $monthBlocks[$i]['prodCol'];
-                            $delC  = $monthBlocks[$i]['deliveryCol'];
-
-                            if ($poC && isset($row[$poC])) {
-                                $mPo = (int) $this->parseCleanNumber($row[$poC]);
-                            }
-                            if ($prodC && isset($row[$prodC])) {
-                                $mProd = (int) $this->parseCleanNumber($row[$prodC]);
-                            }
-                            if ($delC && isset($row[$delC])) {
-                                $mDel = (int) $this->parseCleanNumber($row[$delC]);
-                            }
-                        } else {
-                            if ($i === 1) {
-                                $mPo   = $poVal;
-                                $mProd = $prodVal;
-                            }
+                            if ($monthBlocks[$i]['poCol'] && isset($row[$monthBlocks[$i]['poCol']])) $mPo = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['poCol']]);
+                            if ($monthBlocks[$i]['prodCol'] && isset($row[$monthBlocks[$i]['prodCol']])) $mProd = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['prodCol']]);
                         }
-
-                        $createData["m{$i}_po"]   = $mPo;
-                        $createData["m{$i}_prod"] = $mProd;
+                        $createData["m{$i}_po"] = $mPo; $createData["m{$i}_prod"] = $mProd;
+                        if ($mPo > 0) $monthlyPoValues[] = $mPo;
                     }
 
-                    // 1-to-1 Row Index Matching: Setiap baris Excel memetakan tepat 1 record DB
-                    if ($rowIndex < $existingCount) {
-                        $existingRows[$rowIndex]->update($createData);
-                        $updateCount++;
-                    } else {
-                        PurchasingOutstanding::create($createData);
-                        $importCount++;
-                    }
+                    $totalMonthPo = array_sum($monthlyPoValues);
+                    $createData['order_qty'] = $poVal > 0 ? $poVal : ($totalMonthPo > 0 ? $totalMonthPo : $outstandVal);
+                    $createData['amount'] = $createData['order_qty'] * $priceVal;
+
+                    if ($rowIndex < $existingCount) { $existingRows[$rowIndex]->update($createData); $updateCount++; }
+                    else { PurchasingOutstanding::create($createData); $importCount++; }
                     $rowIndex++;
 
-                    // ──────────────────────────────────────────────────────────
-                    // FORECASTING SYNC: Buat/update record di tabel forecastings
-                    // ──────────────────────────────────────────────────────────
+                    $runningOutstand = $outstandVal; $runningStock = $stockVal;
                     foreach ($monthBlocks as $mIdx => $mBlock) {
-                        if ($mIdx === 0) continue;
-                        
                         $periode = $mBlock['periodYYYYMM'] ?? null;
                         if (!$periode) continue;
+                        $mPoQty = ($mBlock['poCol'] && isset($row[$mBlock['poCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['poCol']]) : 0;
+                        $mProdQty = ($mBlock['prodCol'] && isset($row[$mBlock['prodCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['prodCol']]) : 0;
+                        $mForecastQty = ($mBlock['forecastCol'] && isset($row[$mBlock['forecastCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['forecastCol']]) : 0;
+                        $mDeliveryQty = ($mBlock['deliveryCol'] && isset($row[$mBlock['deliveryCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['deliveryCol']]) : 0;
                         
-                        $mPoQty = 0;
-                        $mProdQty = 0;
-                        $mForecastQty = 0;
-                        $mDeliveryQty = 0;
-                        
-                        if ($mBlock['poCol'] && isset($row[$mBlock['poCol']])) {
-                            $mPoQty = (int) $this->parseCleanNumber($row[$mBlock['poCol']]);
-                        }
-                        if ($mBlock['prodCol'] && isset($row[$mBlock['prodCol']])) {
-                            $mProdQty = (int) $this->parseCleanNumber($row[$mBlock['prodCol']]);
-                        }
-                        if ($mBlock['forecastCol'] && isset($row[$mBlock['forecastCol']])) {
-                            $mForecastQty = (int) $this->parseCleanNumber($row[$mBlock['forecastCol']]);
-                        }
-                        if ($mBlock['deliveryCol'] && isset($row[$mBlock['deliveryCol']])) {
-                            $mDeliveryQty = (int) $this->parseCleanNumber($row[$mBlock['deliveryCol']]);
-                        }
-                        
-                        $calcOutstanding = $outstandVal + $mPoQty - $mDeliveryQty;
-                        $calcStock = $stockVal + $mDeliveryQty - $mProdQty;
+                        $calcOutstanding = ($mIdx === 0) ? $runningOutstand : $runningOutstand + $mPoQty - $mDeliveryQty;
+                        $calcStock = ($mIdx === 0) ? $runningStock : $runningStock + $mDeliveryQty - $mProdQty;
                         
                         $forecastingBatch[] = [
-                            'part_number'    => $itemCodeClean,
-                            'factory_code'   => $factoryVal,
-                            'supplier_name'  => $suppVal,
-                            'periode'        => $periode,
-                            'period_month'   => $periode,
-                            'description'    => $fullDesc,
-                            'price'          => $priceVal,
-                            'currency'       => $currencyVal,
-                            'outstanding_pre'=> $outstandVal,
-                            'stock_pre'      => $stockVal,
-                            'po'             => $mPoQty,
-                            'po_qty'         => $mPoQty,
-                            'production'     => $mProdQty,
-                            'production_qty' => $mProdQty,
-                            'delivery'       => $mDeliveryQty > 0 ? $mDeliveryQty : $mPoQty,
-                            'forecast_qty'   => $mForecastQty > 0 ? $mForecastQty : max(0, $mPoQty - $outstandVal),
-                            'outstanding'    => $calcOutstanding,
-                            'stock'          => $calcStock,
-                            'stock_qty'      => $calcStock,
-                            'delivery_category_code' => $request->input('delivery_category_code', 'LOC'),
+                            'part_number' => $itemCodeClean, 'factory_code' => $factoryVal, 'supplier_name' => $suppVal,
+                            'periode' => $periode, 'period_month' => $periode, 'description' => $fullDesc,
+                            'price' => $priceVal, 'currency' => $currencyVal, 'outstanding_pre' => $runningOutstand,
+                            'stock_pre' => $runningStock, 'po' => $mPoQty, 'po_qty' => $mPoQty, 'production' => $mProdQty,
+                            'production_qty' => $mProdQty, 'delivery' => $mDeliveryQty ?: $mPoQty,
+                            'forecast_qty' => $mForecastQty ?: ($mPoQty > 0 ? $mPoQty : $mProdQty),
+                            'outstanding' => $calcOutstanding, 'stock' => $calcStock, 'stock_qty' => $calcStock,
+                            'delivery_category_code' => 'LOC'
                         ];
-                        
-                        $outstandVal = $calcOutstanding;
-                        $stockVal = $calcStock;
+                        $runningOutstand = $calcOutstanding; $runningStock = $calcStock;
                     }
                 }
+                if ($rowIndex < $existingCount) { for ($k = $rowIndex; $k < $existingCount; $k++) $existingRows[$k]->delete(); }
 
-                // Hapus baris sisa di DB jika file Excel baru memiliki jumlah baris lebih sedikit
-                if ($rowIndex < $existingCount) {
-                    for ($k = $rowIndex; $k < $existingCount; $k++) {
-                        $existingRows[$k]->delete();
-                    }
-                }
-
-                // Olah data duplikat untuk disimpan di session agar dapat ditampilkan notifikasi pop-up
-                $duplicateItemCodes = [];
-                foreach ($codeOccurrences as $compKey => $occurrences) {
-                    if (count($occurrences) > 1) {
-                        $compParts = explode('___', $compKey);
-                        $itemCodeDisp = $compParts[0];
-                        $factoryDisp  = $compParts[1];
-                        $suppDisp     = $compParts[2] ?? '';
-                        $dispCode     = $itemCodeDisp . ' [' . $factoryDisp . ($suppDisp !== '' ? ' - ' . $suppDisp : '') . ']';
-                        $duplicateItemCodes[] = [
-                            'code'         => $dispCode,
-                            'count'        => count($occurrences),
-                            'rows'         => array_column($occurrences, 'row'),
-                            'descriptions' => array_values(array_unique(array_column($occurrences, 'desc'))),
-                        ];
-                    }
-                }
-
-                if (!empty($duplicateItemCodes)) {
-                    session()->flash('import_duplicates_found', $duplicateItemCodes);
-                } else {
-                    session()->forget('import_duplicates_found');
-                }
-
-                // Hapus data yatim di tabel Forecasting
-                $validPartNumbers = PurchasingOutstanding::pluck('part_number')->map(fn($x) => strtoupper(trim($x)))->filter()->toArray();
-                if (!empty($validPartNumbers)) {
-                    \App\Models\Forecasting::whereNotIn('part_number', $validPartNumbers)->delete();
-                }
-                
-                // ──────────────────────────────────────────────────────────
-                // BATCH SYNC: Simpan semua forecast data ke tabel forecastings
-                // ──────────────────────────────────────────────────────────
                 \Illuminate\Support\Facades\DB::table('forecastings')->delete();
-
-                $aggregatedForecasts = [];
+                $userId = \Illuminate\Support\Facades\Auth::id(); $now = now();
                 foreach ($forecastingBatch as $fcData) {
-                    $key = $fcData['part_number'] . '___' . ($fcData['factory_code'] ?? 'KIP 1') . '___' . strtoupper(trim($fcData['supplier_name'] ?? '')) . '___' . $fcData['periode'];
-                    if (!isset($aggregatedForecasts[$key])) {
-                        $aggregatedForecasts[$key] = $fcData;
-                    } else {
-                        $aggregatedForecasts[$key]['po'] += $fcData['po'];
-                        $aggregatedForecasts[$key]['po_qty'] += $fcData['po_qty'];
-                        $aggregatedForecasts[$key]['production'] += $fcData['production'];
-                        $aggregatedForecasts[$key]['production_qty'] += $fcData['production_qty'];
-                        $aggregatedForecasts[$key]['delivery'] += $fcData['delivery'];
-                        $aggregatedForecasts[$key]['forecast_qty'] += $fcData['forecast_qty'];
-                        $aggregatedForecasts[$key]['outstanding'] += $fcData['outstanding'];
-                        $aggregatedForecasts[$key]['stock'] += $fcData['stock'];
-                        $aggregatedForecasts[$key]['stock_qty'] += $fcData['stock_qty'];
-                    }
-                }
-
-                $userId = \Illuminate\Support\Facades\Auth::id();
-                $now = now();
-                foreach ($aggregatedForecasts as $fcData) {
                     \Illuminate\Support\Facades\DB::table('forecastings')->updateOrInsert(
                         [
                             'part_number'  => $fcData['part_number'],
+                            'factory_code' => $fcData['factory_code'],
                             'period_month' => $fcData['period_month'],
                         ],
-                        array_merge($fcData, [
-                            'user_id'    => $userId,
-                            'created_at' => $now,
-                            'updated_at' => $now,
-                        ])
+                        array_merge($fcData, ['user_id' => $userId, 'created_at' => $now, 'updated_at' => $now])
                     );
                     $forecastSyncCount++;
+                }
+
+                // Cek duplikasi baris: hanya peringatkan jika Part Number + Factory Code + Supplier persis sama muncul > 1 kali
+                $duplicatesFound = [];
+                foreach ($codeOccurrences as $cKey => $occs) {
+                    if (count($occs) > 1) {
+                        $parts = explode('___', $cKey);
+                        $cCode = $parts[0] ?? '';
+                        $cFactory = $parts[1] ?? 'KIP 1';
+                        $cSupp = $parts[2] ?? '';
+                        $duplicatesFound[] = [
+                            'code'         => $cCode,
+                            'part_number'  => $cCode,
+                            'factory_code' => $cFactory,
+                            'supplier'     => $cSupp,
+                            'count'        => count($occs),
+                            'rows'         => array_column($occs, 'row'),
+                            'descriptions' => array_values(array_unique(array_column($occs, 'desc'))),
+                        ];
+                    }
+                }
+                if (!empty($duplicatesFound)) {
+                    session(['import_duplicates_found' => $duplicatesFound]);
+                } else {
+                    session()->forget('import_duplicates_found');
                 }
             });
 
             PurchasingOutstanding::clearCalcCaches();
-
-            // ==============================================================
-            // 7. SET SESSION MONITOR — Auto-sync bulan/tahun dari Excel
             //    Month 0 = Premonth (JUN), Month 1 = Start (JUL)
             //    Dropdown "Mulai" dan "Tahun" otomatis mengikuti Excel
             // ==============================================================

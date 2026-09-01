@@ -254,6 +254,12 @@ class DashboardController extends Controller
             $catLogs   = $yearLogs->where('purchasing_category_id', $cat->id);
             $cTarget   = $catLogs->sum('target_order');
             $cReceived = $catLogs->sum('actual_received');
+            if ($cTarget <= 0) {
+                $cTarget = (int) \App\Models\PurchasingOutstanding::where('category_id', $cat->id)->sum('order_qty');
+            }
+            $cPending  = max(0, $cTarget - $cReceived);
+            $cAch      = $cTarget > 0 ? round(($cReceived / $cTarget) * 100, 1) : ($cReceived > 0 ? 100 : 0);
+
             if ($cTarget == 0 && $cReceived == 0) {
                 $cStatus = 'Standby';
             } elseif ($cAch >= 100) {
@@ -337,8 +343,7 @@ class DashboardController extends Controller
             }
             $mFc = (int) $fcQuery->sum('po_qty');
             if ($mFc <= 0) {
-                $rawFc = (int) $fcQuery->sum('forecast_qty');
-                $mFc = ($rawFc > 500000) ? 0 : $rawFc;
+                $mFc = (int) $fcQuery->sum('forecast_qty');
             }
 
             $tgt = max($mFc, (int) $mLogs->sum('target_order'));

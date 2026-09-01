@@ -859,14 +859,18 @@ class PurchasingOutstanding extends Model
             $firstMonthPo   = (int) ($model->m1_po ?? $model->order_qty ?? 0);
             $currentPeriod  = session('monitor_m0', now()->format('Y-m'));
 
-            // 1 Part Number = 1 Consolidated Record di Master Forecast (Update in place, tanpa bikin duplikat)
+            $factoryCode    = $model->factory_code ?? 'KIP 1';
+
+            // Part Number + Factory Code = Record di Master Forecast (Multi-Plant support)
             \App\Models\Forecasting::updateOrCreate(
                 [
                     'part_number'  => $itemCode,
+                    'factory_code' => $factoryCode,
                     'period_month' => $currentPeriod,
                 ],
                 [
                     'user_id'         => $model->user_id ?? auth()->id(),
+                    'supplier_name'   => $model->supplier_name,
                     'description'     => $model->description ?? '-',
                     'outstanding_pre' => (int) ($model->plan_outstand ?? 0),
                     'stock_pre'       => (int) ($model->plan_stock ?? 0),
