@@ -221,7 +221,7 @@
             <button type="button" class="btn-kawai-secondary" data-bs-toggle="modal" data-bs-target="#modalImportMasterPo" title="Import data Master PO dari Excel (hanya membaca kolom Plan / Pesanan)">
                 <i class="bi bi-file-earmark-excel-fill text-success"></i> Import Master PO
             </button>
-            <button type="button" class="btn-kawai-primary" onclick="switchToBulkTab()">
+            <button type="button" class="btn-kawai-primary" data-bs-toggle="modal" data-bs-target="#modalCreateMasterPo" title="Tambah Master PO baru">
                 <i class="bi bi-plus-circle-fill"></i> Tambah PO
             </button>
             <div class="dropdown">
@@ -498,64 +498,99 @@
                     </div>
                 </div>
 
-                <div class="row g-3 mb-4 bg-dark bg-opacity-50 p-3 rounded-3 border border-secondary border-opacity-25">
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted text-uppercase fw-semibold">Tanggal PO (DD/MM/YYYY)</label>
-                        <input type="date" id="m_tanggal" class="form-control form-control-sm bg-dark text-white border-secondary" value="{{ date('Y-m-d') }}">
+                <div class="card bg-dark bg-opacity-75 p-3 rounded-4 border border-secondary border-opacity-25 mb-4 shadow-sm">
+                    <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom border-secondary border-opacity-25">
+                        <span class="text-white fw-bold small text-uppercase letter-spacing-1 d-flex align-items-center gap-2">
+                            <i class="bi bi-pencil-square text-info"></i> Form Entri Cepat Master PO
+                        </span>
+                        <span class="badge bg-info bg-opacity-10 text-info border border-info border-opacity-25 small">
+                            <i class="bi bi-magic me-1"></i> Auto-Fill Aktif
+                        </span>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted text-uppercase fw-semibold">Supplier</label>
-                        <input type="text" id="m_supplier" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="PT Kawai Supplier...">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted text-uppercase fw-semibold">PO Number</label>
-                        <input type="text" id="m_po" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="No. PO (KI-0001)">
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted text-uppercase fw-semibold d-flex justify-content-between align-items-center mb-1">
-                            <span>Item Code</span>
-                            <button type="button" class="btn p-0 text-info text-decoration-none small fw-bold" onclick="openItemCodeSelectorModal('m_itemcode', 'm_name')" style="font-size:0.75rem;">
-                                <i class="bi bi-window-stack"></i> Pop-up
-                            </button>
-                        </label>
-                        <div class="input-group input-group-sm">
-                            <input type="text" id="m_itemcode" class="form-control bg-dark text-white border-secondary" list="registeredItemCodesList" onchange="autoFillItemDescription(this, 'm_name')" oninput="autoFillItemDescription(this, 'm_name')" placeholder="Ketik Item Code Baru atau Cari...">
-                            <button type="button" class="btn btn-outline-info" onclick="openItemCodeSelectorModal('m_itemcode', 'm_name')" title="Pilih Item Code dari Pop-up">
-                                <i class="bi bi-search"></i>
-                            </button>
+
+                    <!-- Row 1: Identitas & Deskripsi -->
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-calendar-event me-1"></i> Tanggal PO</label>
+                            <input type="date" id="m_tanggal" class="form-control form-control-sm form-control-dark" value="{{ date('Y-m-d') }}">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-receipt me-1"></i> No. PO</label>
+                            <input type="text" id="m_po" class="form-control form-control-sm form-control-dark" placeholder="No. PO (KI-0001)">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted text-uppercase fw-semibold d-flex justify-content-between align-items-center mb-1">
+                                <span><i class="bi bi-barcode me-1"></i> Item Code</span>
+                                <button type="button" class="btn p-0 text-info text-decoration-none small fw-bold" onclick="openItemCodeSelectorModal('m_itemcode', 'm_name')" style="font-size:0.75rem;">
+                                    <i class="bi bi-window-stack"></i> Pop-up Cari
+                                </button>
+                            </label>
+                            <div class="input-group input-group-sm">
+                                <input type="text" id="m_itemcode" class="form-control form-control-dark" list="registeredItemCodesList" oninput="autoFillMasterPoFields(this, 'm_')" onchange="autoFillMasterPoFields(this, 'm_')" placeholder="Ketik Item Code...">
+                                <button type="button" class="btn btn-outline-info" onclick="openItemCodeSelectorModal('m_itemcode', 'm_name')" title="Pilih Item Code dari Pop-up">
+                                    <i class="bi bi-search"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-card-text me-1"></i> Nama Material</label>
+                            <input type="text" id="m_name" class="form-control form-control-sm form-control-dark" placeholder="Deskripsi material">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-shop me-1"></i> Supplier / Vendor</label>
+                            <input type="text" id="m_supplier" class="form-control form-control-sm form-control-dark" placeholder="Nama Supplier...">
                         </div>
                     </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-muted text-uppercase fw-semibold">Name</label>
-                        <input type="text" id="m_name" class="form-control form-control-sm bg-dark text-white border-secondary" placeholder="Deskripsi material">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label small text-muted text-uppercase fw-semibold">Qty</label>
-                        <input type="number" id="m_qty" class="form-control form-control-sm bg-dark text-white border-secondary" value="0">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label small text-warning text-uppercase fw-semibold">Price</label>
-                        <input type="text" id="m_price" class="form-control form-control-sm bg-dark text-warning border-secondary fw-bold" placeholder="0.00">
-                    </div>
-                    <div class="col-md-1">
-                        <label class="form-label small text-info text-uppercase fw-semibold">Currency</label>
-                        <select id="m_currency" class="form-select form-select-sm bg-dark text-info border-secondary fw-bold">
-                            <option value="USD">USD</option>
-                            <option value="IDR">IDR</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="form-label small text-info fw-bold text-uppercase"><i class="bi bi-truck me-1"></i> Pengantaran</label>
-                        <select id="m_delivery_category_code" class="form-select form-select-sm bg-dark text-white border-info fw-bold">
-                            @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
-                                <option value="{{ $dc->code }}" {{ $dc->code === 'LOC' ? 'selected' : '' }}>
-                                    {{ $dc->code }} - {{ $dc->name }} ({{ $dc->currency }})
-                                </option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-1 d-flex align-items-end">
-                        <button type="button" id="btnAddMaster" class="btn btn-sm btn-info text-dark fw-bold w-100">Tambah</button>
+
+                    <!-- Row 2: Qty, Finansial, Klasifikasi & Submit -->
+                    <div class="row g-2 align-items-end">
+                        <div class="col-md-2">
+                            <label class="form-label small text-muted text-uppercase fw-semibold mb-1"><i class="bi bi-123 me-1"></i> Qty Order</label>
+                            <input type="number" id="m_qty" class="form-control form-control-sm form-control-dark" value="1" min="0">
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-warning text-uppercase fw-semibold mb-1"><i class="bi bi-currency-dollar me-1"></i> Price</label>
+                            <input type="text" id="m_price" class="form-control form-control-sm form-control-dark text-warning fw-bold" placeholder="0.00">
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small text-warning text-uppercase fw-semibold mb-1">Mata Uang</label>
+                            <select id="m_currency" class="form-select form-select-sm form-select-dark text-warning fw-bold">
+                                <option value="USD">USD</option>
+                                <option value="IDR">IDR</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-info fw-bold text-uppercase mb-1"><i class="bi bi-truck me-1"></i> Pengantaran</label>
+                            <select id="m_delivery_category_code" class="form-select form-select-sm form-select-dark">
+                                @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
+                                    <option value="{{ $dc->code }}" {{ $dc->code === 'LOC' ? 'selected' : '' }}>
+                                        {{ $dc->code }} - {{ $dc->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="form-label small text-warning fw-bold text-uppercase mb-1"><i class="bi bi-tag me-1"></i> Kategori</label>
+                            <select id="m_category_id" class="form-select form-select-sm form-select-dark">
+                                <option value="">-- Kategori --</option>
+                                @foreach($categories ?? \App\Models\PurchasingCategory::all() as $cat)
+                                    <option value="{{ $cat->id }}">{{ $cat->category_code }} - {{ $cat->category_name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-1">
+                            <label class="form-label small text-primary fw-bold text-uppercase mb-1"><i class="bi bi-building me-1"></i> Pabrik</label>
+                            <select id="m_factory_code" class="form-select form-select-sm form-select-dark">
+                                @foreach(['Plant 1', 'Plant 2', 'Plant 3', 'Plant 4', 'KIP 1', 'KIP 2'] as $p)
+                                    <option value="{{ $p }}" {{ $p === 'Plant 3' ? 'selected' : '' }}>{{ $p }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" id="btnAddMaster" class="btn btn-sm btn-success text-dark fw-bold w-100 shadow-sm">
+                                <i class="bi bi-plus-circle-fill me-1"></i> Tambah Baris
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -704,6 +739,8 @@ document.addEventListener('DOMContentLoaded', function() {
             const price = document.getElementById('m_price') ? document.getElementById('m_price').value : '0';
             const currency = document.getElementById('m_currency') ? document.getElementById('m_currency').value : 'USD';
             const deliveryCategoryCode = document.getElementById('m_delivery_category_code') ? document.getElementById('m_delivery_category_code').value : 'LOC';
+            const categoryId = document.getElementById('m_category_id') ? document.getElementById('m_category_id').value : '';
+            const factoryCode = document.getElementById('m_factory_code') ? document.getElementById('m_factory_code').value : 'Plant 3';
 
             if (!itemcode && !po) {
                 if (window.notify) {
@@ -736,7 +773,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     qty: qty || 0,
                     price: price || 0,
                     currency: currency || 'USD',
-                    delivery_category_code: deliveryCategoryCode
+                    delivery_category_code: deliveryCategoryCode,
+                    category_id: categoryId,
+                    factory_code: factoryCode
                 })
             })
             .then(async res => {
@@ -812,6 +851,118 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+<!-- ════════════ MODAL TAMBAH MASTER PO BARU ════════════ -->
+<div class="modal fade text-start" id="modalCreateMasterPo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">
+        <form action="{{ route('purchasing.master-po.store') }}" method="POST" class="modal-content modal-content-dark border-secondary text-white shadow-lg">
+            @csrf
+            <div class="modal-header border-bottom border-secondary border-opacity-25" style="background: rgba(16, 185, 129, 0.15);">
+                <h5 class="modal-title fw-bold text-white d-flex align-items-center gap-2">
+                    <i class="bi bi-plus-circle-fill text-success fs-4"></i>
+                    <span>Tambah Master Purchase Order Baru</span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="alert alert-info bg-info bg-opacity-10 border border-info border-opacity-25 text-info py-2 px-3 small rounded-3 mb-4 d-flex align-items-center gap-2">
+                    <i class="bi bi-info-circle-fill fs-5"></i>
+                    <div>Ketik <b>Item Code</b> atau gunakan pop-up pencarian untuk mengisi otomatis deskripsi, supplier, harga, dan kategori material.</div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold"><i class="bi bi-calendar-event me-1"></i> Tanggal PO</label>
+                        <input type="date" name="tanggal" id="create_po_tanggal" class="form-control form-control-dark" value="{{ date('Y-m-d') }}" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold"><i class="bi bi-receipt me-1"></i> Nomor PO <span class="text-danger">*</span></label>
+                        <input type="text" name="po" id="create_po_no" class="form-control form-control-dark" placeholder="Contoh: KI-TJT-0001/2026" required>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold d-flex justify-content-between align-items-center">
+                            <span><i class="bi bi-barcode me-1"></i> Item Code <span class="text-danger">*</span></span>
+                            <button type="button" class="btn p-0 text-info text-decoration-none small fw-bold" onclick="openItemCodeSelectorModal('create_po_item_code', 'create_po_name')" style="font-size:0.75rem;">
+                                <i class="bi bi-window-stack"></i> Cari Item
+                            </button>
+                        </label>
+                        <div class="input-group input-group-sm">
+                            <input type="text" name="item_code" id="create_po_item_code" class="form-control form-control-dark" list="registeredItemCodesList" oninput="autoFillMasterPoFields(this, 'create_po_')" onchange="autoFillMasterPoFields(this, 'create_po_')" placeholder="Ketik Item Code..." required>
+                            <button type="button" class="btn btn-outline-info" onclick="openItemCodeSelectorModal('create_po_item_code', 'create_po_name')" title="Pilih Item Code dari Pop-up">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold"><i class="bi bi-card-text me-1"></i> Nama Material / Deskripsi</label>
+                        <input type="text" name="name" id="create_po_name" class="form-control form-control-dark" placeholder="Deskripsi nama material">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold"><i class="bi bi-shop me-1"></i> Supplier / Vendor</label>
+                        <input type="text" name="supplier" id="create_po_supplier" class="form-control form-control-dark" placeholder="Nama Supplier / Vendor">
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-muted small fw-bold"><i class="bi bi-123 me-1"></i> Quantity Order <span class="text-danger">*</span></label>
+                        <input type="number" name="qty" id="create_po_qty" class="form-control form-control-dark" value="1" min="0" required>
+                    </div>
+
+                    <div class="col-md-4">
+                        <label class="form-label text-warning small fw-bold"><i class="bi bi-currency-dollar me-1"></i> Harga Satuan (Price)</label>
+                        <input type="text" name="price" id="create_po_price" class="form-control form-control-dark text-warning fw-bold" placeholder="0.00">
+                    </div>
+
+                    <div class="col-md-2">
+                        <label class="form-label text-warning small fw-bold">Mata Uang</label>
+                        <select name="currency" id="create_po_currency" class="form-select form-select-dark text-warning fw-bold">
+                            <option value="USD">USD ($)</option>
+                            <option value="IDR">IDR (Rp)</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-info small fw-bold"><i class="bi bi-truck me-1"></i> Jalur Pengantaran</label>
+                        <select name="delivery_category_code" id="create_po_delivery_category_code" class="form-select form-select-dark">
+                            @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
+                                <option value="{{ $dc->code }}" {{ $dc->code === 'LOC' ? 'selected' : '' }}>
+                                    {{ $dc->code }} - {{ $dc->name }} ({{ $dc->currency }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-warning small fw-bold"><i class="bi bi-tag me-1"></i> Kategori Material</label>
+                        <select name="category_id" id="create_po_category_id" class="form-select form-select-dark">
+                            <option value="">-- Auto-Detect Kategori --</option>
+                            @foreach($categories ?? \App\Models\PurchasingCategory::all() as $cat)
+                                <option value="{{ $cat->id }}">{{ $cat->category_code }} - {{ $cat->category_name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label class="form-label text-primary small fw-bold"><i class="bi bi-building me-1"></i> Kode Pabrik (Plant)</label>
+                        <select name="factory_code" id="create_po_factory_code" class="form-select form-select-dark">
+                            @foreach(['Plant 1', 'Plant 2', 'Plant 3', 'Plant 4', 'KIP 1', 'KIP 2'] as $p)
+                                <option value="{{ $p }}" {{ $p === 'Plant 3' ? 'selected' : '' }}>{{ $p }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-top border-secondary border-opacity-25 bg-dark">
+                <button type="button" class="btn btn-outline-secondary rounded-pill px-4" data-bs-dismiss="modal">Batal</button>
+                <button type="submit" class="btn btn-success text-dark rounded-pill px-4 fw-bold shadow-sm">
+                    <i class="bi bi-check-circle-fill me-1"></i> Simpan Master PO
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <!-- Modals Edit PO (placed outside any container to prevent viewport/backdrop clipping) -->
 @foreach($masterPoList as $mp)
     <div class="modal fade text-start" id="modalEditPo{{ $mp->id }}" tabindex="-1" aria-hidden="true">
@@ -864,24 +1015,32 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                     </div>
                     <div class="row g-2 mb-3">
-                        <div class="col-6">
+                        <div class="col-4">
                             <label class="form-label text-info small fw-bold"><i class="bi bi-truck me-1"></i> Pengantaran</label>
                             <select name="delivery_category_code" class="form-select bg-dark text-white border-secondary">
                                 @foreach($deliveryCategories ?? \App\Models\DeliveryCategory::all() as $dc)
                                     <option value="{{ $dc->code }}" {{ ($mp->delivery_category_code ?? 'LOC') == $dc->code ? 'selected' : '' }}>
-                                        {{ $dc->code }} - {{ $dc->name }} ({{ $dc->currency }})
+                                        {{ $dc->code }} - {{ $dc->name }}
                                     </option>
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-6">
-                            <label class="form-label text-warning small fw-bold"><i class="bi bi-tag me-1"></i> Kategori Material</label>
+                        <div class="col-4">
+                            <label class="form-label text-warning small fw-bold"><i class="bi bi-tag me-1"></i> Kategori</label>
                             <select name="category_id" class="form-select bg-dark text-white border-secondary">
                                 <option value="">-- Pilih Kategori --</option>
                                 @foreach($categories ?? \App\Models\PurchasingCategory::all() as $cat)
                                     <option value="{{ $cat->id }}" {{ ($mp->category_id ?? '') == $cat->id ? 'selected' : '' }}>
                                         {{ $cat->category_code }} - {{ $cat->category_name }}
                                     </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label text-primary small fw-bold"><i class="bi bi-building me-1"></i> Pabrik</label>
+                            <select name="factory_code" class="form-select bg-dark text-white border-secondary">
+                                @foreach(['Plant 1', 'Plant 2', 'Plant 3', 'Plant 4', 'KIP 1', 'KIP 2'] as $p)
+                                    <option value="{{ $p }}" {{ ($mp->factory_code ?? 'Plant 3') == $p ? 'selected' : '' }}>{{ $p }}</option>
                                 @endforeach
                             </select>
                         </div>

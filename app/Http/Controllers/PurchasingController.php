@@ -1118,6 +1118,11 @@ class PurchasingController extends Controller
             'item_code' => 'required|string',
             'name'      => 'nullable|string',
             'qty'       => 'nullable|integer|min:0',
+            'price'     => 'nullable',
+            'currency'  => 'nullable|string',
+            'category_id' => 'nullable',
+            'factory_code' => 'nullable|string',
+            'delivery_category_code' => 'nullable|string',
         ]);
 
         $itemCode = $this->normalizePoValue($validated['item_code']);
@@ -1128,100 +1133,109 @@ class PurchasingController extends Controller
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Mohon isi minimal Item Code atau PO Number.'], 422);
             }
-            return redirect()->back()->with('error', 'Mohon isi minimal Item Code atau PO Number.');
-        }
-
-        // Auto-register item code di Step 1 (PurchasingOutstanding) jika belum ada
-        $existsInStep1 = \App\Models\PurchasingOutstanding::where(function($q) use ($itemCode) {
-            $q->where('part_number', $itemCode)->orWhere('drawing', $itemCode);
-        })->exists() || \App\Models\Forecasting::where('part_number', $itemCode)->exists();
-
-        if (!$existsInStep1) {
-            \App\Models\PurchasingOutstanding::create([
-                'po_number'     => $poNumber,
-                'po_date'       => $poDate,
-                'part_number'   => $itemCode,
-                'drawing'       => $itemCode,
-                'category_id'   => $request->input('category_id') ?: null,
-                'factory_code'  => $request->input('factory_code', 'Plant 3'),
-                'description'   => $validated['name'] ?: $itemCode,
-                'supplier_name' => $validated['supplier'] ?? null,
-                'plan_stock'    => 0,
-                'plan_outstand' => 0,
-                'price'         => !empty($request->input('price')) ? (float) str_replace(',', '.', (string) $request->input('price')) : 0.0,
-                'currency'      => strtoupper(trim($request->input('currency', 'USD'))),
-            ]);
+            return redirect()->back()->withInput()->with('error', 'Mohon isi minimal Item Code atau PO Number.');
         }
 
         if (\App\Models\MasterPo::where('po', $poNumber)->where('item_code', $itemCode)->where('tanggal', $poDate)->exists()) {
             if ($request->wantsJson() || $request->ajax()) {
                 return response()->json(['success' => false, 'message' => 'Entri Master PO dengan No. PO, Item Code, dan Tanggal tersebut sudah terdaftar.'], 422);
             }
-            return redirect()->back()->with('error', 'Entri Master PO dengan No. PO, Item Code, dan Tanggal tersebut sudah terdaftar.');
+            return redirect()->back()->withInput()->with('error', 'Entri Master PO dengan No. PO (' . $poNumber . '), Item Code (' . $itemCode . '), dan Tanggal tersebut sudah terdaftar.');
         }
 
-        $catId = $request->input('category_id') ?: null;
-        if (!$catId) {
-            $catId = \App\Models\PurchasingOutstanding::where('part_number', $itemCode)
-                ->orWhere('drawing', $itemCode)
-                ->value('category_id');
-        }
+        // Cari data referensi dari Step 1 jika ada
+        $step1Item = \App\Models\PurchasingOutstanding::where('part_number', $itemCode)
+            ->orWhere('drawing', $itemCode)
+            ->first();
+        $fcItem = \App\Models\Forecasting::where('part_number', $itemCode)->first();
 
-        $itemName = !empty($validated['name']) ? $validated['name'] : null;
-        if (!$itemName) {
-            $itemName = \App\Models\PurchasingOutstanding::where('part_number', $itemCode)
-                ->orWhere('drawing', $itemCode)
-                ->value('description')
-                ?: \App\Models\Forecasting::where('part_number', $itemCode)->value('description');
-        }
+        $catId = $request->input('category_id') ?: ($step1Item?->category_id ?: null);
+        $supplierName = !empty($validated['supplier']) ? trim($validated['supplier']) : ($step1Item?->supplier_name ?: ($fcItem?->supplier_name ?: null));
+        $itemName = !empty($validated['name']) ? trim($validated['name']) : ($step1Item?->description ?: ($fcItem?->description ?: $itemCode));
 
         $rawPrice = $request->input('price');
         $price = !empty($rawPrice) ? (float) str_replace(',', '.', (string) $rawPrice) : 0.0;
         if ($price <= 0) {
-            $price = (float) (\App\Models\PurchasingOutstanding::where('part_number', $itemCode)->orWhere('drawing', $itemCode)->value('price')
-                ?: \App\Models\Forecasting::where('part_number', $itemCode)->where('price', '>', 0)->value('price')
-                ?: 0.0);
+            $price = (float) ($step1Item?->price > 0 ? $step1Item->price : ($fcItem?->price > 0 ? $fcItem->price : 0.0));
         }
 
-        $currency = strtoupper(trim($request->input('currency', 'USD')));
+        $currency = strtoupper(trim($request->input('currency', ($step1Item?->currency ?: 'USD'))));
         if ($price > 300 && in_array($currency, ['USD', 'DOLLAR', '$'])) {
             $currency = 'IDR';
         }
 
-        $factoryCode = trim((string)$request->input('factory_code', 'Plant 3'));
+        $factoryCode = trim((string)$request->input('factory_code', ($step1Item?->factory_code ?: 'Plant 3')));
         if (empty($factoryCode)) {
             $factoryCode = 'Plant 3';
         }
 
-        $mp = \App\Models\MasterPo::create([
-            'tanggal'    => !empty($validated['tanggal']) ? $validated['tanggal'] : date('Y-m-d'),
-            'supplier'   => !empty($validated['supplier']) ? $validated['supplier'] : null,
-            'po'         => $poNumber,
-            'item_code'  => $itemCode,
-            'factory_code' => $factoryCode,
-            'category_id' => $catId,
-            'name'       => $itemName ?: $itemCode,
-            'qty'        => !empty($validated['qty']) ? (int) $validated['qty'] : 0,
-            'price'      => $price,
-            'currency'   => $currency,
-            'created_by' => Auth::id(),
-            'user_id'    => Auth::id(),
-            'delivery_category_code' => $request->input('delivery_category_code', 'LOC'),
-        ]);
-
-        $this->syncForecastFromMasterPo($itemCode, $validated['tanggal'] ?? null);
-
-        \App\Models\PurchasingOutstanding::clearCalcCaches();
-
-        if ($request->wantsJson() || $request->ajax()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Data Master PO berhasil disimpan ke database.',
-                'data' => $mp
-            ]);
+        $deliveryCat = strtoupper(trim((string)$request->input('delivery_category_code', ($step1Item?->delivery_category_code ?: 'LOC'))));
+        if (empty($deliveryCat)) {
+            $deliveryCat = 'LOC';
         }
 
-        return redirect()->back()->with('success', 'Data Master PO berhasil ditambahkan.');
+        // Auto-register item code di Step 1 jika belum ada
+        if (!$step1Item && !$fcItem) {
+            try {
+                \App\Models\PurchasingOutstanding::create([
+                    'po_number'     => $poNumber,
+                    'po_date'       => $poDate,
+                    'part_number'   => $itemCode,
+                    'drawing'       => $itemCode,
+                    'category_id'   => $catId,
+                    'factory_code'  => $factoryCode,
+                    'description'   => $itemName,
+                    'supplier_name' => $supplierName,
+                    'plan_stock'    => 0,
+                    'plan_outstand' => 0,
+                    'price'         => $price,
+                    'currency'      => $currency,
+                    'delivery_category_code' => $deliveryCat,
+                ]);
+            } catch (\Throwable $e) {
+                // Ignore silent duplicate
+            }
+        }
+
+        try {
+            $mp = \App\Models\MasterPo::create([
+                'tanggal'                => $poDate,
+                'supplier'               => $supplierName,
+                'po'                     => $poNumber,
+                'item_code'              => $itemCode,
+                'factory_code'           => $factoryCode,
+                'category_id'            => $catId,
+                'name'                   => $itemName,
+                'qty'                    => !empty($validated['qty']) ? (int) $validated['qty'] : 0,
+                'price'                  => $price,
+                'currency'               => $currency,
+                'created_by'             => Auth::id(),
+                'user_id'                => Auth::id(),
+                'delivery_category_code' => $deliveryCat,
+            ]);
+
+            $this->syncForecastFromMasterPo($itemCode, $poDate);
+            \App\Models\PurchasingOutstanding::clearCalcCaches();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data Master PO berhasil disimpan ke database.',
+                    'data'    => $mp
+                ]);
+            }
+
+            return redirect()->back()->with('success', 'Data Master PO (' . $poNumber . ' - ' . $itemCode . ') berhasil ditambahkan.');
+        } catch (\Throwable $e) {
+            \Log::error('Error storing Master PO: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal menyimpan transaksi Master PO: ' . $e->getMessage()
+                ], 500);
+            }
+            return redirect()->back()->withInput()->with('error', 'Gagal menyimpan transaksi Master PO: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -1620,6 +1634,30 @@ class PurchasingController extends Controller
 
         $fulfillmentPercentage = $masterPoTotalQty > 0 ? round(($matchedActualQty / $masterPoTotalQty) * 100, 1) : 0;
 
+        $registeredItemsQuery = \App\Models\PurchasingOutstanding::with('category')->get();
+        $registeredItemsMap = [];
+        $registeredItems = [];
+
+        foreach ($registeredItemsQuery as $item) {
+            $code = strtoupper(trim((string)($item->part_number ?: $item->drawing)));
+            if ($code && !isset($registeredItemsMap[$code])) {
+                $registeredItemsMap[$code] = [
+                    'item_code'    => $code,
+                    'name'         => $item->description ?: $code,
+                    'supplier'     => $item->supplier_name ?: ($item->vendor_name ?: ''),
+                    'price'        => (float)$item->price,
+                    'currency'     => strtoupper(trim((string)($item->currency ?: 'USD'))),
+                    'category_id'  => $item->category_id,
+                    'factory_code' => $item->factory_code ?: 'Plant 3',
+                    'delivery_category_code' => $item->delivery_category_code ?: 'LOC',
+                ];
+                $registeredItems[] = [
+                    'item_code' => $code,
+                    'name'      => $item->description ?: $code,
+                ];
+            }
+        }
+
         return view('purchasing.master_po', [
             'masterPoList'           => $masterPoList,
             'masterPoTotalCount'     => $masterPoTotalCount,
@@ -1637,6 +1675,8 @@ class PurchasingController extends Controller
             'categories'             => \App\Models\PurchasingCategory::all(),
             'suppliers'              => $suppliers,
             'selectedSupplier'       => $selectedSupplier,
+            'registeredItems'        => $registeredItems,
+            'registeredItemsMapJson' => json_encode($registeredItemsMap),
         ]);
     }
 

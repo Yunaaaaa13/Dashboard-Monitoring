@@ -165,4 +165,91 @@ class MasterPoAndIncomingDatabaseIntegrityTest extends TestCase
             'price'        => 9000,
         ]);
     }
+
+    public function test_master_po_store_auto_fills_details_from_step1_when_omitted()
+    {
+        // 1. Create Step 1 record
+        PurchasingOutstanding::create([
+            'part_number'   => 'SKU-AUTO-01',
+            'description'   => 'Auto Desc Material',
+            'supplier_name' => 'PT Auto Vendor',
+            'price'         => 12500,
+            'currency'      => 'IDR',
+            'category_id'   => $this->category->id,
+            'factory_code'  => 'Plant 2',
+            'delivery_category_code' => 'LOC',
+        ]);
+
+        // 2. Submit Master PO store with only minimal fields
+        $response = $this->actingAs($this->user)->post(route('purchasing.master-po.store'), [
+            'tanggal'   => '2026-02-10',
+            'po'        => 'PO-AUTO-001',
+            'item_code' => 'SKU-AUTO-01',
+            'qty'       => 500,
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
+
+        $this->assertDatabaseHas('master_pos', [
+            'po'           => 'PO-AUTO-001',
+            'item_code'    => 'SKU-AUTO-01',
+            'name'         => 'Auto Desc Material',
+            'supplier'     => 'PT Auto Vendor',
+            'price'        => 12500,
+            'currency'     => 'IDR',
+            'category_id'  => $this->category->id,
+            'factory_code' => 'Plant 2',
+            'qty'          => 500,
+        ]);
+    }
+
+    public function test_master_po_store_ajax_returns_json_and_auto_registers_step1()
+    {
+        $response = $this->actingAs($this->user)->postJson(route('purchasing.master-po.store'), [
+            'tanggal'      => '2026-03-01',
+            'po'           => 'PO-AJAX-001',
+            'item_code'    => 'NEW-SKU-99',
+            'name'         => 'Brand New Component',
+            'supplier'     => 'PT Supplier Baru',
+            'qty'          => 150,
+            'price'        => 2.50,
+            'currency'     => 'USD',
+            'factory_code' => 'Plant 4',
+            'category_id'  => $this->category->id,
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson([
+            'success' => true,
+        ]);
+
+        $this->assertDatabaseHas('master_pos', [
+            'po'        => 'PO-AJAX-001',
+            'item_code' => 'NEW-SKU-99',
+            'price'     => 2.50,
+            'currency'  => 'USD',
+        ]);
+
+        $this->assertDatabaseHas('purchasing_outstandings', [
+            'part_number' => 'NEW-SKU-99',
+            'description' => 'Brand New Component',
+        ]);
+    }
+
+    public function test_master_po_index_supplies_registered_items_for_autocomplete()
+    {
+        PurchasingOutstanding::create([
+            'part_number' => 'SKU-LIST-01',
+            'description' => 'List Item Description',
+        ]);
+
+        $response = $this->actingAs($this->user)->get(route('purchasing.master-po'));
+        $response->assertStatus(200);
+        $response->assertViewHas('registeredItems');
+        $response->assertViewHas('registeredItemsMapJson');
+
+        $registered = $response->viewData('registeredItems');
+        $this->assertTrue(collect($registered)->contains('item_code', 'SKU-LIST-01'));
+    }
 }
