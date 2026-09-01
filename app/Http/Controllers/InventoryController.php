@@ -815,6 +815,8 @@ class InventoryController extends Controller
      */
     public function importExcel(Request $request)
     {
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
+
         $rows = [];
 
         if ($request->has('rows') && is_array($request->input('rows'))) {

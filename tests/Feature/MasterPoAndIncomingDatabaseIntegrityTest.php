@@ -252,4 +252,93 @@ class MasterPoAndIncomingDatabaseIntegrityTest extends TestCase
         $registered = $response->viewData('registeredItems');
         $this->assertTrue(collect($registered)->contains('item_code', 'SKU-LIST-01'));
     }
+
+    public function test_integrated_importer_execute_import_saves_master_po_and_incoming_safely()
+    {
+        $importer = app(\App\Services\Import\IntegratedPoIncomingImporter::class);
+
+        $analysisData = [
+            'batch_id' => 'IMP-TEST-001',
+            'file_name' => 'test_master_po.xlsx',
+            'master_po_rows' => [
+                [
+                    'tanggal'      => '2026-02-02',
+                    'supplier'     => 'PT. TRI JAYA TEKNIK KARAWANG',
+                    'po'           => 'KI-TJT-0001/2026',
+                    'item_code'    => '1312006',
+                    'factory_code' => 'Plant 3',
+                    'category_id'  => $this->category->id,
+                    'name'         => 'Bracket Compou',
+                    'qty'          => 230,
+                    'price'        => 8470,
+                    'currency'     => 'IDR',
+                ],
+            ],
+            'incoming_rows' => [
+                [
+                    'receipt_date'    => '2026-02-05',
+                    'item_code'       => '1312006',
+                    'factory_code'    => 'Plant 3',
+                    'category_id'     => $this->category->id,
+                    'item_name'       => 'Bracket Compou',
+                    'supplier_name'   => 'PT. TRI JAYA TEKNIK KARAWANG',
+                    'po_reference'    => 'KI-TJT-0001/2026',
+                    'period_month'    => '2026-02',
+                    'target_order'    => 230,
+                    'actual_received' => 230,
+                    'pending_order'   => 0,
+                    'price'           => 8470,
+                    'currency'        => 'IDR',
+                    'amount'          => 1948100,
+                    'status_note'     => 'MATCH_EXACT',
+                ],
+            ],
+            'reconciliation' => [
+                'total_excel_rows' => 2,
+            ],
+        ];
+
+        $result = $importer->executeImport($analysisData, $this->user->id);
+
+        $this->assertTrue($result['success']);
+        $this->assertEquals(1, $result['inserted_master_po']);
+        $this->assertEquals(1, $result['inserted_incoming']);
+
+        $this->assertDatabaseHas('master_pos', [
+            'po'           => 'KI-TJT-0001/2026',
+            'item_code'    => '1312006',
+            'factory_code' => 'Plant 3',
+            'category_id'  => $this->category->id,
+            'qty'          => 230,
+            'price'        => 8470,
+            'currency'     => 'IDR',
+        ]);
+
+        $this->assertDatabaseHas('purchasing_logs', [
+            'po_reference'           => 'KI-TJT-0001/2026',
+            'item_code'              => '1312006',
+            'factory_code'           => 'Plant 3',
+            'purchasing_category_id' => $this->category->id,
+            'actual_received'        => 230,
+            'price'                  => 8470,
+            'currency'               => 'IDR',
+        ]);
+    }
+
+    public function test_database_schema_manager_ensures_all_tables_integrity()
+    {
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity(true);
+
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasTable('master_pos'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('master_pos', 'category_id'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('master_pos', 'factory_code'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('master_pos', 'price'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('master_pos', 'currency'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('master_pos', 'delivery_category_code'));
+
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasTable('purchasing_logs'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('purchasing_logs', 'purchasing_category_id'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('purchasing_logs', 'price'));
+        $this->assertTrue(\Illuminate\Support\Facades\Schema::hasColumn('purchasing_logs', 'currency'));
+    }
 }

@@ -382,6 +382,8 @@ class IntegratedPoIncomingImporter
         $masterPoRows = $analysisData['master_po_rows'] ?? [];
         $incomingRows = $analysisData['incoming_rows'] ?? [];
 
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
+
         $defaultCategory = PurchasingCategory::first();
         if (!$defaultCategory) {
             $defaultCategory = PurchasingCategory::create([
@@ -401,20 +403,22 @@ class IntegratedPoIncomingImporter
             // 1. Simpan Master PO Records
             foreach ($masterPoRows as $po) {
                 $poCatId = !empty($po['category_id']) ? (int)$po['category_id'] : $defaultCatId;
-                MasterPo::create([
+                $poData = [
                     'tanggal'        => $po['tanggal'] ?: date('Y-m-d'),
                     'supplier'       => $po['supplier'],
                     'po'             => $po['po'],
                     'item_code'      => $po['item_code'],
-                    'factory_code'   => $po['factory_code'],
+                    'factory_code'   => $po['factory_code'] ?? 'Plant 3',
                     'category_id'    => $poCatId,
                     'name'           => $po['name'],
                     'qty'            => $po['qty'],
-                    'price'          => $po['price'],
-                    'currency'       => $po['currency'],
+                    'price'          => $po['price'] ?? 0,
+                    'currency'       => $po['currency'] ?? 'USD',
                     'user_id'        => $userId,
                     'created_by'     => $userId,
-                ]);
+                ];
+
+                MasterPo::create($poData);
 
                 // Sinkronisasi ComparisonMaster untuk Master PO
                 $poPeriod = InputNormalizer::canonicalPeriod($po['tanggal']);
@@ -427,12 +431,12 @@ class IntegratedPoIncomingImporter
             foreach ($incomingRows as $inc) {
                 $incCatId = !empty($inc['category_id']) ? (int)$inc['category_id'] : $defaultCatId;
                 $canonicalIncPeriod = InputNormalizer::canonicalPeriod($inc['period_month']);
-                $log = PurchasingLog::create([
+                $incData = [
                     'purchasing_category_id' => $incCatId,
                     'user_id'                => $userId,
                     'receipt_date'           => $inc['receipt_date'] ?: date('Y-m-d'),
                     'item_code'              => $inc['item_code'],
-                    'factory_code'           => $inc['factory_code'],
+                    'factory_code'           => $inc['factory_code'] ?? 'Plant 3',
                     'item_name'              => $inc['item_name'],
                     'supplier_name'          => $inc['supplier_name'],
                     'po_reference'           => $inc['po_reference'],
@@ -440,11 +444,13 @@ class IntegratedPoIncomingImporter
                     'target_order'           => $inc['target_order'],
                     'actual_received'        => $inc['actual_received'],
                     'pending_order'          => $inc['pending_order'],
-                    'price'                  => $inc['price'],
-                    'currency'               => $inc['currency'],
-                    'amount'                 => $inc['amount'],
-                    'status_note'            => $inc['status_note'],
-                ]);
+                    'price'                  => $inc['price'] ?? 0,
+                    'currency'               => $inc['currency'] ?? 'USD',
+                    'amount'                 => $inc['amount'] ?? 0,
+                    'status_note'            => $inc['status_note'] ?? '',
+                ];
+
+                $log = PurchasingLog::create($incData);
 
                 // Sinkronisasi Actual & ComparisonMaster
                 $periode = $canonicalIncPeriod;
@@ -461,7 +467,7 @@ class IntegratedPoIncomingImporter
                 } else {
                     Actual::create([
                         'part_number'   => $partNumber,
-                        'factory_code'  => $inc['factory_code'],
+                        'factory_code'  => $inc['factory_code'] ?? 'Plant 3',
                         'description'   => $inc['item_name'],
                         'periode'       => $periode,
                         'period_month'  => $periode,

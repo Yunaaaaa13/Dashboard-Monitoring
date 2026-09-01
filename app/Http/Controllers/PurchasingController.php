@@ -2491,6 +2491,8 @@ class PurchasingController extends Controller
         set_time_limit(600);
         ini_set('memory_limit', '512M');
 
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
+
         try {
             $file = $request->file('file');
             $realPath = $file->getRealPath();
@@ -2580,7 +2582,6 @@ class PurchasingController extends Controller
             }
 
             // Pre-fetch in-memory maps for Step 1 (Outstanding) & Forecasting to eliminate N+1 queries during bulk import
-            // Pre-fetch in-memory maps for Step 1 (Outstanding) & Forecasting with lightweight column selection
             $outstandingMap = [];
             foreach (\App\Models\PurchasingOutstanding::select(['id', 'part_number', 'drawing', 'description', 'category_id', 'factory_code'])->get() as $o) {
                 if (!empty($o->part_number)) $outstandingMap[strtoupper(trim($o->part_number))] = $o;
@@ -2653,9 +2654,14 @@ class PurchasingController extends Controller
                 $matchedStep1 = $outstandingMap[$itemClean] ?? ($outstandingMap[$nameClean] ?? null);
                 $matchedForecast = !$matchedStep1 ? ($forecastingMap[$itemClean] ?? ($forecastingMap[$nameClean] ?? null)) : null;
 
+                $factoryCode = 'Plant 3';
+                $categoryId = null;
+
                 if ($matchedStep1) {
                     $canonicalItemCode = !empty($item_code) ? $item_code : ($matchedStep1->part_number ?: $matchedStep1->drawing);
                     $canonicalName = (!empty($name) && $name !== '-') ? $name : ($matchedStep1->description ?: $canonicalItemCode);
+                    $factoryCode = $matchedStep1->factory_code ?: 'Plant 3';
+                    $categoryId = $matchedStep1->category_id;
                 } elseif ($matchedForecast) {
                     $canonicalItemCode = !empty($item_code) ? $item_code : $matchedForecast->part_number;
                     $canonicalName = (!empty($name) && $name !== '-') ? $name : ($matchedForecast->description ?: $canonicalItemCode);
@@ -2665,17 +2671,19 @@ class PurchasingController extends Controller
                 }
 
                 $toInsert[] = [
-                    'tanggal'    => $this->parseExcelDate($tanggal),
-                    'supplier'   => $supplier,
-                    'po'         => $po,
-                    'item_code'  => $canonicalItemCode,
-                    'name'       => $canonicalName,
-                    'qty'        => $qty,
-                    'price'      => $price,
-                    'currency'   => $currencyVal,
-                    'created_by' => Auth::id(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                    'tanggal'      => $this->parseExcelDate($tanggal),
+                    'supplier'     => $supplier,
+                    'po'           => $po,
+                    'item_code'    => $canonicalItemCode,
+                    'factory_code' => $factoryCode,
+                    'category_id'  => $categoryId,
+                    'name'         => $canonicalName,
+                    'qty'          => $qty,
+                    'price'        => $price,
+                    'currency'     => $currencyVal,
+                    'created_by'   => Auth::id(),
+                    'created_at'   => now(),
+                    'updated_at'   => now(),
                 ];
             }
 
@@ -2690,16 +2698,18 @@ class PurchasingController extends Controller
                     foreach (array_chunk($toInsert, 500) as $chunk) {
                         foreach ($chunk as $row) {
                             \App\Models\MasterPo::create([
-                                'tanggal'    => $row['tanggal'],
-                                'supplier'   => $row['supplier'],
-                                'po'         => $row['po'],
-                                'item_code'  => $row['item_code'],
-                                'name'       => $row['name'],
-                                'qty'        => $row['qty'],
-                                'price'      => $row['price'],
-                                'currency'   => $row['currency'],
-                                'user_id'    => $row['created_by'],
-                                'created_by' => $row['created_by'],
+                                'tanggal'      => $row['tanggal'],
+                                'supplier'     => $row['supplier'],
+                                'po'           => $row['po'],
+                                'item_code'    => $row['item_code'],
+                                'factory_code' => $row['factory_code'] ?? 'Plant 3',
+                                'category_id'  => $row['category_id'] ?? null,
+                                'name'         => $row['name'],
+                                'qty'          => $row['qty'],
+                                'price'        => $row['price'],
+                                'currency'     => $row['currency'],
+                                'user_id'      => $row['created_by'],
+                                'created_by'   => $row['created_by'],
                             ]);
                         }
                     }

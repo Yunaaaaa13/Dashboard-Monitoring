@@ -25,8 +25,7 @@ class AppServiceProvider extends ServiceProvider
         Paginator::useBootstrapFive();
 
         try {
-            \App\Models\MasterPo::ensureSchemaIntegrity();
-            \App\Models\PurchasingLog::ensureSchemaIntegrity();
+            \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
         } catch (\Throwable $e) {
             // Ignore if DB connection not ready yet
         }
@@ -54,7 +53,7 @@ class AppServiceProvider extends ServiceProvider
                     });
                 }
 
-                if (Schema::hasTable('purchasing_master_pos')) {
+                if (Schema::hasTable('master_pos')) {
                     \App\Models\MasterPo::select('item_code', 'name')->get()->each(function($i) use (&$registeredItemsMap) {
                         $code = strtoupper(trim($i->item_code));
                         if ($code && !isset($registeredItemsMap[$code])) {

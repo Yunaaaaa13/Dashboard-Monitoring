@@ -1566,6 +1566,8 @@ class PurchasingOutstandingController extends Controller
         set_time_limit(600);
         ini_set('memory_limit', '512M');
 
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
+
         $request->validate([
             'file' => 'required|mimes:xlsx,xls,csv,txt|max:5120',
         ]);

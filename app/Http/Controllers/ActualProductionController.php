@@ -448,6 +448,8 @@ class ActualProductionController extends Controller
         set_time_limit(600);
         ini_set('memory_limit', '512M');
 
+        \App\Services\DataValidation\DatabaseSchemaManager::ensureAllTablesIntegrity();
+
         try {
             $parsedRows = [];
 
