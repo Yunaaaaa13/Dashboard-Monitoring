@@ -7,7 +7,6 @@ use App\Models\PurchasingLog;
 use App\Models\PurchasingCategory;
 use App\Models\Forecasting;
 use App\Models\Outstanding;
-use App\Models\OutstandingRecord;
 use App\Models\Actual;
 use App\Models\ForecastActual;
 use App\Models\ComparisonMaster;

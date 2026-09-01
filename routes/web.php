@@ -6,7 +6,6 @@ use App\Http\Controllers\PurchasingOutstandingController;
 use App\Http\Controllers\HistoryController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ProductionController;
-use App\Http\Controllers\ForecastComparisonController;
 use App\Http\Controllers\ForecastController;
 use App\Http\Controllers\OutstandingController;
 use App\Http\Controllers\ActualController;
