@@ -124,8 +124,17 @@ class HistoryController extends Controller
         // KPI Ringkasan
         $allInputLogs       = PurchasingLog::all();
         $totalInputLogs     = $allInputLogs->count();
-        $totalInputReceived = $allInputLogs->sum('actual_received');
-        $totalInputTarget   = $allInputLogs->sum('target_order');
+        $totalInputReceived = (int) $allInputLogs->sum('actual_received');
+
+        // Deduplikasi target order per PO + Item Code
+        $poTargetGroups = [];
+        foreach ($allInputLogs as $log) {
+            $poKey   = !empty($log->po_reference) ? trim($log->po_reference) : (!empty($log->item_code) ? trim($log->item_code) : 'LOG-' . $log->id);
+            $itemKey = !empty($log->item_code) ? trim($log->item_code) : 'ITEM-' . $log->id;
+            $uniqueKey = $poKey . '___' . $itemKey;
+            $poTargetGroups[$uniqueKey] = max($poTargetGroups[$uniqueKey] ?? 0, (int) $log->target_order);
+        }
+        $totalInputTarget = array_sum($poTargetGroups);
 
         $totalOutstandingItems  = $outstandings->count();
         $totalOutstandingAmount = $outstandings->sum('display_amount');
@@ -337,12 +346,12 @@ class HistoryController extends Controller
             'supplier_name' => 'nullable|string',
             'eta_date'      => 'nullable|date',
             'order_qty'     => 'required|integer|min:1',
-            'price'         => 'required|integer|min:0',
+            'price'         => 'required|numeric|min:0',
             'complete'      => 'required|integer|min:0',
         ]);
 
         $orderQty = (int) $validated['order_qty'];
-        $price    = (int) $validated['price'];
+        $price    = (float) $validated['price'];
         $complete = min($orderQty, (int) $validated['complete']);
         $amount   = $orderQty * $price;
 
@@ -360,7 +369,7 @@ class HistoryController extends Controller
             'description'   => $validated['description'],
             'drawing'       => strtoupper($validated['drawing'] ?? '-'),
             'supplier_name' => !empty($validated['supplier_name']) ? $validated['supplier_name'] : null,
-            'eta_date'      => $validated['eta_date'] ?: null,
+            'eta_date'      => $validated['eta_date'] ?? null,
             'order_qty'     => $orderQty,
             'price'         => $price,
             'amount'        => $amount,

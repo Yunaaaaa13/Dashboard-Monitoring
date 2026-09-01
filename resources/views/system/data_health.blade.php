@@ -153,8 +153,8 @@
         </div>
     </div>
 
-    <!-- 5 Module Health Matrix Cards -->
-    <div class="row g-3 mb-4">
+    <!-- 7 Module Health Matrix Cards -->
+    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-4 row-cols-xl-7 g-3 mb-4">
         @foreach($healthData['modules'] as $key => $mod)
             <div class="col">
                 <div class="glass-card p-3 h-100 border-{{ $mod['status'] === 'HEALTHY' ? 'success' : 'secondary' }} border-opacity-50">
@@ -164,10 +164,16 @@
                         </span>
                         <i class="bi bi-diagram-3 text-muted"></i>
                     </div>
-                    <h6 class="fw-bold text-white mb-1">{{ $mod['title'] }}</h6>
-                    <div class="small text-muted">
+                    <h6 class="fw-bold text-white mb-1" style="font-size: 0.88rem;">{{ $mod['title'] }}</h6>
+                    <div class="small text-muted" style="font-size: 0.78rem;">
                         @if(isset($mod['record_count']))
                             <span>Data: <b>{{ number_format($mod['record_count']) }}</b> baris</span><br>
+                        @endif
+                        @if(isset($mod['total_qty']))
+                            <span>Qty: <b>{{ number_format($mod['total_qty']) }}</b> unit</span><br>
+                        @endif
+                        @if(isset($mod['total_stock']))
+                            <span>Stock: <b>{{ number_format($mod['total_stock']) }}</b> unit</span><br>
                         @endif
                         @if(isset($mod['items_count']))
                             <span>Items: <b>{{ number_format($mod['items_count']) }}</b> SKU</span>

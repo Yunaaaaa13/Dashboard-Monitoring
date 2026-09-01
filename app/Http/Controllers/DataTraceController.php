@@ -107,25 +107,35 @@ class DataTraceController extends Controller
             $totalOverDeliveryQty += max(0, $received - $plan);
         }
 
-        // 5. Production & Inventory
-        $productionCount = class_exists('\App\Models\ProductionLog') ? ProductionLog::count() : 0;
-        $inventoryCount  = class_exists('\App\Models\Inventory') ? Inventory::count() : 0;
+        // 5. Actual Production (Step 5) & Actual Stock (Step 6)
+        $actualProdCount = class_exists('\App\Models\ActualProduction') ? \App\Models\ActualProduction::count() : 0;
+        $actualProdQty   = class_exists('\App\Models\ActualProduction') ? (int)\App\Models\ActualProduction::sum('qty') : 0;
+        $actualProdItems = class_exists('\App\Models\ActualProduction') ? \App\Models\ActualProduction::distinct('item_code')->count('item_code') : 0;
+
+        $inventoryCount  = class_exists('\App\Models\Inventory') ? \App\Models\Inventory::count() : 0;
+        $inventoryStock  = class_exists('\App\Models\Inventory') ? (int)\App\Models\Inventory::sum('current_stock') : 0;
+        $inventoryItems  = class_exists('\App\Models\Inventory') ? \App\Models\Inventory::distinct('part_number')->count('part_number') : 0;
+
         $actualsCount    = Actual::count();
         $comparisonCount = ComparisonMaster::count();
 
-        // 6. Evaluasi Status Kesehatan Sistem
-        $statusForecast = ($forecastCount > 0 || $step1Count > 0) ? 'HEALTHY' : 'EMPTY';
-        $statusMasterPo = $masterPoCount > 0 ? 'HEALTHY' : 'EMPTY';
-        $statusIncoming = $incomingCount > 0 ? 'HEALTHY' : 'EMPTY';
+        // 6. Evaluasi Status Kesehatan Sistem untuk 7 Modul Purchasing
+        $statusForecast   = ($forecastCount > 0 || $step1Count > 0) ? 'HEALTHY' : 'EMPTY';
+        $statusMasterPo   = $masterPoCount > 0 ? 'HEALTHY' : 'EMPTY';
+        $statusIncoming   = $incomingCount > 0 ? 'HEALTHY' : 'EMPTY';
         $statusOutstanding = ($masterPoCount > 0) ? 'HEALTHY' : 'EMPTY';
-        $statusAnalysis = ($comparisonCount > 0 || $actualsCount > 0) ? 'HEALTHY' : 'EMPTY';
+        $statusActualProd = $actualProdCount > 0 ? 'HEALTHY' : 'EMPTY';
+        $statusInventory  = $inventoryCount > 0 ? 'HEALTHY' : 'EMPTY';
+        $statusAnalysis   = ($comparisonCount > 0 || $actualsCount > 0) ? 'HEALTHY' : 'EMPTY';
 
-        $totalModules = 5;
+        $totalModules = 7;
         $healthyModules = 0;
         if ($statusForecast === 'HEALTHY') $healthyModules++;
         if ($statusMasterPo === 'HEALTHY') $healthyModules++;
         if ($statusIncoming === 'HEALTHY') $healthyModules++;
         if ($statusOutstanding === 'HEALTHY') $healthyModules++;
+        if ($statusActualProd === 'HEALTHY') $healthyModules++;
+        if ($statusInventory === 'HEALTHY') $healthyModules++;
         if ($statusAnalysis === 'HEALTHY') $healthyModules++;
 
         $healthScore = round(($healthyModules / $totalModules) * 100);
@@ -162,8 +172,22 @@ class DataTraceController extends Controller
                     'total_outstanding' => $totalOutstandingQty,
                     'total_over_delivery' => $totalOverDeliveryQty,
                 ],
+                'actual_production' => [
+                    'title'       => '05 Aktual Produksi',
+                    'status'      => $statusActualProd,
+                    'record_count'=> $actualProdCount,
+                    'total_qty'   => $actualProdQty,
+                    'items_count' => $actualProdItems,
+                ],
+                'inventory' => [
+                    'title'       => '06 Aktual Stock',
+                    'status'      => $statusInventory,
+                    'record_count'=> $inventoryCount,
+                    'total_stock' => $inventoryStock,
+                    'items_count' => $inventoryItems,
+                ],
                 'analysis' => [
-                    'title'       => '07 Sinergi & Analisis',
+                    'title'       => '07 Hasil Akhir & Analisis',
                     'status'      => $statusAnalysis,
                     'actuals_count'    => $actualsCount,
                     'comparison_count' => $comparisonCount,

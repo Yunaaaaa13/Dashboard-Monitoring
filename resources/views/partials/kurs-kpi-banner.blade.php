@@ -136,8 +136,8 @@
     </span>
 
     {{-- Link ke Manajemen Kurs --}}
-    @if(Route::has('tax.exchange-rates'))
-    <a href="{{ route('tax.exchange-rates') }}" class="d-flex align-items-center ms-1"
+    @if(Route::has('exchange-rate.index'))
+    <a href="{{ route('exchange-rate.index') }}" class="d-flex align-items-center ms-1"
        style="color: #94a3b8; font-size: 0.75rem; text-decoration: none; padding: 3px 7px; border-radius: 6px; background: rgba(255,255,255,0.05); transition: all 0.2s;"
        title="Kelola & Update Kurs Pajak Mingguan"
        onmouseover="this.style.color='#fff'; this.style.background='rgba(59,130,246,0.3)'"

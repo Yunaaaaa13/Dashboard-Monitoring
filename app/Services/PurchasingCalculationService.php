@@ -268,6 +268,24 @@ class PurchasingCalculationService
             $pending += max(0, $group['target'] - $group['received']);
         }
 
+        // Fallback target jika log incoming belum ada atau target belum diisi pada log
+        if ($target <= 0) {
+            $masterPoQuery = \App\Models\MasterPo::query();
+            if ($selectedCategoryId) {
+                $masterPoQuery->where('category_id', $selectedCategoryId);
+            }
+            $target = (int) $masterPoQuery->where('tanggal', 'like', $selectedYear . '-%')->sum('qty');
+
+            if ($target <= 0) {
+                $outQuery = \App\Models\PurchasingOutstanding::query();
+                if ($selectedCategoryId) {
+                    $outQuery->where('category_id', $selectedCategoryId);
+                }
+                $target = (int) $outQuery->sum('order_qty');
+            }
+            $pending = max(0, $target - $received);
+        }
+
         $fulfillmentPct = $target > 0 ? round(($received / $target) * 100, 1) : 0.0;
 
         // 2. Status Kesehatan Pengadaan

@@ -77,8 +77,8 @@ class ExceptionCenterService
                     'count' => $unreconciledBatches,
                     'title' => "{$unreconciledBatches} Batch Impor Memerlukan Rekonsiliasi Ulang",
                     'description' => "Terdapat perbedaan antara kuantitas pada file sumber dengan baris yang berhasil diimpor.",
-                    'action_url' => '#',
-                    'action_label' => 'Buka Log Rekonsiliasi'
+                    'action_url' => route('system.data-health'),
+                    'action_label' => 'Buka Data Integration Health'
                 ];
             }
         } catch (\Throwable $e) {}

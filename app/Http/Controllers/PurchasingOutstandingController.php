@@ -136,15 +136,51 @@ class PurchasingOutstandingController extends Controller
             ->orderBy('period_month', 'asc')
             ->get();
 
+        // Helper untuk menghitung metrik target & aktual ter-deduplikasi per PO + Item Code
+        $calcDeduplicatedMetrics = function($logCollection) {
+            $poGroups = [];
+            foreach ($logCollection as $log) {
+                $poKey   = !empty($log->po_reference) ? trim($log->po_reference) : (!empty($log->item_code) ? trim($log->item_code) : 'LOG-' . $log->id);
+                $itemKey = !empty($log->item_code) ? trim($log->item_code) : 'ITEM-' . $log->id;
+                $uniqueKey = $poKey . '___' . $itemKey;
+
+                if (!isset($poGroups[$uniqueKey])) {
+                    $poGroups[$uniqueKey] = [
+                        'target' => 0,
+                        'received' => 0,
+                    ];
+                }
+                $poGroups[$uniqueKey]['target'] = max($poGroups[$uniqueKey]['target'], (int) $log->target_order);
+                $poGroups[$uniqueKey]['received'] += (int) $log->actual_received;
+            }
+
+            $target = 0;
+            $received = 0;
+            $pending = 0;
+
+            foreach ($poGroups as $group) {
+                $target += $group['target'];
+                $received += $group['received'];
+                $pending += max(0, $group['target'] - $group['received']);
+            }
+
+            return [
+                'target'   => $target,
+                'received' => $received,
+                'pending'  => $pending,
+            ];
+        };
+
         // Agregasi per bulan
         $forecastByMonth = [];
         foreach ($monthsList as $num => $label) {
             $periodStr = $forecastYear . '-' . $num;
             $monthLogs = $forecastLogs->where('period_month', $periodStr);
-            $target    = $monthLogs->sum('target_order');
-            $actual    = $monthLogs->sum('actual_received');
-            $prod      = $monthLogs->sum('production_qty');
-            $pending   = $monthLogs->sum('pending_order');
+            $monthMetrics = $calcDeduplicatedMetrics($monthLogs);
+            $target    = $monthMetrics['target'];
+            $actual    = $monthMetrics['received'];
+            $prod      = (int) $monthLogs->sum('production_qty');
+            $pending   = $monthMetrics['pending'];
             $gap       = $actual - $target;               // positif = over, negatif = under
             $fulfPct   = $target > 0 ? round(($actual / $target) * 100, 1) : null;
 
@@ -166,8 +202,9 @@ class PurchasingOutstandingController extends Controller
         $forecastByCategory = [];
         foreach ($allCategories as $cat) {
             $catLogs = $forecastLogs->where('purchasing_category_id', $cat->id);
-            $target  = $catLogs->sum('target_order');
-            $actual  = $catLogs->sum('actual_received');
+            $catMetrics = $calcDeduplicatedMetrics($catLogs);
+            $target  = $catMetrics['target'];
+            $actual  = $catMetrics['received'];
             $gap     = $actual - $target;
             $fulfPct = $target > 0 ? round(($actual / $target) * 100, 1) : null;
 
@@ -176,18 +213,19 @@ class PurchasingOutstandingController extends Controller
                 'name'        => $cat->category_name,
                 'target'      => $target,
                 'actual'      => $actual,
-                'production'  => $catLogs->sum('production_qty'),
-                'pending'     => $catLogs->sum('pending_order'),
+                'production'  => (int) $catLogs->sum('production_qty'),
+                'pending'     => $catMetrics['pending'],
                 'gap'         => $gap,
                 'fulfillment' => $fulfPct,
             ];
         }
 
         // KPI Totals
-        $forecastTotalTarget  = $forecastLogs->sum('target_order');
-        $forecastTotalActual  = $forecastLogs->sum('actual_received');
-        $forecastTotalProd    = $forecastLogs->sum('production_qty');
-        $forecastTotalPending = $forecastLogs->sum('pending_order');
+        $overallForecastMetrics = $calcDeduplicatedMetrics($forecastLogs);
+        $forecastTotalTarget  = $overallForecastMetrics['target'];
+        $forecastTotalActual  = $overallForecastMetrics['received'];
+        $forecastTotalProd    = (int) $forecastLogs->sum('production_qty');
+        $forecastTotalPending = $overallForecastMetrics['pending'];
         $forecastTotalGap     = $forecastTotalActual - $forecastTotalTarget;
         $forecastFulfillPct   = $forecastTotalTarget > 0
             ? round(($forecastTotalActual / $forecastTotalTarget) * 100, 1)
