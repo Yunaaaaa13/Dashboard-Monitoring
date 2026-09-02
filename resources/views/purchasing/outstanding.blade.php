@@ -1967,6 +1967,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const detectedCols = new Set();
                 const mNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
                 const mIndoMap = {'MEI':'MAY','AGS':'AUG','OKT':'OCT','DES':'DEC','AGU':'AUG'};
+                const monthPattern = /(JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|AGU|SEP|OCT|OKT|NOV|DEC|DES)[\s\-]?(\d{2,4})/i;
                 
                 // Scan header rows from row 0 to headerRowIdx + 5
                 for (let i = 0; i < Math.min(rows.length, headerRowIdx + 6); i++) {
