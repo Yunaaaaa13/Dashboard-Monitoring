@@ -1602,8 +1602,8 @@ class PurchasingOutstandingController extends Controller
                 if (empty($val)) return null;
                 $valStr = trim((string)$val);
                 
-                // 1. Jika angka serial Excel (40000 - 50000 = tahun 2009 - 2036)
-                if (is_numeric($valStr) && (float)$valStr >= 40000 && (float)$valStr <= 50000) {
+                // 1. Jika angka serial Excel (40000 - 55000 = tahun 2009 - 2050)
+                if (is_numeric($valStr) && (float)$valStr >= 40000 && (float)$valStr <= 55000) {
                     $unix = ((float)$valStr - 25569) * 86400;
                     $mShort = strtoupper(date('M', (int)$unix));
                     $yr = date('Y', (int)$unix);
@@ -1613,21 +1613,75 @@ class PurchasingOutstandingController extends Controller
                         'code'  => $mShort . '-' . substr($yr, -2)
                     ];
                 }
-                
-                // 2. Jika string tekstual (e.g. JUN-26, Jun 2026, JUL-26)
-                $monthPattern = '/(JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|SEP|OCT|OKT|NOV|DEC|DES)[\s\-]?(\d{2,4})/i';
+
+                $mNames = [1=>'JAN',2=>'FEB',3=>'MAR',4=>'APR',5=>'MAY',6=>'JUN',7=>'JUL',8=>'AUG',9=>'SEP',10=>'OCT',11=>'NOV',12=>'DEC'];
+                $mIndoMap = ['MEI'=>'MAY','AGS'=>'AUG','OKT'=>'OCT','DES'=>'DEC','AGU'=>'AUG'];
+
+                // 2. Format ISO YYYY-MM-DD atau YYYY-MM
+                if (preg_match('/^(\d{4})[-\/](\d{1,2})([-\/]\d{1,2})?/', $valStr, $isoMatch)) {
+                    $y = (int) $isoMatch[1];
+                    $m = (int) $isoMatch[2];
+                    if ($y >= 2020 && $y <= 2040 && $m >= 1 && $m <= 12) {
+                        $mShort = $mNames[$m];
+                        return [
+                            'short' => $mShort,
+                            'year'  => $y,
+                            'code'  => $mShort . '-' . substr((string)$y, -2)
+                        ];
+                    }
+                }
+
+                // 3. Format DD/MM/YYYY atau DD-MM-YYYY
+                if (preg_match('/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})/', $valStr, $dmyMatch)) {
+                    $m = (int) $dmyMatch[2];
+                    $y = (int) $dmyMatch[3];
+                    if ($y >= 2020 && $y <= 2040 && $m >= 1 && $m <= 12) {
+                        $mShort = $mNames[$m];
+                        return [
+                            'short' => $mShort,
+                            'year'  => $y,
+                            'code'  => $mShort . '-' . substr((string)$y, -2)
+                        ];
+                    }
+                }
+
+                // 4. Cari apakah ada 4 digit tahun (2020-2040)
+                $foundYear = null;
+                if (preg_match('/\b(20[23]\d)\b/', $valStr, $yMatch)) {
+                    $foundYear = (int) $yMatch[1];
+                }
+
+                // Cari nama bulan (English & Indonesia)
+                $monthPattern = '/(JANUARI|FEBRUARI|MARET|APRIL|MEI|JUNI|JULI|AGUSTUS|SEPTEMBER|OKTOBER|NOVEMBER|DESEMBER|JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|AGU|SEP|OCT|OKT|NOV|DEC|DES)/i';
                 if (preg_match($monthPattern, strtoupper($valStr), $mMatch)) {
-                    $mShort = strtoupper($mMatch[1]);
-                    if ($mShort === 'MEI') $mShort = 'MAY';
-                    if ($mShort === 'AGS') $mShort = 'AUG';
-                    if ($mShort === 'DES') $mShort = 'DEC';
-                    if ($mShort === 'OKT') $mShort = 'OCT';
-                    $yrDigits = strlen($mMatch[2]) === 2 ? ('20' . $mMatch[2]) : $mMatch[2];
-                    return [
-                        'short' => $mShort,
-                        'year'  => (int)$yrDigits,
-                        'code'  => $mShort . '-' . substr($yrDigits, -2)
-                    ];
+                    $mRaw = strtoupper(substr($mMatch[1], 0, 3));
+                    if (isset($mIndoMap[$mRaw])) $mRaw = $mIndoMap[$mRaw];
+
+                    if ($foundYear !== null) {
+                        return [
+                            'short' => $mRaw,
+                            'year'  => $foundYear,
+                            'code'  => $mRaw . '-' . substr((string)$foundYear, -2)
+                        ];
+                    }
+
+                    // Jika tidak ada 4 digit tahun, cari 2 digit tahun yang masuk akal (20..39)
+                    if (preg_match('/' . preg_quote($mMatch[1], '/') . '[\s\-]?(2\d|3\d)\b/i', $valStr, $y2Match)) {
+                        $y = (int) ('20' . $y2Match[1]);
+                        return [
+                            'short' => $mRaw,
+                            'year'  => $y,
+                            'code'  => $mRaw . '-' . substr((string)$y, -2)
+                        ];
+                    }
+                    if (preg_match('/\b(2\d|3\d)[\s\-]?' . preg_quote($mMatch[1], '/') . '/i', $valStr, $y2Match)) {
+                        $y = (int) ('20' . $y2Match[1]);
+                        return [
+                            'short' => $mRaw,
+                            'year'  => $y,
+                            'code'  => $mRaw . '-' . substr((string)$y, -2)
+                        ];
+                    }
                 }
                 
                 return null;
@@ -2383,13 +2437,29 @@ class PurchasingOutstandingController extends Controller
                     ];
 
                     for ($i = 0; $i <= 36; $i++) {
-                        $mPo = 0; $mProd = 0;
+                        $mPo = 0; $mProd = 0; $mInv = 0;
                         if (isset($monthBlocks[$i])) {
-                            if ($monthBlocks[$i]['poCol'] && isset($row[$monthBlocks[$i]['poCol']])) $mPo = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['poCol']]);
-                            if ($monthBlocks[$i]['prodCol'] && isset($row[$monthBlocks[$i]['prodCol']])) $mProd = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['prodCol']]);
+                            if ($monthBlocks[$i]['poCol'] && isset($row[$monthBlocks[$i]['poCol']])) {
+                                $mPo = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['poCol']]);
+                            }
+                            if ($monthBlocks[$i]['prodCol'] && isset($row[$monthBlocks[$i]['prodCol']])) {
+                                $mProd = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['prodCol']]);
+                            }
+                            $stkColToUse = $monthBlocks[$i]['stockCol'] ?: ($monthBlocks[$i]['inventoryCol'] ?? null);
+                            if ($stkColToUse && isset($row[$stkColToUse])) {
+                                $mInv = (int) $this->parseCleanNumber($row[$stkColToUse]);
+                            }
                         }
-                        $createData["m{$i}_po"] = $mPo; $createData["m{$i}_prod"] = $mProd;
+                        if ($i === 0 && $mInv === 0 && $stockVal > 0) {
+                            $mInv = $stockVal;
+                        }
+                        $createData["m{$i}_po"] = $mPo;
+                        $createData["m{$i}_prod"] = $mProd;
+                        $createData["m{$i}_inventory"] = $mInv;
                         if ($mPo > 0) $monthlyPoValues[] = $mPo;
+                    }
+                    if (!isset($createData['m0_inventory']) || $createData['m0_inventory'] === 0) {
+                        $createData['m0_inventory'] = $stockVal;
                     }
 
                     $totalMonthPo = array_sum($monthlyPoValues);
@@ -2420,15 +2490,25 @@ class PurchasingOutstandingController extends Controller
                         $mForecastQty = ($mBlock['forecastCol'] && isset($row[$mBlock['forecastCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['forecastCol']]) : 0;
                         $mDeliveryQty = ($mBlock['deliveryCol'] && isset($row[$mBlock['deliveryCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['deliveryCol']]) : 0;
                         
-                        $calcOutstanding = ($mIdx === 0) ? $runningOutstand : $runningOutstand + $mPoQty - $mDeliveryQty;
-                        $calcStock = ($mIdx === 0) ? $runningStock : $runningStock + $mDeliveryQty - $mProdQty;
+                        // Ekstraksi nilai stock eksplisit jika ada kolom stock pada bulan ini di file Excel
+                        $stkCol = $mBlock['stockCol'] ?: ($mBlock['inventoryCol'] ?? null);
+                        $excelStockVal = ($stkCol && isset($row[$stkCol]) && trim((string)$row[$stkCol]) !== '') ? (int) $this->parseCleanNumber($row[$stkCol]) : null;
+
+                        $effDelivery = $mDeliveryQty > 0 ? $mDeliveryQty : $mPoQty;
+                        $calcOutstanding = ($mIdx === 0 && $outstandVal > 0) ? $outstandVal : ($runningOutstand + $mPoQty - $effDelivery);
+                        
+                        if ($excelStockVal !== null && ($excelStockVal !== 0 || $mIdx === 0)) {
+                            $calcStock = $excelStockVal;
+                        } else {
+                            $calcStock = ($mIdx === 0) ? $runningStock : ($runningStock + $effDelivery - $mProdQty);
+                        }
                         
                         $forecastingBatch[] = [
                             'part_number' => $itemCodeClean, 'factory_code' => $factoryVal, 'supplier_name' => $suppVal,
                             'periode' => $periode, 'period_month' => $periode, 'description' => $fullDesc,
                             'price' => $priceVal, 'currency' => $currencyVal, 'outstanding_pre' => $runningOutstand,
                             'stock_pre' => $runningStock, 'po' => $mPoQty, 'po_qty' => $mPoQty, 'production' => $mProdQty,
-                            'production_qty' => $mProdQty, 'delivery' => $mDeliveryQty ?: $mPoQty,
+                            'production_qty' => $mProdQty, 'delivery' => $effDelivery,
                             'forecast_qty' => $mForecastQty ?: ($mPoQty > 0 ? $mPoQty : $mProdQty),
                             'outstanding' => $calcOutstanding, 'stock' => $calcStock, 'stock_qty' => $calcStock,
                             'delivery_category_code' => 'LOC'

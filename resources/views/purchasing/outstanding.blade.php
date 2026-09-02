@@ -1963,28 +1963,61 @@ document.addEventListener('DOMContentLoaded', function() {
                 if (headerRowIdx === -1) headerRowIdx = 0;
                 
                 // Detect months
-                const monthPattern = /(JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|SEP|OCT|OKT|NOV|DEC|DES)[\s\-]?(\d{2,4})/i;
                 const months = new Set();
                 const detectedCols = new Set();
+                const mNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+                const mIndoMap = {'MEI':'MAY','AGS':'AUG','OKT':'OCT','DES':'DEC','AGU':'AUG'};
                 
                 // Scan header rows from row 0 to headerRowIdx + 5
                 for (let i = 0; i < Math.min(rows.length, headerRowIdx + 6); i++) {
                     Object.entries(rows[i]).forEach(([col, val]) => {
-                        const str = String(val ?? '').trim();
-                        const mMatch = str.match(monthPattern);
-                        if (mMatch) {
-                            let mShort = mMatch[1].toUpperCase();
-                            if (mShort === 'MEI') mShort = 'MAY';
-                            if (mShort === 'AGS') mShort = 'AUG';
-                            if (mShort === 'DES') mShort = 'DEC';
-                            if (mShort === 'OKT') mShort = 'OCT';
-                            const yr = mMatch[2].length === 2 ? '20' + mMatch[2] : mMatch[2];
-                            months.add(mShort + '-' + yr.slice(-2));
+                        if (val === null || val === undefined || val === '') return;
+
+                        // Check if Date object or Excel serial number
+                        let d = null;
+                        if (val instanceof Date && !isNaN(val)) {
+                            d = val;
+                        } else if (typeof val === 'number' && val >= 40000 && val <= 55000) {
+                            d = new Date((val - 25569) * 86400000);
                         }
-                        if (typeof val === 'number' && val >= 40000 && val <= 50000) {
-                            const d = new Date((val - 25569) * 86400000);
-                            const mNames = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+                        if (d) {
                             months.add(mNames[d.getMonth()] + '-' + String(d.getFullYear()).slice(-2));
+                            return;
+                        }
+
+                        const str = String(val).trim();
+
+                        // 1. ISO format (YYYY-MM or YYYY-MM-DD)
+                        const isoMatch = str.match(/^(\d{4})[-\/](\d{1,2})/);
+                        if (isoMatch) {
+                            const y = parseInt(isoMatch[1]);
+                            const m = parseInt(isoMatch[2]);
+                            if (y >= 2020 && y <= 2040 && m >= 1 && m <= 12) {
+                                months.add(mNames[m - 1] + '-' + String(y).slice(-2));
+                                return;
+                            }
+                        }
+
+                        // 2. Format with month name and year (e.g. "DEC-25", "Dec 2025", "01-Dec-2025")
+                        const y4Match = str.match(/\b(20[23]\d)\b/);
+                        const mTextMatch = str.match(/(JANUARI|FEBRUARI|MARET|APRIL|MEI|JUNI|JULI|AGUSTUS|SEPTEMBER|OKTOBER|NOVEMBER|DESEMBER|JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|AGS|AGU|SEP|OCT|OKT|NOV|DEC|DES)/i);
+                        if (mTextMatch) {
+                            let mShort = mTextMatch[1].toUpperCase().slice(0, 3);
+                            if (mIndoMap[mShort]) mShort = mIndoMap[mShort];
+
+                            if (y4Match) {
+                                months.add(mShort + '-' + y4Match[1].slice(-2));
+                                return;
+                            }
+
+                            // 2-digit year (only 20..39, e.g. 24, 25, 26, 27)
+                            const y2Match = str.match(/(?:JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|SEP|OCT|OKT|NOV|DEC|DES)[\s\-]?([23]\d)\b/i)
+                                         || str.match(/\b([23]\d)[\s\-]?(?:JAN|FEB|MAR|APR|MAY|MEI|JUN|JUL|AUG|AGS|SEP|OCT|OKT|NOV|DEC|DES)/i);
+                            if (y2Match) {
+                                months.add(mShort + '-' + y2Match[1]);
+                                return;
+                            }
                         }
                     });
                 }
@@ -1997,7 +2030,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     'CURRENCY': 'Currency', 'KURS': 'Currency', 'OUTSTANDING': 'Outstanding',
                     'STOCK': 'Stock', 'PO': 'PO', 'PROD': 'Produksi',
                     'FORECAST': 'Forecast', 'INCOMING': 'Incoming', 'DELIVERY': 'Incoming',
-                    'QTY': 'QTY', 'AMOUNT': 'Amount'
+                    'QTY': 'QTY', 'AMOUNT': 'Amount',
+                    'KODE BARANG': 'Kode Barang', 'KODE MATERIAL': 'Kode Material', 'KODE ITEM': 'Kode Item',
+                    'PART NO': 'Part Number', 'DRAWING': 'Drawing', 'PN': 'PN'
                 };
                 
                 for (let i = 0; i < Math.min(rows.length, headerRowIdx + 6); i++) {
@@ -2141,7 +2176,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 // Warnings
                 const warnings = [];
                 if (months.size === 0) warnings.push('Tidak ada bulan terdeteksi di header. Pastikan format bulan seperti JUN-26 atau serial date ada di baris header.');
-                if (!detectedCols.has('Item Code') && !detectedCols.has('Part Number')) warnings.push('Kolom ITEM CODE / PART NUMBER tidak ditemukan.');
+                const itemCodeKeywords = ['Item Code', 'Part Number', 'Material Code', 'Kode Barang', 'Kode Material', 'Kode Item', 'Drawing', 'PN'];
+                const hasItemCodeCol = [...detectedCols].some(c => itemCodeKeywords.includes(c));
+                if (!hasItemCodeCol) warnings.push('Kolom ITEM CODE / PART NUMBER tidak ditemukan.');
                 if (dataRowCount === 0) warnings.push('Tidak ada baris data terdeteksi setelah header.');
                 if (dupEntries.length > 0) {
                     const dupDetail = dupEntries.slice(0, 4).map(([k, v]) => {

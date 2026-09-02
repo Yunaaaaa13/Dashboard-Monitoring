@@ -2504,7 +2504,7 @@
             clean.includes('itemcode') || clean.includes('kodematerial') ||
             clean.includes('kodebarang') || clean.includes('kodeitem') ||
             clean.includes('kodepart') || clean.includes('partno') ||
-            clean.includes('drawingno') || clean === 'drawing' ||
+            clean.includes('drawingno') || clean === 'drawing' || clean === 'pn' || clean === 'sku' ||
             clean.includes('matcode') || clean.includes('matno') ||
             clean.includes('partcode') || clean === 'komponen' ||
             (clean.includes('material') && !clean.includes('name') && !clean.includes('desc') && !clean.includes('supplier')) ||

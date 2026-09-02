@@ -824,16 +824,31 @@ class InventoryController extends Controller
         } elseif ($request->hasFile('file')) {
             $file = $request->file('file');
             $path = $file->getRealPath();
-            $data = array_map('str_getcsv', file($path));
+            $ext = strtolower($file->getClientOriginalExtension());
+            if (in_array($ext, ['xlsx', 'xls'])) {
+                try {
+                    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($path);
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $data = $worksheet->toArray(null, false, true, false);
+                } catch (\Throwable $e) {
+                    $data = [];
+                }
+            } else {
+                $data = array_map('str_getcsv', file($path));
+            }
             if (count($data) > 1) {
                 $header = array_map(fn($h) => strtolower(trim((string)$h)), $data[0]);
                 for ($i = 1; $i < count($data); $i++) {
                     if (empty(array_filter($data[$i]))) continue;
                     $rowAssoc = [];
                     foreach ($header as $colIdx => $colName) {
-                        $rowAssoc[$colName] = $data[$i][$colIdx] ?? null;
+                        if (!empty($colName)) {
+                            $rowAssoc[$colName] = $data[$i][$colIdx] ?? null;
+                        }
                     }
-                    $rows[] = $rowAssoc;
+                    if (!empty($rowAssoc)) {
+                        $rows[] = $rowAssoc;
+                    }
                 }
             }
         }
@@ -856,15 +871,14 @@ class InventoryController extends Controller
             $rawSupplierCode = $this->resolveField($r, ['supplier_code', 'suppliercode', 'vendor_code', 'vendorcode', 'kode_supplier', 'kode_vendor']);
             $rawSupplierName = $this->resolveField($r, ['supplier_name', 'suppliername', 'supplier', 'vendor_name', 'vendorname', 'vendor', 'nama_supplier', 'nama_vendor']);
             $rawPlant        = $this->resolveField($r, ['plant', 'factory_code', 'factorycode', 'factory', 'lokasi', 'site', 'plant_code'], 'KIP1');
-            $rawMaterialCode = $this->resolveField($r, ['material_code', 'materialcode', 'part_number', 'partnumber', 'part_no', 'partno', 'item_code', 'itemcode', 'kode_material', 'kode_barang', 'material', 'part']);
+            $rawMaterialCode = $this->resolveField($r, ['material_code', 'materialcode', 'part_number', 'partnumber', 'part_no', 'partno', 'item_code', 'itemcode', 'drawing', 'pn', 'kode_material', 'kode_barang', 'kode_item', 'kode_part', 'material', 'part', 'item']);
             $rawDescription  = $this->resolveField($r, ['description', 'deskripsi', 'nama_barang', 'item_description', 'material_name', 'keterangan']);
             $rawInventory    = $this->resolveField($r, ['actual_inventory', 'actualinventory', 'aktual_inventory', 'aktualinventory', 'actual_stock', 'actualstock', 'aktual_stok', 'aktualstok', 'current_stock', 'currentstock', 'stok_fisik', 'stokfisik', 'physical_stock', 'physicalstock', 'ending_stock', 'endingstock', 'saldo', 'saldo_akhir', 'qty', 'quantity', 'jumlah', 'inventory', 'stock', 'stok', 'm0_inventory', 'm0_stock', 'm0']);
             $rawSnapshotDate = $this->resolveField($r, ['snapshot_date', 'snapshotdate', 'tanggal_inventory', 'tanggalinventory', 'tanggal', 'date', 'periode', 'period', 'tgl'], $today);
 
-            $matCodeStr = strtoupper(trim((string)$rawMaterialCode));
-            if ($rawMaterialCode === null || $matCodeStr === '' || $matCodeStr === 'ITEM CODE' || $matCodeStr === 'MATERIAL CODE' || $matCodeStr === 'PART NUMBER' || str_starts_with($matCodeStr, 'TOTAL')) continue;
+            $materialCode = \App\Services\DataValidation\InputNormalizer::normalizeMaterialCode($rawMaterialCode);
+            if ($materialCode === '' || $materialCode === 'ITEM CODE' || $materialCode === 'MATERIAL CODE' || $materialCode === 'PART NUMBER' || str_starts_with($materialCode, 'TOTAL')) continue;
 
-            $materialCode = trim((string)$rawMaterialCode);
             $plant = strtoupper(trim((string)$rawPlant ?: 'KIP1'));
             $supplierCode = $rawSupplierCode ? trim((string)$rawSupplierCode) : null;
             $supplierName = $rawSupplierName ? trim((string)$rawSupplierName) : null;
@@ -911,7 +925,11 @@ class InventoryController extends Controller
                 }
 
                 $invRecord = Inventory::where('part_number', $materialCode)
-                    ->where('factory_code', $plant)
+                    ->where(function($q) use ($plant) {
+                        $q->where('factory_code', $plant)
+                          ->orWhere('factory_code', str_replace(' ', '', $plant))
+                          ->orWhere('factory_code', preg_replace('/(KIP|PLANT)(\d)/i', '$1 $2', $plant));
+                    })
                     ->where('tanggal_inventory', $snapshotDate)
                     ->first();
 
@@ -946,6 +964,18 @@ class InventoryController extends Controller
                 PurchasingOutstanding::where('part_number', $materialCode)
                     ->orWhere('drawing', $materialCode)
                     ->update(['m0_inventory' => $actualInventory]);
+
+                // Sinkronisasi stock ke tabel Forecastings untuk periode yang bersangkutan
+                $ymPeriod = substr($snapshotDate, 0, 7);
+                \App\Models\Forecasting::where('part_number', $materialCode)
+                    ->where(function($q) use ($ymPeriod) {
+                        $q->where('period_month', $ymPeriod)
+                          ->orWhere('periode', $ymPeriod);
+                    })
+                    ->update([
+                        'stock_qty' => $actualInventory,
+                        'stock'     => $actualInventory,
+                    ]);
             }
 
             DB::commit();

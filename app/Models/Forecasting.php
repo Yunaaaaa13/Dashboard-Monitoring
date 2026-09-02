@@ -170,20 +170,40 @@ class Forecasting extends Model
     public function getCalculatedOutstandingAttribute(): int
     {
         $outPre = (int) ($this->attributes['outstanding_pre'] ?? 0);
-        $po     = $this->calculated_po;
+        $po     = $this->calculated_po > 0 ? $this->calculated_po : (int) ($this->attributes['po_qty'] ?? ($this->attributes['po'] ?? 0));
         $del    = $this->calculated_delivery;
+        if ($del === 0 && isset($this->attributes['outstanding']) && (int)$this->attributes['outstanding'] !== 0) {
+            return (int) $this->attributes['outstanding'];
+        }
         return $outPre + $po - $del;
     }
 
     /**
      * Rumus Excel Stock Akhir: Stock = Stock (pre month) + Delivery - PROD
+     * - Jika ada realisasi penerimaan (PurchasingLog Step 3), hitung dinamis: StockPre + Del - Prod
+     * - Jika belum ada penerimaan fisik nyata, prioritaskan nilai stock_qty yang diimpor dari Excel/Forecast
+     * - Fallback: hitung dari rencana delivery/PO: StockPre + PlannedDel - Prod
      */
     public function getCalculatedStockAttribute(): int
     {
-        $stockPre = (int) ($this->attributes['stock_pre'] ?? ($this->attributes['stock_qty'] ?? 0));
-        $del      = $this->calculated_delivery;
-        $prod     = (int) ($this->attributes['production_qty'] ?? ($this->attributes['production'] ?? 0));
-        return $stockPre + $del - $prod;
+        $storedStock = (int) ($this->attributes['stock_qty'] ?? ($this->attributes['stock'] ?? 0));
+        $del = $this->calculated_delivery;
+        $prod = (int) ($this->attributes['production_qty'] ?? ($this->attributes['production'] ?? 0));
+        $stockPre = (int) ($this->attributes['stock_pre'] ?? 0);
+
+        // 1. Jika ada realisasi penerimaan barang nyata di Step 3
+        if ($del > 0) {
+            return $stockPre + $del - $prod;
+        }
+
+        // 2. Jika ada nilai stock yang tersimpan dari hasil import Excel / Forecast
+        if ($storedStock !== 0 || isset($this->attributes['stock_qty']) || isset($this->attributes['stock'])) {
+            return $storedStock;
+        }
+
+        // 3. Fallback: gunakan rencana delivery (po_qty) jika belum ada catatan penerimaan fisik
+        $plannedDel = (int) ($this->attributes['delivery'] ?? ($this->attributes['po_qty'] ?? 0));
+        return $stockPre + $plannedDel - $prod;
     }
 
     /**
