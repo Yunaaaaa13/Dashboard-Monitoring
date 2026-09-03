@@ -61,37 +61,37 @@ Route::delete('/purchasing/history/outstanding/{id}', [HistoryController::class,
 Route::get('/purchasing/outstanding/comparison-json', [PurchasingOutstandingController::class, 'comparisonJson'])->name('purchasing.outstanding.comparison-json');
 // Step 1: Outstanding/Forecast
 Route::get('/purchasing/outstanding', [PurchasingOutstandingController::class, 'index'])->name('purchasing.outstanding');
-Route::post('/purchasing/outstanding', [PurchasingOutstandingController::class, 'store'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.store');
-Route::put('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'update'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.update');
-Route::delete('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.destroy');
+Route::post('/purchasing/outstanding', [PurchasingOutstandingController::class, 'store'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.store');
+Route::put('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'update'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.update');
+Route::delete('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.destroy');
 Route::post('/purchasing/outstanding/destroy-bulk', [PurchasingOutstandingController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.outstanding.destroy-bulk');
 Route::post('/purchasing/outstanding/destroy-all', [PurchasingOutstandingController::class, 'destroyAll'])->middleware('auth')->name('purchasing.outstanding.destroy-all');
-Route::post('/purchasing/outstanding/seed', [PurchasingOutstandingController::class, 'seedDefault'])->middleware(['auth', 'role:supervisor'])->name('purchasing.outstanding.seed');
+Route::post('/purchasing/outstanding/seed', [PurchasingOutstandingController::class, 'seedDefault'])->middleware(['auth', 'role:supervisor,admin'])->name('purchasing.outstanding.seed');
 Route::post('/purchasing/outstanding/months', [PurchasingOutstandingController::class, 'updateMonths'])->name('purchasing.outstanding.months');
 Route::get('/purchasing/outstanding/template', [ForecastController::class, 'downloadTemplate'])->middleware('auth')->name('purchasing.template');
 Route::get('/purchasing/outstanding/export', [HistoryController::class, 'export'])->middleware('auth')->name('purchasing.export');
 Route::get('/purchasing/outstanding/import', function() {
     return redirect()->route('purchasing.outstanding');
 });
-Route::post('/purchasing/outstanding/import', [PurchasingOutstandingController::class, 'importExcel'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.outstanding.import');
+Route::post('/purchasing/outstanding/import', [PurchasingOutstandingController::class, 'importExcel'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.import');
 Route::post('/purchasing/outstanding/{id}/workflow', [PurchasingOutstandingController::class, 'updateWorkflow'])->middleware('auth')->name('purchasing.outstanding.workflow');
  
 // Input Real Data Pembelian Bulanan (Buyer Entry - Step 3)
 Route::get('/purchasing/input', [PurchasingController::class, 'createLog'])->middleware('auth')->name('purchasing.input');
-Route::post('/purchasing/input', [PurchasingController::class, 'storeLog'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.store');
-Route::post('/purchasing/log/{id}/verify', [HistoryController::class, 'approveInputLog'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.log.verify');
-Route::delete('/purchasing/log/{id}', [PurchasingController::class, 'destroyLog'])->middleware(['auth', 'role:supervisor'])->name('purchasing.log.destroy');
+Route::post('/purchasing/input', [PurchasingController::class, 'storeLog'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.store');
+Route::post('/purchasing/log/{id}/verify', [HistoryController::class, 'approveInputLog'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.log.verify');
+Route::delete('/purchasing/log/{id}', [PurchasingController::class, 'destroyLog'])->middleware(['auth', 'role:supervisor,admin'])->name('purchasing.log.destroy');
 Route::post('/purchasing/log/destroy-bulk', [PurchasingController::class, 'destroyLogBulk'])->middleware('auth')->name('purchasing.log.destroy-bulk');
 Route::post('/purchasing/log/destroy-all', [PurchasingController::class, 'destroyLogAll'])->middleware('auth')->name('purchasing.log.destroy-all');
-Route::put('/purchasing/log/{id}', [PurchasingController::class, 'updateLog'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.log.update');
+Route::put('/purchasing/log/{id}', [PurchasingController::class, 'updateLog'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.log.update');
 Route::get('/purchasing/input/template', [IntegratedImportController::class, 'downloadIncomingTemplate'])->middleware('auth')->name('purchasing.input.template');
-Route::post('/purchasing/input/import', [IntegratedImportController::class, 'importIncoming'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.input.import');
-Route::post('/purchasing/input/bulk', [PurchasingController::class, 'storeLogBulk'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.input.bulk');
+Route::post('/purchasing/input/import', [IntegratedImportController::class, 'importIncoming'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.input.import');
+Route::post('/purchasing/input/bulk', [PurchasingController::class, 'storeLogBulk'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.input.bulk');
 Route::get('/purchasing/outstanding-po', [AnalysisController::class, 'outstandingPo'])->middleware('auth')->name('purchasing.outstanding-po');
 
 // Modul Import Terpadu PO & Incoming (1 Excel -> Master PO + Incoming)
 Route::post('/purchasing/integrated-import/preview', [IntegratedImportController::class, 'preview'])->middleware('auth')->name('purchasing.integrated-import.preview');
-Route::post('/purchasing/integrated-import/execute', [IntegratedImportController::class, 'execute'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.integrated-import.execute');
+Route::post('/purchasing/integrated-import/execute', [IntegratedImportController::class, 'execute'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.integrated-import.execute');
 Route::get('/purchasing/integrated-import/template', [IntegratedImportController::class, 'downloadTemplate'])->middleware('auth')->name('purchasing.integrated-import.template');
 
 Route::post('/integrated-import/smart-preview', [IntegratedImportController::class, 'smartPreview'])->name('integrated-import.smart-preview');
@@ -103,12 +103,12 @@ Route::get('/api/system/data-health', [DataTraceController::class, 'apiHealth'])
 
 // Dashboard Master PO (Terpisah & Independen - Step 2)
 Route::get('/purchasing/master-po', [PurchasingController::class, 'masterPoIndex'])->middleware('auth')->name('purchasing.master-po');
-Route::post('/purchasing/master-po/store', [PurchasingController::class, 'storeMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.store');
-Route::post('/purchasing/master-po/bulk', [PurchasingController::class, 'storeMasterPoBulk'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master.bulk');
+Route::post('/purchasing/master-po/store', [PurchasingController::class, 'storeMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master-po.store');
+Route::post('/purchasing/master-po/bulk', [PurchasingController::class, 'storeMasterPoBulk'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master.bulk');
 Route::get('/purchasing/master-po/template', [IntegratedImportController::class, 'downloadMasterPoTemplate'])->middleware('auth')->name('purchasing.master-po.template');
-Route::post('/purchasing/master-po/import', [IntegratedImportController::class, 'importMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.import');
-Route::put('/purchasing/master-po/{id}', [PurchasingController::class, 'updateMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.update');
-Route::delete('/purchasing/master-po/{id}', [PurchasingController::class, 'destroyMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master-po.destroy');
+Route::post('/purchasing/master-po/import', [IntegratedImportController::class, 'importMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master-po.import');
+Route::put('/purchasing/master-po/{id}', [PurchasingController::class, 'updateMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master-po.update');
+Route::delete('/purchasing/master-po/{id}', [PurchasingController::class, 'destroyMasterPo'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master-po.destroy');
 Route::post('/purchasing/master-po/destroy-bulk', [PurchasingController::class, 'destroyMasterPoBulk'])->middleware('auth')->name('purchasing.master-po.destroy-bulk');
 Route::post('/purchasing/master-po/destroy-all', [PurchasingController::class, 'destroyMasterPoAll'])->middleware('auth')->name('purchasing.master-po.destroy-all');
  
@@ -161,7 +161,7 @@ Route::post('/purchasing/actual-production/destroy-all', [\App\Http\Controllers\
 // Step 6: Aktual Inventory
 Route::get('/purchasing/actual-inventory', [\App\Http\Controllers\InventoryController::class, 'index'])->middleware('auth')->name('purchasing.actual-inventory');
 Route::get('/purchasing/actual-inventory/template', [\App\Http\Controllers\InventoryController::class, 'downloadTemplate'])->middleware('auth')->name('purchasing.actual-inventory.template');
-Route::post('/purchasing/actual-inventory/import', [\App\Http\Controllers\InventoryController::class, 'importExcel'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.actual-inventory.import');
+Route::post('/purchasing/actual-inventory/import', [\App\Http\Controllers\InventoryController::class, 'importExcel'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.actual-inventory.import');
 Route::post('/purchasing/actual-inventory/store', [\App\Http\Controllers\InventoryController::class, 'store'])->middleware('auth')->name('purchasing.actual-inventory.store');
 Route::put('/purchasing/actual-inventory/{id}', [\App\Http\Controllers\InventoryController::class, 'update'])->middleware('auth')->name('purchasing.actual-inventory.update');
 Route::delete('/purchasing/actual-inventory/{id}', [\App\Http\Controllers\InventoryController::class, 'destroy'])->middleware('auth')->name('purchasing.actual-inventory.destroy');
@@ -172,7 +172,7 @@ Route::post('/purchasing/actual-inventory/destroy-all', [\App\Http\Controllers\I
 Route::get('/purchasing/master/outstanding', [OutstandingController::class, 'masterIndex'])->middleware('auth')->name('purchasing.master.outstanding');
 Route::post('/purchasing/master/outstanding', [OutstandingController::class, 'store'])->middleware('auth')->name('purchasing.master.outstanding.store');
 Route::put('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'update'])->middleware('auth')->name('purchasing.master.outstanding.update');
-Route::delete('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor'])->name('purchasing.master.outstanding.destroy');
+Route::delete('/purchasing/master/outstanding/{id}', [OutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.master.outstanding.destroy');
 Route::post('/purchasing/master/outstanding/destroy-bulk', [OutstandingController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.master.outstanding.destroy-bulk');
 
 // ─── Modul Analisis & Komparasi ──────────────────────────────────────────────
