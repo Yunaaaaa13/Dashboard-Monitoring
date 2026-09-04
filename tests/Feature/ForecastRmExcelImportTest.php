@@ -293,4 +293,101 @@ class ForecastRmExcelImportTest extends TestCase
         $response->assertStatus(200);
         $response->assertSee('MASTER FORECAST');
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Test 5: Multi-sheet dengan lembar revisi/duplikat tidak menduplikasi baris
+    // dan tidak memetakan deskripsi sebagai part number
+    // ─────────────────────────────────────────────────────────────────────────
+    public function test_multi_sheet_with_secondary_revision_sheet_does_not_duplicate_or_map_description_as_part_number()
+    {
+        $spreadsheet = new Spreadsheet();
+
+        // Sheet 1: Sheet2 (3) (Format lengkap dengan kategori di kolom D)
+        $sheet1 = $spreadsheet->getActiveSheet();
+        $sheet1->setTitle('Sheet2 (3)');
+
+        $sheet1->setCellValue('I1', 'JUL-26');
+        $sheet1->setCellValue('I2', 'OUTSTANDING');
+        $sheet1->setCellValue('J2', 'STOCK');
+        $sheet1->setCellValue('K2', 'PO');
+        $sheet1->setCellValue('L2', 'PROD');
+
+        $sheet1->setCellValue('A4', 'Supplier Code');
+        $sheet1->setCellValue('B4', 'Supplier Name');
+        $sheet1->setCellValue('C4', 'Plant');
+        $sheet1->setCellValue('D4', 'kategori');
+        $sheet1->setCellValue('E4', 'Material Code');
+        $sheet1->setCellValue('F4', 'Description');
+        $sheet1->setCellValue('G4', 'Unit price');
+        $sheet1->setCellValue('H4', 'Currency');
+
+        $sheet1->setCellValue('A5', 'C081');
+        $sheet1->setCellValue('B5', 'PT. SERBAGUNA PRIMA');
+        $sheet1->setCellValue('C5', 'KIP1');
+        $sheet1->setCellValue('D5', 'PUR-01');
+        $sheet1->setCellValue('E5', 'M50601');
+        $sheet1->setCellValue('F5', 'Post Dso 506 37.5X100');
+        $sheet1->setCellValue('G5', 4.821);
+        $sheet1->setCellValue('H5', 'USD');
+        $sheet1->setCellValue('I5', 10);
+        $sheet1->setCellValue('J5', 20);
+        $sheet1->setCellValue('K5', 30);
+        $sheet1->setCellValue('L5', 40);
+
+        // Sheet 2: Sheet2 (2) (Revisi lama tanpa kolom kategori - kolom bergeser)
+        $sheet2 = $spreadsheet->createSheet();
+        $sheet2->setTitle('Sheet2 (2)');
+
+        $sheet2->setCellValue('H1', 'JUL-26');
+        $sheet2->setCellValue('H2', 'OUTSTANDING');
+
+        $sheet2->setCellValue('A4', 'Supplier Code');
+        $sheet2->setCellValue('B4', 'Supplier Name');
+        $sheet2->setCellValue('C4', 'Plant');
+        $sheet2->setCellValue('D4', 'Material Code');
+        $sheet2->setCellValue('E4', 'Description');
+        $sheet2->setCellValue('F4', 'Unit price');
+        $sheet2->setCellValue('G4', 'Currency');
+
+        $sheet2->setCellValue('A5', 'C081');
+        $sheet2->setCellValue('B5', 'PT. SERBAGUNA PRIMA');
+        $sheet2->setCellValue('C5', 'KIP1');
+        $sheet2->setCellValue('D5', 'M50601');
+        $sheet2->setCellValue('E5', 'Post Dso 506 37.5X100');
+        $sheet2->setCellValue('F5', 4.821);
+        $sheet2->setCellValue('G5', 'USD');
+        $sheet2->setCellValue('H5', 10);
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_revision_') . '.xlsx';
+        (new Xlsx($spreadsheet))->save($tempPath);
+
+        $file = new UploadedFile(
+            $tempPath,
+            'Template_Revision_Test.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($this->user)->post(route('purchasing.outstanding.import'), [
+            'file' => $file,
+        ]);
+
+        $response->assertStatus(302);
+        $response->assertSessionHas('success');
+
+        // Pastikan hanya tepat 1 item yang terimport, bukan terduplikasi menjadi 2
+        $this->assertEquals(1, PurchasingOutstanding::count(), 'Hanya sheet terbaik yang harus diimpor, tidak menduplikasi baris dari sheet revisi');
+
+        // Pastikan part_number adalah kode material 'M50601', bukan deskripsi barang
+        $item = PurchasingOutstanding::first();
+        $this->assertEquals('M50601', $item->part_number);
+        $this->assertStringContainsString('Post Dso 506', $item->description);
+
+        // Pastikan tidak ada record dengan part_number berupa deskripsi
+        $badItem = PurchasingOutstanding::where('part_number', 'LIKE', '%Post Dso%')->first();
+        $this->assertNull($badItem, 'Deskripsi barang tidak boleh menjadi part_number');
+    }
 }

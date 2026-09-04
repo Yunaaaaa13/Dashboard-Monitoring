@@ -1712,13 +1712,10 @@ class PurchasingOutstandingController extends Controller
             };
 
             // ---------------------------------------------------------------
-            // Multi-sheet inspection: kumpulkan SEMUA sheet yang memiliki data
-            // material (score >= 15). Sheet cover/blank (score < 15) dilewati.
-            // Tiap sheet yang lolos akan di-append ke $bestRows dengan baris
-            // section-header pembeda sehingga category dapat di-inherit dari
-            // nama sheet (misal sheet "RM SYAHRUL" → PUR-01).
+            // Sheet inspection: cari sheet terbaik dengan skor data material tertinggi.
+            // Sheet cover/blank dilewati. Kategori dapat di-inherit jika nama sheet
+            // mengindikasikan kategori (misal: "RM SYAHRUL" -> PUR-01).
             // ---------------------------------------------------------------
-            $validSheets = []; // [['sheet'=>$obj, 'score'=>int, 'name'=>string]]
             foreach ($allSheetNames as $sheetName) {
                 $candidateSheet = $spreadsheet->getSheetByName($sheetName);
                 if (!$candidateSheet) continue;
@@ -1757,11 +1754,6 @@ class PurchasingOutstandingController extends Controller
                 if ($sheetScore > $bestSheetScore) {
                     $bestSheetScore = $sheetScore;
                     $bestSheet = $candidateSheet;
-                }
-
-                // Semua sheet dengan data material (score >= 15) dikumpulkan
-                if ($sheetScore >= 15) {
-                    $validSheets[] = ['sheet' => $candidateSheet, 'score' => $sheetScore, 'name' => $sheetName];
                 }
             }
 
@@ -1807,69 +1799,20 @@ class PurchasingOutstandingController extends Controller
                 return $rawRows;
             };
 
-            // Jika ada >1 sheet valid, gabungkan semua dengan sentinel baris category
-            if (count($validSheets) > 1) {
-                $mergedRows = [];
-                $rowOffset  = 0;
-                $firstHeaderDone = false;
-                $firstHeaderRows = [];
-
-                // Sort: sheet dengan score tertinggi dijadikan referensi header pertama
-                usort($validSheets, fn($a, $b) => $b['score'] <=> $a['score']);
-
-                foreach ($validSheets as $vsInfo) {
-                    $sheetRows = $extractSheetRows($vsInfo['sheet']);
-                    if (empty($sheetRows)) continue;
-
-                    // Tentukan kategori default dari nama sheet
-                    $sheetCatFromName = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($vsInfo['name']);
-
-                    if (!$firstHeaderDone) {
-                        // Sheet pertama (score tertinggi): simpan baris aslinya semua
-                        foreach ($sheetRows as $rIdx => $row) {
-                            $mergedRows[$rIdx] = $row;
-                            $rowOffset = max($rowOffset, $rIdx);
-                        }
-                        $firstHeaderDone = true;
-                    } else {
-                        $rowOffset++;
-                        // Sisipkan sentinel baris: kolom A berisi nama kategori sheet
-                        // Ini akan dibaca sebagai section divider oleh loop data rows
-                        $mergedRows[$rowOffset] = ['A' => '__SHEET_CAT__:' . $sheetCatFromName . ':' . $vsInfo['name']];
-                        $rowOffset++;
-
-                        // Cari header row di sheet ini lalu skip, ambil data rows saja
-                        $subBestScore = 0;
-                        $subHeaderIdx = null;
-                        foreach ($sheetRows as $rIdx => $row) {
-                            if ($rIdx > 35) break;
-                            $score = 0;
-                            foreach ($row as $cVal) {
-                                $cv = strtoupper(trim((string)($cVal ?? '')));
-                                foreach ($itemKeywords as $ikw) {
-                                    if ($cv === $ikw || str_contains($cv, $ikw)) { $score += 5; break; }
-                                }
-                            }
-                            if ($score > $subBestScore) {
-                                $subBestScore = $score;
-                                $subHeaderIdx = $rIdx;
-                            }
-                        }
-                        $subDataStart = ($subHeaderIdx !== null) ? ($subHeaderIdx + 2) : 5;
-
-                        foreach ($sheetRows as $rIdx => $row) {
-                            if ($rIdx < $subDataStart) continue;
-                            $mergedRows[$rowOffset] = $row;
-                            $rowOffset++;
-                        }
-                    }
+            // Selalu gunakan single best sheet dengan skor relevansi tertinggi ($bestSheet).
+            // Dilarang menggabungkan multi-sheet secara buta karena sheet duplikat/revisi
+            // (misal Sheet2 (2) vs Sheet2 (3)) memiliki struktur kolom berbeda yang menyebabkan
+            // pergeseran kolom (deskripsi terbaca sebagai kode barang) dan duplikasi ratusan baris.
+            $bestRows = [];
+            $sheetDefaultCategory = null;
+            if ($bestSheet) {
+                $sheetTitle = $bestSheet->getTitle();
+                $normalizedSheetCat = \App\Services\DataValidation\InputNormalizer::normalizeCategoryCode($sheetTitle);
+                // Jika nama sheet mengindikasikan kategori (misal: RM, RM SYAHRUL, PUR-01), simpan sebagai fallback
+                if (!empty($normalizedSheetCat) && !preg_match('/^SHEET\d*/i', trim($sheetTitle))) {
+                    $sheetDefaultCategory = $normalizedSheetCat;
                 }
-                $bestRows = $mergedRows;
-            } else {
-                // Sheet tunggal – jalankan seperti sebelumnya
-                if ($bestSheet) {
-                    $bestRows = $extractSheetRows($bestSheet);
-                }
+                $bestRows = $extractSheetRows($bestSheet);
             }
 
             if (empty($bestRows)) {
@@ -2277,9 +2220,9 @@ class PurchasingOutstandingController extends Controller
                         $factoryCodeCol = $col;
                     } elseif (!$categoryCol && preg_match('/(KATEGORI|CATEGORY|PURCHASING[\s_]?CAT|KODE[\s_]?KATEGORI|\bKAT\b|JENIS[\s_]?MATERIAL|\bPUR[\s\-_]?\d{2}\b)/i', $ht)) {
                         $categoryCol = $col;
-                    } elseif (!$itemCodeCol && !preg_match('/(SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK|KATEGORI|CATEGORY|PUR[\s\-_]?\d)/i', $ht) && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|ITEM[\s_]?NO|NO[\s_\.]?PART|NO[\s_\.]?ITEM|NO[\s_\.]?BARANG|NO[\s_\.]?MATERIAL|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL|KODE[\s_]?ITEM|KODE[\s_]?PART|KODE[\s_]?RM|NO[\s_\.]?RM|RM[\s_]?CODE|RM[\s_]?NUMBER|RAW[\s_]?MATERIAL[\s_]?CODE|\bPN\b|\bP\/N\b|\bDRAWING\b|\bDWG\b|\bKOMPONEN\b|\bSKU\b|PART[\s_]?#|ITEM[\s_]?#|MAT[\s_]?#|MAT[\s_]?CODE|\bITEM\b|\bPART\b|\bPARTS\b|\bMATERIAL\b)/i', $ht)) {
+                    } elseif (!$itemCodeCol && !preg_match('/(SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK|KATEGORI|CATEGORY|PUR[\s\-_]?\d|DESC|DESCRIP|NAMA|NAME|KET|KETERANGAN)/i', $ht) && preg_match('/(ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|ITEM[\s_]?NO|NO[\s_\.]?PART|NO[\s_\.]?ITEM|NO[\s_\.]?BARANG|NO[\s_\.]?MATERIAL|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL|KODE[\s_]?ITEM|KODE[\s_]?PART|KODE[\s_]?RM|NO[\s_\.]?RM|RM[\s_]?CODE|RM[\s_]?NUMBER|RAW[\s_]?MATERIAL[\s_]?CODE|\bPN\b|\bP\/N\b|\bDRAWING\b|\bDWG\b|\bKOMPONEN\b|\bSKU\b|PART[\s_]?#|ITEM[\s_]?#|MAT[\s_]?#|MAT[\s_]?CODE|\bITEM\b|\bPART\b|\bPARTS\b|\bMATERIAL\b)/i', $ht)) {
                         $itemCodeCol = $col;
-                    } elseif (!$descCol && !preg_match('/(KATEGORI|CATEGORY|PUR[\s\-_]?\d|SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK)/i', $ht) && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|MATERIAL[\s_]?NAME|PART[\s_]?NAME|PRODUCT[\s_]?NAME|NAMA[\s_]?PRODUK|NAMA[\s_]?ITEM|NAMA[\s_]?PART|NAMA[\s_]?MATERIAL|ITEM[\s_]?DESCRIPTION|MATERIAL[\s_]?DESCRIPTION|PART[\s_]?DESCRIPTION|\bDESC\b|\bDESCR\b|KETERANGAN|\bKET\b|SPESIFIKASI|SPECIFICATION|\bSPEC\b|\bSPECS\b|UKURAN|\bSIZE\b)/i', $ht)) {
+                    } elseif (!$descCol && !preg_match('/(KATEGORI|CATEGORY|PUR[\s\-_]?\d|SUPPLIER|VENDOR|FACTORY|PLANT|PABRIK|ITEM[\s_]?CODE|MATERIAL[\s_]?CODE|PART[\s_]?NUMBER|PART[\s_]?NO|KODE[\s_]?BARANG|KODE[\s_]?MATERIAL|KODE[\s_]?PART|KODE[\s_]?RM|\bPN\b|\bP\/N\b)/i', $ht) && preg_match('/(DECRIPTION|DESCRIPTION|DESKRIPSI|NAMA[\s_]?BARANG|ITEM[\s_]?NAME|MATERIAL[\s_]?NAME|PART[\s_]?NAME|PRODUCT[\s_]?NAME|NAMA[\s_]?PRODUK|NAMA[\s_]?ITEM|NAMA[\s_]?PART|NAMA[\s_]?MATERIAL|ITEM[\s_]?DESCRIPTION|MATERIAL[\s_]?DESCRIPTION|PART[\s_]?DESCRIPTION|\bDESC\b|\bDESCR\b|KETERANGAN|\bKET\b|SPESIFIKASI|SPECIFICATION|\bSPEC\b|\bSPECS\b|UKURAN|\bSIZE\b)/i', $ht)) {
                         $descCol = $col;
                     } elseif (!$typeCol && preg_match('/\bTYPE\b|\bTIPE\b|\bMODEL\b|\bSPEC\b/i', $ht)) {
                         $typeCol = $col;
@@ -2320,6 +2263,9 @@ class PurchasingOutstandingController extends Controller
 
             // Safe positional fallbacks that NEVER collide with suppCodeCol, suppCol, factoryCodeCol, or categoryCol
             $excludedCols = array_filter([$suppCodeCol, $suppCol, $factoryCodeCol, $categoryCol, $priceCol, $currencyCol]);
+            if ($descCol) {
+                $excludedCols[] = $descCol;
+            }
 
             if (!$itemCodeCol) {
                 foreach ($allHeaderCols as $c) {
@@ -2373,7 +2319,7 @@ class PurchasingOutstandingController extends Controller
             $firstCategory = $allCategories->where('status', 'Active')->first() ?? $allCategories->first();
             $defaultCatId = $firstCategory ? $firstCategory->id : 1;
 
-            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $dataStartRowIdx, $allHeaderCols, $colToNum, $leftmostMonthCol, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, &$allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount) {
+            \Illuminate\Support\Facades\DB::transaction(function() use ($request, $dataRows, $dataStartRowIdx, $allHeaderCols, $colToNum, $leftmostMonthCol, $itemCodeCol, $factoryCodeCol, $categoryCol, $descCol, $suppCol, $suppCodeCol, $typeCol, $priceCol, $currencyCol, $outstandCol, $stockCol, $poCol, $forecastCol, $prodCol, $monthBlocks, &$allCategories, $defaultCatId, $parseCellMonth, &$importCount, &$updateCount, &$forecastSyncCount, $sheetDefaultCategory) {
                 $skipKeywords = ['ITEM CODE', 'ITEM', 'PN', 'PART NUMBER', 'PART NO', 'TOTAL', 'GRAND TOTAL', 'NO', 'ITEM CODE (PK)', 'KATEGORI', 'DESCRIPTION & SUPPLIER', 'DESCRIPTION', 'DESKRIPSI', 'KETERANGAN', 'NOTE', 'SUB TOTAL', 'SUBTOTAL'];
                 $isCompanyName = function(?string $text): bool {
                     if (empty($text)) return false;
@@ -2413,26 +2359,16 @@ class PurchasingOutstandingController extends Controller
 
                 $codeOccurrences = [];
                 $forecastingBatch = [];
-                $sectionCategoryOverride = null; // set saat membaca sentinel row antar-sheet
 
                 foreach ($dataRows as $rIdx => $row) {
-                    // Periksa sentinel baris antar-sheet yang disisipkan saat multi-sheet merge
-                    $sentinelA = trim((string)($row['A'] ?? ''));
-                    if (str_starts_with($sentinelA, '__SHEET_CAT__:')) {
-                        // Format: __SHEET_CAT__:PUR-01:RM SYAHRUL
-                        $parts = explode(':', $sentinelA, 3);
-                        $sectionCategoryOverride = $parts[1] ?? null; // misal: PUR-01
-                        continue; // jangan proses baris ini sebagai data
-                    }
-
                     $rawCode = trim((string)($row[$itemCodeCol] ?? ''));
                     $rawDesc = trim((string)($row[$descCol] ?? ''));
                     $rawSupp = trim((string)($row[$suppCol] ?? ''));
                     $rawSuppCode = $suppCodeCol ? trim((string)($row[$suppCodeCol] ?? '')) : '';
                     $rawCategory = $categoryCol ? trim((string)($row[$categoryCol] ?? '')) : '';
-                    // Jika tidak ada kolom kategori eksplisit dan ada section override dari nama sheet, gunakan override
-                    if (empty($rawCategory) && !empty($sectionCategoryOverride)) {
-                        $rawCategory = $sectionCategoryOverride;
+                    // Jika tidak ada kolom kategori eksplisit dan nama sheet mengindikasikan kategori (misal RM SYAHRUL -> PUR-01), gunakan fallback
+                    if (empty($rawCategory) && !empty($sheetDefaultCategory)) {
+                        $rawCategory = $sheetDefaultCategory;
                     }
                     $rawFactory = ($factoryCodeCol && !empty(trim((string)($row[$factoryCodeCol] ?? '')))) ? strtoupper(trim((string)$row[$factoryCodeCol])) : '';
 
@@ -2498,12 +2434,15 @@ class PurchasingOutstandingController extends Controller
                             }
 
                             // Candidate for Item Code
-                            // RM item codes (misal: WOOD-SPRUCE, BALOK, VENEER-A) boleh tidak mengandung digit
+                            // RM item codes (misal: WOOD-SPRUCE-A, BALOK-PINE-2X4, M50601) boleh tidak mengandung digit tapi berstruktur kode
                             if (empty($rawCode) && !$isCompanyName($strVal) && !$isVendorCode($strVal) && !$isCategoryCode($strVal) && !$isPlantCode($strVal)) {
                                 $isNumericCode = is_numeric($strVal) && strlen($strVal) >= 4 && (int)$strVal > 1000 && !str_contains($strVal, '.');
+                                $hasCodeStructure = preg_match('/[0-9]/', $strVal) || preg_match('/[\-\_\/]/', $strVal) || !str_contains($strVal, ' ');
                                 $isAlphanumCode = strlen($strVal) <= 40 && !str_contains($strVal, '  ') && !is_numeric($strVal)
                                     && preg_match('/^[A-Z0-9][A-Z0-9\-\_\/\.\s]{1,39}$/i', $strVal)
-                                    && !preg_match('/^(TOTAL|SUBTOTAL|GRAND|NOTE|KETERANGAN|DESCRIPTION|DESKRIPSI)\b/i', $strVal);
+                                    && !preg_match('/^(TOTAL|SUBTOTAL|GRAND|NOTE|KETERANGAN|DESCRIPTION|DESKRIPSI)\b/i', $strVal)
+                                    && $hasCodeStructure
+                                    && substr_count($strVal, ' ') <= 1;
                                 if ($isNumericCode || $isAlphanumCode) {
                                     $rawCode = $strVal;
                                     continue;
