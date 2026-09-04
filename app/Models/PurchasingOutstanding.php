@@ -517,6 +517,13 @@ class PurchasingOutstanding extends Model
     /**
      * Dapatkan target Qty Forecast untuk bulan ke-$index.
      * Mengambil dari inputan Excel Step 1 (Forecast) / model Forecasting.
+     * Prioritas:
+     *   1. m{i}_forecast  (kolom langsung jika diisi eksplisit > 0)
+     *   2. Tabel forecastings via cache (forecast_qty > 0)  ← kunci utama setelah import Excel RM
+     *   3. m{i}_po dari purchasing_outstandings
+     *   4. m{i}_prod dari purchasing_outstandings
+     *   5. m{i}_order_qty
+     *   6. 0
      */
     public function getForecastForMonth(int $index): int
     {
@@ -530,14 +537,32 @@ class PurchasingOutstanding extends Model
             return (int) $directFc;
         }
 
-        // 2. Ambil dari kolom m{index}_po dari tabel PurchasingOutstanding (Step 1 Excel Import)
-        if (isset($this->{"m{$index}_po"}) && $this->{"m{$index}_po"} !== null) {
-            return (int) $this->{"m{$index}_po"};
+        // 2. Cek tabel forecastings (via cache) untuk periode yang bersesuaian
+        //    Ini adalah sumber utama nilai forecast setelah import Excel RM
+        $period = $this->getPeriodForMonth($index);
+        if ($period) {
+            $fcFromTable = $this->getForecastForPeriod($period);
+            if ($fcFromTable > 0) {
+                return $fcFromTable;
+            }
         }
 
-        // 3. Fallback ke m{index}_order_qty jika ada
-        if (isset($this->{"m{$index}_order_qty"}) && $this->{"m{$index}_order_qty"} !== null) {
-            return (int) $this->{"m{$index}_order_qty"};
+        // 3. Ambil dari kolom m{index}_po dari tabel PurchasingOutstanding
+        $mPo = isset($this->{"m{$index}_po"}) ? (int)$this->{"m{$index}_po"} : null;
+        if ($mPo !== null && $mPo > 0) {
+            return $mPo;
+        }
+
+        // 4. Ambil dari m{index}_prod jika > 0
+        $mProd = isset($this->{"m{$index}_prod"}) ? (int)$this->{"m{$index}_prod"} : null;
+        if ($mProd !== null && $mProd > 0) {
+            return $mProd;
+        }
+
+        // 5. Fallback ke m{index}_order_qty jika ada
+        $mOrderQty = isset($this->{"m{$index}_order_qty"}) ? (int)$this->{"m{$index}_order_qty"} : null;
+        if ($mOrderQty !== null && $mOrderQty > 0) {
+            return $mOrderQty;
         }
 
         return 0;

@@ -376,12 +376,14 @@ class InputNormalizer
             return "PUR-{$num}";
         }
 
-        // Check standard category keywords and aliases
+        // Check standard category keywords and aliases (more specific keys must come before shorter generic keys)
         $directAliases = [
-            'RM KAYU' => 'PUR-01', 'RM-KAYU' => 'PUR-01', 'RAW MATERIAL KAYU' => 'RAW KAYU',
-            'KAYU' => 'PUR-01', 'WOOD' => 'PUR-01', 'KAYU AKUSTIK' => 'PUR-01', 'SPRUCE' => 'PUR-01',
             'RM LOGAM' => 'PUR-02', 'RM-LOGAM' => 'PUR-02', 'RAW MATERIAL LOGAM' => 'PUR-02',
             'LOGAM' => 'PUR-02', 'METAL' => 'PUR-02', 'BESI' => 'PUR-02', 'BAJA' => 'PUR-02', 'STEEL' => 'PUR-02',
+            'RM BESI' => 'PUR-02', 'RM BAJA' => 'PUR-02', 'RM STEEL' => 'PUR-02',
+            'RM KAYU' => 'PUR-01', 'RM-KAYU' => 'PUR-01', 'RAW MATERIAL KAYU' => 'PUR-01',
+            'KAYU' => 'PUR-01', 'WOOD' => 'PUR-01', 'KAYU AKUSTIK' => 'PUR-01', 'SPRUCE' => 'PUR-01',
+            'RM SYAHRUL' => 'PUR-01', 'RAW MATERIALS' => 'PUR-01', 'RAW MATERIAL' => 'PUR-01', 'BAHAN BAKU' => 'PUR-01', 'RM' => 'PUR-01',
             'CONSUMABLE TOOL' => 'PUR-03', 'CONSUMABLE' => 'PUR-03', 'TOOL' => 'PUR-03', 'TOOLS' => 'PUR-03',
             'KOMPONEN PACKING' => 'PUR-04', 'PACKING' => 'PUR-04', 'PACKAGING' => 'PUR-04', 'KEMASAN' => 'PUR-04',
             'DUS' => 'PUR-04', 'KARTON' => 'PUR-04', 'PLASTIK' => 'PUR-04', 'RESIN' => 'PUR-04', 'FINISHING' => 'PUR-04',

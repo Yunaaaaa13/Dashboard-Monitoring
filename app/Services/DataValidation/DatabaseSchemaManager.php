@@ -313,7 +313,30 @@ class DatabaseSchemaManager
      */
     public static function ensureInventoriesTable(): void
     {
-        if (!Schema::hasTable('inventories')) return;
+        if (!Schema::hasTable('inventories')) {
+            // Buat tabel inventories jika belum ada
+            Schema::create('inventories', function (Blueprint $table) {
+                $table->id();
+                $table->string('part_number', 100)->index();
+                $table->string('drawing', 100)->nullable();
+                $table->string('description')->nullable();
+                $table->string('supplier_code', 50)->nullable();
+                $table->string('supplier_name')->nullable();
+                $table->unsignedBigInteger('category_id')->nullable();
+                $table->string('factory_code', 50)->default('KIP1')->index();
+                $table->integer('current_stock')->default(0);
+                $table->integer('m0_inventory')->default(0);
+                $table->string('unit_measure', 20)->default('PCS');
+                $table->decimal('unit_price', 15, 4)->default(0);
+                $table->string('currency', 10)->default('USD');
+                $table->string('warehouse_location')->nullable();
+                $table->string('status', 50)->default('Active');
+                $table->unsignedBigInteger('user_id')->nullable();
+                $table->date('tanggal_inventory')->nullable()->index();
+                $table->timestamps();
+            });
+            return;
+        }
 
         $existing = Schema::getColumnListing('inventories');
         $missing = [];

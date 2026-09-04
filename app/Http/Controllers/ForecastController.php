@@ -24,7 +24,7 @@ class ForecastController extends Controller
             });
         })->when($selectedDeliveryCategory, function ($q) use ($selectedDeliveryCategory) {
             $q->where('delivery_category_code', $selectedDeliveryCategory);
-        })->when(!$user?->isAdmin() && !$targetUserId, function ($q) use ($user) {
+        })->when(!$user?->isAdmin() && !$user?->isSupervisor() && !$targetUserId, function ($q) use ($user) {
             $q->where('user_id', $user?->id);
         })->when($targetUserId, function ($q) use ($targetUserId) {
             $q->where('user_id', $targetUserId);
