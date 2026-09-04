@@ -65,7 +65,7 @@ Route::post('/purchasing/outstanding', [PurchasingOutstandingController::class, 
 Route::put('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'update'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.update');
 Route::delete('/purchasing/outstanding/{id}', [PurchasingOutstandingController::class, 'destroy'])->middleware(['auth', 'role:staff,leader,supervisor,admin'])->name('purchasing.outstanding.destroy');
 Route::post('/purchasing/outstanding/destroy-bulk', [PurchasingOutstandingController::class, 'destroyBulk'])->middleware('auth')->name('purchasing.outstanding.destroy-bulk');
-Route::post('/purchasing/outstanding/destroy-all', [PurchasingOutstandingController::class, 'destroyAll'])->middleware('auth')->name('purchasing.outstanding.destroy-all');
+Route::match(['get', 'post'], '/purchasing/outstanding/destroy-all', [PurchasingOutstandingController::class, 'destroyAll'])->middleware('auth')->name('purchasing.outstanding.destroy-all');
 Route::post('/purchasing/outstanding/seed', [PurchasingOutstandingController::class, 'seedDefault'])->middleware(['auth', 'role:supervisor,admin'])->name('purchasing.outstanding.seed');
 Route::post('/purchasing/outstanding/months', [PurchasingOutstandingController::class, 'updateMonths'])->name('purchasing.outstanding.months');
 Route::get('/purchasing/outstanding/template', [ForecastController::class, 'downloadTemplate'])->middleware('auth')->name('purchasing.template');

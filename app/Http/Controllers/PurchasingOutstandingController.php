@@ -1485,6 +1485,10 @@ class PurchasingOutstandingController extends Controller
      */
     public function destroyAll(Request $request)
     {
+        if ($request->isMethod('get')) {
+            return redirect()->route('purchasing.outstanding');
+        }
+
         try {
             \Illuminate\Support\Facades\DB::transaction(function() {
                 PurchasingOutstanding::query()->delete();
@@ -1522,6 +1526,15 @@ class PurchasingOutstandingController extends Controller
         if ($val === null || $val === '' || $val === '-') return 0.0;
         $str = trim((string)$val);
         
+        // Tangani formula error Excel (#VALUE!, #REF!, dll) atau string formula mentah (=SUMIF, dll)
+        if (str_starts_with($str, '#') || str_starts_with($str, '=')) {
+            // Jika formula sederhana bernilai konstan, misal: "=150" atau "=+50.5"
+            if (preg_match('/^=[+]?(-?\d+(?:\.\d+)?)$/', $str, $simpleMatch)) {
+                return (float) $simpleMatch[1];
+            }
+            return 0.0;
+        }
+        
         $isNegative = false;
         if (preg_match('/^\((.*)\)$/', $str, $matches)) {
             $isNegative = true;
@@ -1554,6 +1567,14 @@ class PurchasingOutstandingController extends Controller
         }
 
         $num = (float) $str;
+
+        // Lindungi dari integer overflow di MySQL (SIGNED INT batas 2.147.483.647)
+        if ($num > 2147483647) {
+            $num = 2147483647;
+        } elseif ($num < -2147483648) {
+            $num = -2147483648;
+        }
+
         return $isNegative ? -$num : $num;
     }
 
@@ -1727,6 +1748,17 @@ class PurchasingOutstandingController extends Controller
                     $bestSheetScore = $sheetScore;
                     $bestSheet = $candidateSheet;
                     $bestRows = $candRows;
+                }
+            }
+
+            if ($bestSheet) {
+                try {
+                    $calcRows = $bestSheet->toArray(null, true, false, true);
+                    if (!empty($calcRows)) {
+                        $bestRows = $calcRows;
+                    }
+                } catch (\Throwable $calcErr) {
+                    // Gunakan uncalculated candRows jika kalkulasi formula mengalami error
                 }
             }
 
@@ -2440,18 +2472,18 @@ class PurchasingOutstandingController extends Controller
                         $mPo = 0; $mProd = 0; $mInv = 0;
                         if (isset($monthBlocks[$i])) {
                             if ($monthBlocks[$i]['poCol'] && isset($row[$monthBlocks[$i]['poCol']])) {
-                                $mPo = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['poCol']]);
+                                $mPo = (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$monthBlocks[$i]['poCol']])));
                             }
                             if ($monthBlocks[$i]['prodCol'] && isset($row[$monthBlocks[$i]['prodCol']])) {
-                                $mProd = (int) $this->parseCleanNumber($row[$monthBlocks[$i]['prodCol']]);
+                                $mProd = (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$monthBlocks[$i]['prodCol']])));
                             }
                             $stkColToUse = $monthBlocks[$i]['stockCol'] ?: ($monthBlocks[$i]['inventoryCol'] ?? null);
                             if ($stkColToUse && isset($row[$stkColToUse])) {
-                                $mInv = (int) $this->parseCleanNumber($row[$stkColToUse]);
+                                $mInv = (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$stkColToUse])));
                             }
                         }
                         if ($i === 0 && $mInv === 0 && $stockVal > 0) {
-                            $mInv = $stockVal;
+                            $mInv = (int) min(2147483647, max(-2147483648, $stockVal));
                         }
                         $createData["m{$i}_po"] = $mPo;
                         $createData["m{$i}_prod"] = $mProd;
@@ -2459,12 +2491,13 @@ class PurchasingOutstandingController extends Controller
                         if ($mPo > 0) $monthlyPoValues[] = $mPo;
                     }
                     if (!isset($createData['m0_inventory']) || $createData['m0_inventory'] === 0) {
-                        $createData['m0_inventory'] = $stockVal;
+                        $createData['m0_inventory'] = (int) min(2147483647, max(-2147483648, $stockVal));
                     }
 
                     $totalMonthPo = array_sum($monthlyPoValues);
-                    $createData['order_qty'] = $poVal > 0 ? $poVal : ($totalMonthPo > 0 ? $totalMonthPo : $outstandVal);
-                    $createData['amount'] = $createData['order_qty'] * $priceVal;
+                    $rawOrderQty = $poVal > 0 ? $poVal : ($totalMonthPo > 0 ? $totalMonthPo : $outstandVal);
+                    $createData['order_qty'] = (int) min(2147483647, max(0, $rawOrderQty));
+                    $createData['amount'] = (float) ($createData['order_qty'] * $priceVal);
 
                     // Robust Business Key Lookup: part_number + factory_code
                     PurchasingOutstanding::withoutEvents(function() use ($itemCodeClean, $factoryVal, $createData, &$updateCount, &$importCount) {
@@ -2485,14 +2518,14 @@ class PurchasingOutstandingController extends Controller
                     foreach ($monthBlocks as $mIdx => $mBlock) {
                         $periode = $mBlock['periodYYYYMM'] ?? null;
                         if (!$periode) continue;
-                        $mPoQty = ($mBlock['poCol'] && isset($row[$mBlock['poCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['poCol']]) : 0;
-                        $mProdQty = ($mBlock['prodCol'] && isset($row[$mBlock['prodCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['prodCol']]) : 0;
-                        $mForecastQty = ($mBlock['forecastCol'] && isset($row[$mBlock['forecastCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['forecastCol']]) : 0;
-                        $mDeliveryQty = ($mBlock['deliveryCol'] && isset($row[$mBlock['deliveryCol']])) ? (int) $this->parseCleanNumber($row[$mBlock['deliveryCol']]) : 0;
+                        $mPoQty = ($mBlock['poCol'] && isset($row[$mBlock['poCol']])) ? (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$mBlock['poCol']]))) : 0;
+                        $mProdQty = ($mBlock['prodCol'] && isset($row[$mBlock['prodCol']])) ? (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$mBlock['prodCol']]))) : 0;
+                        $mForecastQty = ($mBlock['forecastCol'] && isset($row[$mBlock['forecastCol']])) ? (int) min(2147483647, max(0, $this->parseCleanNumber($row[$mBlock['forecastCol']]))) : 0;
+                        $mDeliveryQty = ($mBlock['deliveryCol'] && isset($row[$mBlock['deliveryCol']])) ? (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$mBlock['deliveryCol']]))) : 0;
                         
                         // Ekstraksi nilai stock eksplisit jika ada kolom stock pada bulan ini di file Excel
                         $stkCol = $mBlock['stockCol'] ?: ($mBlock['inventoryCol'] ?? null);
-                        $excelStockVal = ($stkCol && isset($row[$stkCol]) && trim((string)$row[$stkCol]) !== '') ? (int) $this->parseCleanNumber($row[$stkCol]) : null;
+                        $excelStockVal = ($stkCol && isset($row[$stkCol]) && trim((string)$row[$stkCol]) !== '') ? (int) min(2147483647, max(-2147483648, $this->parseCleanNumber($row[$stkCol]))) : null;
 
                         $effDelivery = $mDeliveryQty > 0 ? $mDeliveryQty : $mPoQty;
                         $calcOutstanding = ($mIdx === 0 && $outstandVal > 0) ? $outstandVal : ($runningOutstand + $mPoQty - $effDelivery);
@@ -2506,11 +2539,18 @@ class PurchasingOutstandingController extends Controller
                         $forecastingBatch[] = [
                             'part_number' => $itemCodeClean, 'factory_code' => $factoryVal, 'supplier_name' => $suppVal,
                             'periode' => $periode, 'period_month' => $periode, 'description' => $fullDesc,
-                            'price' => $priceVal, 'currency' => $currencyVal, 'outstanding_pre' => $runningOutstand,
-                            'stock_pre' => $runningStock, 'po' => $mPoQty, 'po_qty' => $mPoQty, 'production' => $mProdQty,
-                            'production_qty' => $mProdQty, 'delivery' => $effDelivery,
-                            'forecast_qty' => $mForecastQty ?: ($mPoQty > 0 ? $mPoQty : $mProdQty),
-                            'outstanding' => $calcOutstanding, 'stock' => $calcStock, 'stock_qty' => $calcStock,
+                            'price' => $priceVal, 'currency' => $currencyVal,
+                            'outstanding_pre' => (int) min(2147483647, max(-2147483648, $runningOutstand)),
+                            'stock_pre'       => (int) min(2147483647, max(-2147483648, $runningStock)),
+                            'po'              => (int) min(2147483647, max(-2147483648, $mPoQty)),
+                            'po_qty'          => (int) min(2147483647, max(-2147483648, $mPoQty)),
+                            'production'      => (int) min(2147483647, max(-2147483648, $mProdQty)),
+                            'production_qty'  => (int) min(2147483647, max(-2147483648, $mProdQty)),
+                            'delivery'        => (int) min(2147483647, max(-2147483648, $effDelivery)),
+                            'forecast_qty'    => (int) min(2147483647, max(0, $mForecastQty ?: ($mPoQty > 0 ? $mPoQty : $mProdQty))),
+                            'outstanding'     => (int) min(2147483647, max(-2147483648, $calcOutstanding)),
+                            'stock'           => (int) min(2147483647, max(-2147483648, $calcStock)),
+                            'stock_qty'       => (int) min(2147483647, max(-2147483648, $calcStock)),
                             'delivery_category_code' => 'LOC'
                         ];
                         $runningOutstand = $calcOutstanding; $runningStock = $calcStock;
